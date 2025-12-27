@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="../css/update-category.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="logo">
+    <i class="fas fa-boxes"></i>
+    <span>Inventory</span>
+  </div>
+
+  <ul>
+    <li class="active"><i class="fas fa-chart-pie"></i><a href="#">Dashboard</a></li>
+    <li><i class="fas fa-box"></i><a href="#"> Products</a></li>
+    <li><i class="fas fa-warehouse"></i><a href="#"> Warehouses</a></li>
+    <li><i class="fas fa-truck"></i><a href="#"> Suppliers</a></li>
+    <li><i class="fas fa-file-invoice"></i><a href="#"> Orders</a></li>
+    <li><i class="fas fa-cog"></i><a href="#"> Settings</a></li>
+    <li><i class="fas fa-sign-out-alt"></i><a href="#">Logout</a></li>
+  </ul>
+</aside>
+
+<!-- Main -->
+<main>
+  <div class="title">Inventory Items</div>
+  <div class="subtitle">Add and manage your inventory items</div>
+
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <button class="btn-green" onclick="openModal('item')"><i class="fa fa-plus"></i> Add Item</button>
+      <button class="btn-blue" onclick="openModal('type')"><i class="fa fa-tags"></i> Add Type</button>
+      <button class="btn-blue" onclick="openModal('category')"><i class="fa fa-layer-group"></i> Add Category</button>
+      <button class="btn-purple" onclick="openModal('subcategory')"><i class="fa fa-list"></i> Add Subcategory</button>
+    </div>
+    <div>
+      <input placeholder="Search..." style="padding:10px;border-radius:8px;border:1px solid #ccc" id="search" oninput="searchItem()">
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Item ID</th>
+        <th>Item Type</th>
+        <th>Item Name</th>
+        <th>Remaining QTY</th>
+        <th>Reorder</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="rows"></tbody>
+  </table>
+</main>
+
+<!-- Modal -->
+<div class="modal" id="modal">
+  <div class="modal-box">
+    <h3 id="modalTitle"></h3>
+    <div id="modalContent"></div>
+    <div class="modal-buttons">
+      <button class="btn-green" id="saveBtn">Save</button>
+      <button class="btn-gray" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+<script src="../js/update-category.js"></script>
+</body>
+</html>
