@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="barcode.css">
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.7.0/fonts/remixicon.css" rel="stylesheet" />
+    <!-- Add these before your custom script -->
+    <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.19.1"></script>
+    <script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>
+</head>
+
+<body>
+
+    <header class="topbar">
+        <div class="logo">
+            <i class="bx bx-cube"></i>
+            <span>InventoryPro</span>
+        </div>
+
+        <div class="user-info">
+            <div class="avatar">A</div>
+            <span>Admin User</span>
+            <i class="bx bx-chevron-down"></i>
+        </div>
+    </header>
+
+    <div class="app">
+
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <ul>
+                <li><i class="bx bx-user"></i> User Management</li>
+                <li><i class="bx bx-box"></i> Product Management</li>
+                <li><i class="bx bx-layer"></i> Stock Management</li>
+                <li><i class="bx bx-category"></i> Category Management</li>
+                <li><i class="bx bx-truck"></i> Supplier Management</li>
+                <li><i class="bx bx-cart"></i> Purchase Management</li>
+                <li><i class="bx bx-money"></i> Sales Management</li>
+                <li><i class="bx bx-bar-chart"></i> Reports</li>
+                <li class="active">
+                    <i class="bx bx-download"></i> Backup & Export
+                </li>
+            </ul>
+        </aside>
+        <main class="content">
+            <div class="content1">
+                <div class="nav-left">
+                    <p style="font-weight: bold; font-size: 32px;">Item Scanner</p>
+                    <p style="color: gray; font-size: 18px;">Barcode & QR Code Scanner System</ផ>
+                </div>
+                <div class="nav-right">
+                    <!-- HTML: Dashboard Header -->
+                    <div class="dashboard-header">
+                        <!-- Search -->
+                        <div class="search-box">
+                            <i class="fas fa-search"></i>
+                            <input type="search" placeholder="Search by code or name..." />
+                        </div>
+
+                        <!-- Notifications -->
+                        <div class="notification">
+                            <i class="fas fa-bell"></i>
+                            <span class="badge">3</span>
+                        </div>
+
+                        <!-- User Avatar -->
+                        <div class="refresh" title="Refresh">
+                            <i class="fas fa-sync-alt"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="content2">
+                <div class="div1">
+                    <i class='bx bx-qr'></i>
+                    <div class="total-scan">
+                        <p style="font-size: 40px; font-weight: bold;">4</p>
+                        <p style="color: gray;">Total Scans</p>
+                    </div>
+                </div>
+                <div class="div2">
+                    <i class='bx bx-cube-alt'></i>
+                    <div class="total-scan">
+                        <p style="font-size: 40px; font-weight: bold;">4</p>
+                        <p style="color: gray;">Items in Inventory</p>
+                    </div>
+                </div>
+                <div class="div3">
+                    <i class='bx bxs-time'></i>
+                    <div class="total-scan">
+                        <p style="font-size: 40px; font-weight: bold;">4</p>
+                        <p style="color: gray;">Scans Today</p>
+                    </div>
+                </div>
+                <div class="div4">
+                    <i class="fa fa-exclamation-triangle"></i>
+                    <div class="total-scan">
+                        <p style="font-size: 40px; font-weight: bold;">4</p>
+                        <p style="color: gray;">Low Stock Items</p>
+                    </div>
+                </div>
+            </div>
+            <div class="scanner-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-camera"></i> Quick Scanner</h2>
+                    <div class="scanner-controls">
+                        <button class="btn btn-primary" id="startScannerBtn">
+                            <i class="fas fa-play"></i> Start Scanner
+                        </button>
+                        <button class="btn btn-secondary" id="stopScannerBtn" disabled>
+                            <i class="fas fa-stop"></i> Stop Scanner
+                        </button>
+                        <button class="btn btn-outline" id="uploadImageBtn">
+                            <i class="fas fa-upload"></i> Upload Image
+                        </button>
+                        <input type="file" id="imageUpload" accept="image/*" style="display: none;">
+                    </div>
+                </div>
+
+                <div class="scanner-container">
+                    <div class="scanner-view">
+                        <div class="scanner-placeholder" id="scannerPlaceholder">
+                            <i class="fas fa-qrcode"></i>
+                            <p>Scanner is inactive</p>
+                            <p>Click "Start Scanner" to begin</p>
+                        </div>
+                        <video id="scannerVideo" style="display: none;"></video>
+                        <canvas id="scannerCanvas" style="display: none;"></canvas>
+                    </div>
+
+                    <div class="scanner-results">
+                        <h3><i class="fas fa-history"></i> Recent Scans</h3>
+                        <div class="recent-scans" id="recentScans">
+                            <!-- Recent scans will appear here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Add & Item Lookup -->
+            <div class="item-management">
+                <div class="item-details card">
+                    <h3><i class="fas fa-info-circle"></i> Item Details</h3>
+                    <div class="item-details-content" id="itemDetails">
+                        <div class="no-item-selected">
+                            <i class="fas fa-barcode"></i>
+                            <p>Scan a barcode/QR code to view item details</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="quick-add-form card">
+                    <h3><i class="fas fa-plus-circle"></i> Quick Add Item</h3>
+                    <form id="quickAddForm">
+                        <div class="form-group">
+                            <label for="itemCode"><i class="fas fa-barcode"></i> Item Code</label>
+                            <input type="text" id="itemCode" placeholder="Scanned code will appear here" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="itemName"><i class="fas fa-tag"></i> Item Name</label>
+                            <input type="text" id="itemName" placeholder="Enter item name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="itemCategory"><i class="fas fa-folder"></i> Category</label>
+                            <select id="itemCategory">
+                                <option value="">Select category</option>
+                                <option value="electronics">Electronics</option>
+                                <option value="clothing">Clothing</option>
+                                <option value="books">Books</option>
+                                <option value="food">Food & Beverages</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="itemQuantity"><i class="fas fa-boxes"></i> Quantity</label>
+                                <input type="number" id="itemQuantity" value="1" min="1">
+                            </div>
+                            <div class="form-group">
+                                <label for="itemPrice"><i class="fas fa-dollar-sign"></i> Price</label>
+                                <input type="number" id="itemPrice" step="0.01" placeholder="0.00">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="itemDescription"><i class="fas fa-align-left"></i> Description</label>
+                            <textarea id="itemDescription" rows="3" placeholder="Enter item description"></textarea>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Add to Inventory
+                            </button>
+                            <button type="button" class="btn btn-secondary" id="clearFormBtn">
+                                <i class="fas fa-times"></i> Clear
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Recent Activity & Inventory Table -->
+            <div class="activity-section">
+                <div class="recent-activity card">
+                    <h3><i class="fas fa-history"></i> Recent Activity</h3>
+                    <div class="activity-list" id="activityList">
+                        <!-- Activity items will appear here -->
+                    </div>
+                </div>
+
+                <div class="inventory-table card">
+                    <div class="table-header">
+                        <h3><i class="fas fa-boxes"></i> Inventory Items</h3>
+                        <button class="btn btn-primary" id="exportBtn">
+                            <i class="fas fa-download"></i> Export CSV
+                        </button>
+                    </div>
+                    <div class="table-container">
+                        <table id="inventoryTable">
+                            <thead>
+                                <tr>
+                                    <th>Code</th>
+                                    <th>Name</th>
+                                    <th>Category</th>
+                                    <th>Quantity</th>
+                                    <th>Price</th>
+                                    <th>Last Scanned</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="inventoryTableBody">
+                                <!-- Table rows will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Scanner Modal -->
+            <div class="modal" id="scannerModal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3><i class="fas fa-qrcode"></i> Scanner</h3>
+                        <button class="close-modal" id="closeScannerModal">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="scanner-frame">
+                            <div class="scanner-guide"></div>
+                            <video id="modalScannerVideo" autoplay playsinline></video>
+                        </div>
+                        <div class="scanner-instructions">
+                            <p><i class="fas fa-info-circle"></i> Position barcode/QR code within the frame</p>
+                            <p class="scanner-status" id="scannerStatus">Ready to scan...</p>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" id="switchCameraBtn">
+                            <i class="fas fa-sync-alt"></i> Switch Camera
+                        </button>
+                        <button class="btn btn-primary" id="scanFromFileBtn">
+                            <i class="fas fa-image"></i> Scan from Image
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notification Toast -->
+            <div class="toast" id="notificationToast">
+                <div class="toast-content">
+                    <i class="fas fa-check-circle"></i>
+                    <span id="toastMessage">Item scanned successfully!</span>
+                </div>
+            </div>
+        </main>
+    </div>
+    </main>
+
+    </div>
+
+
+</body>
+
+</html>
