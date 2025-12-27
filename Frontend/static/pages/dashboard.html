@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Inventory Dashboard</title>
+    <link rel="stylesheet" href="../css/dashboard.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  <body>
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="logo">
+        <i class="fas fa-boxes"></i>
+        <span>Inventory</span>
+      </div>
+
+      <ul>
+        <li class="active">
+          <i class="fas fa-chart-pie"></i><a href="#">Dashboard</a>
+        </li>
+        <li><i class="fas fa-box"></i><a href="#"> Products</a></li>
+        <li><i class="fas fa-warehouse"></i><a href="#"> Warehouses</a></li>
+        <li><i class="fas fa-truck"></i><a href="#"> Suppliers</a></li>
+        <li><i class="fas fa-file-invoice"></i><a href="#"> Orders</a></li>
+        <li><i class="fas fa-cog"></i><a href="#"> Settings</a></li>
+        <li><i class="fas fa-sign-out-alt"></i><a href="#">Logout</a></li>
+      </ul>
+    </aside>
+
+    <div class="main">
+      <!-- NAVBAR -->
+      <header class="navbar">
+        <div class="nav-left">
+          <h2>Dashboard</h2>
+          <input type="text" placeholder="Search products..." />
+        </div>
+
+        <div class="nav-right">
+          <i class="fas fa-bell"></i>
+          <div class="profile">
+            <img src="https://i.pravatar.cc/100" />
+            <span>Admin</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- CONTENT -->
+      <div class="content">
+        <!-- STATS -->
+        <section class="stats">
+          <div class="stat product">
+            <i class="fas fa-boxes"></i>
+            <div class="value">
+              <h3>Total Products</h3>
+              <p>7654</p>
+            </div>
+          </div>
+          <div class="stat low-stock">
+            <i class="fas fa-exclamation-triangle" style="color: rgb(255, 230, 0)"></i>
+            <div class="value">
+              <h3>Low Stock</h3>
+              <p>324</p>
+            </div>
+          </div>
+          <div class="stat out-stock">
+            <i class="fas fa-times-circle" style="color: rgb(255, 247, 0)"></i>
+            <div class="value">
+              <h3>Out of Stock</h3>
+              <p>58</p>
+            </div>
+          </div>
+          <div class="stat Value">
+             <i class="fas fa-sack-dollar" style="color: red"></i>
+            <div class="value">
+              <h3>Total Value</h3>
+              <p>$42800</p>
+            </div>
+          </div>
+          <div class="stat customer">
+             <i class="fas fa-wallet" style="color: rgb(38, 255, 0)"></i>
+            <div class="value">
+              <h3>Members</h3>
+              <p>$42000</p>
+            </div>
+          </div>
+          <div class="stat user">
+             <i class="fas fa-coins" style="color: orange"></i>
+            <div class="value">
+              <h3>Services</h3>
+              <p>$56700</p>
+            </div>
+          </div>
+          <div class="stat Supplier">
+             <i class="fas fa-chart-line" style="color: red"></i>
+            <div class="value">
+              <h3>Payment</h3>
+              <p>$1200</p>
+            </div>
+          </div>
+          <div class="stat quality">
+             <i class="fas fa-box-open" style="color: red"></i>
+            <div class="value">
+              <h3>Rrmembre me</h3>
+              <p>$69000</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- ROW 1 -->
+        <section class="grid two">
+          <div class="card">
+            <h3>Stock Movement</h3>
+            <canvas id="barChart"></canvas>
+          </div>
+
+          <div class="card">
+            <h3>Stock Status</h3>
+            <canvas id="donutChart"></canvas>
+          </div>
+        </section>
+
+        <!-- ROW 2 -->
+        <section class="grid three">
+          <div class="card">
+            <h3>Weekly In/Out</h3>
+            <canvas id="lineChart"></canvas>
+          </div>
+
+          <div class="card">
+            <h3>Top Categories</h3>
+            <ul class="list">
+              <li>Electronics <span class="badge in">520</span></li>
+              <li>Accessories <span class="badge low">180</span></li>
+              <li>Furniture <span class="badge out">45</span></li>
+            </ul>
+          </div>
+
+          <div class="card highlight">
+            <h1>742</h1>
+            <p>Items sold this month</p>
+            <canvas id="miniChart"></canvas>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <script src="../js/main.js"></script>
+  </body>
+</html>
