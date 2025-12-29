@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="../css/sign-up.css">
+     <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+</head>
+<body>
+     <!-- ROLE SCREEN -->
+    <div class="role-screen" id="roleScreen">
+      <div class="role-box">
+        <h2>Please select your role</h2>
+        <div class="roles">
+          <div class="role" onclick="chooseRole('Admin','fa-shield-alt')">
+            <i class="fa fa-shield-alt"></i>
+            Admin
+          </div>
+          <div class="role" onclick="chooseRole('User','fa-user')">
+            <i class="fa fa-user"></i>
+            Manager
+          </div>
+          <div class="role" onclick="chooseRole('Staff','fa-hard-hat')">
+            <i class="fa fa-hard-hat"></i>
+            Staff
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AUTH CONTAINER -->
+    <div class="container" id="container">
+      <div class="row">
+        <!-- SIGN UP -->
+        <div class="col align-items-center flex-col sign-up">
+          <div class="form-wrapper">
+            <div class="form sign-up">
+              <div class="profile">
+                <img src="./image/unnamed.jpg" alt="" />
+              </div>
+              <div class="input-group">
+                <i class="fa fa-user"></i>
+                <input type="text" placeholder="Username" />
+              </div>
+              <div class="input-group">
+                <i class="fa fa-envelope"></i>
+                <input type="email" placeholder="Email" />
+              </div>
+              <div class="input-group">
+                <i class="fa" id="roleIcon"></i>
+                <input type="text" id="roleInput" readonly />
+              </div>
+              <div class="input-group">
+                <i class="fa fa-lock"></i>
+                <input type="password" placeholder="Password" />
+              </div>
+              <div class="complete_btn">
+                <button class="back-btn" onclick="goBack()">Back</button>
+                <button class="singIn">Sign In</button>
+              </div>
+              <p>
+                Already have an account?
+                <b class="pointer" onclick="toggle()">Sign in here</b>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- SIGN IN -->
+        <div class="col align-items-center flex-col sign-in">
+          <div class="form-wrapper">
+            <div class="form sign-in">
+              <div class="profile_singIn">
+                <img src="./image/unnamed.jpg" alt="" />
+              </div>
+              <div class="input-group">
+                <i class="fa fa-user"></i>
+                <input type="text" placeholder="Username" />
+              </div>
+              <div class="input-group">
+                <i class="fa fa-lock"></i>
+                <input type="password" placeholder="Password" />
+              </div>
+              <div class="complete_btn">
+                <button class="back-btn" onclick="goBack()">Back</button>
+                <button class="singIn">Sign Up</button>
+              </div>
+              <p>
+                Don’t have an account?
+                <b class="pointer" onclick="toggle()">Sign up here</b>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script src="../js/sign-up.js"></script>
+</body>
+</html>
