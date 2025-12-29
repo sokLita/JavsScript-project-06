@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InventoryPro - Transaction History</title>
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/Frontend/static/css/transition-history.css">
+</head>
+
+<body>
+    <header class="topbar">
+        <div class="logo">
+            <i class="bx bx-cube"></i>
+            <span>InventoryPro</span>
+        </div>
+
+        <div class="user-info">
+            <div class="avatar">A</div>
+            <span>Admin User</span>
+            <i class="bx bx-chevron-down"></i>
+        </div>
+    </header>
+
+    <div class="app">
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <ul>
+                <li><i class="bx bx-user"></i> User Management</li>
+                <li><i class="bx bx-box"></i> Product Management</li>
+                <li><i class="bx bx-layer"></i> Stock Management</li>
+                <li><i class="bx bx-category"></i> Category Management</li>
+                <li><i class="bx bx-truck"></i> Supplier Management</li>
+                <li><i class="bx bx-cart"></i> Purchase Management</li>
+                <li><i class="bx bx-money"></i> Sales Management</li>
+                <li><i class="bx bx-bar-chart"></i> Reports</li>
+                <li><i class="bx bx-download"></i> Backup & Export</li>
+                <li class="active">
+                    <i class="bx bx-history"></i> Transaction History
+                </li>
+            </ul>
+        </aside>
+
+        <!-- MAIN CONTENT -->
+        <main class="content">
+            <div class="page-header">
+                <div class="page-title">
+                    <i class='bx bx-history'></i>
+                    Transaction History
+                </div>
+                <button class="btn-apply" onclick="exportTransactionHistory()">
+                    <i class="bx bx-download"></i> Export History
+                </button>
+            </div>
+
+            <!-- Filter Controls -->
+            <div class="filter-controls">
+                <div class="filter-group">
+                    <label for="transactionType">Transaction Type</label>
+                    <select id="transactionType" class="filter-select">
+                        <option value="all">All Types</option>
+                        <option value="restock">Restock</option>
+                        <option value="sale">Sale</option>
+                        <option value="return">Return</option>
+                        <option value="adjustment">Adjustment</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label for="itemFilter">Item Name</label>
+                    <input type="text" id="itemFilter" class="filter-input" placeholder="Search by item name...">
+                </div>
+
+                <div class="filter-group">
+                    <label for="dateFrom">Date From</label>
+                    <input type="date" id="dateFrom" class="filter-input">
+                </div>
+
+                <div class="filter-group">
+                    <label for="dateTo">Date To</label>
+                    <input type="date" id="dateTo" class="filter-input">
+                </div>
+
+                <button class="btn-apply" onclick="applyFilters()">
+                    <i class="bx bx-filter-alt"></i> Apply Filters
+                </button>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="stats-cards">
+                <div class="stat-card">
+                    <div class="stat-icon restock">
+                        <i class="bx bx-box"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>127</h3>
+                        <p>Restocks This Month</p>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon sale">
+                        <i class="bx bx-cart"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>342</h3>
+                        <p>Sales This Month</p>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon return">
+                        <i class="bx bx-refresh"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>23</h3>
+                        <p>Returns This Month</p>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon adjustment">
+                        <i class="bx bx-edit"></i>
+                    </div>
+                    <div class="stat-info">
+                        <h3>15</h3>
+                        <p>Adjustments This Month</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transaction Table -->
+            <div class="transaction-table-container">
+                <div class="table-header">
+                    <h3>Recent Transactions</h3>
+                    <div>
+                        <span id="totalTransactions">45 transactions found</span>
+                    </div>
+                </div>
+
+                <table class="transaction-table">
+                    <thead>
+                        <tr>
+                            <th>Date & Time</th>
+                            <th>Transaction ID</th>
+                            <th>Type</th>
+                            <th>Item</th>
+                            <th>Quantity</th>
+                            <th>Unit Price</th>
+                            <th>Total Value</th>
+                            <th>User</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transactionTableBody">
+                        <!-- Transactions will be populated here by JavaScript -->
+                    </tbody>
+                </table>
+
+                <div class="pagination">
+                    <button class="pagination-btn" onclick="changePage(1)">1</button>
+                    <button class="pagination-btn active" onclick="changePage(2)">2</button>
+                    <button class="pagination-btn" onclick="changePage(3)">3</button>
+                    <button class="pagination-btn" onclick="changePage(4)">4</button>
+                    <button class="pagination-btn" onclick="changePage(5)">5</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Transaction Detail Modal -->
+    <div class="modal" id="transactionModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Transaction Details</h3>
+                <button class="close-modal" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Modal content will be populated by JavaScript -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeModal()">Close</button>
+                <button class="btn-apply" onclick="printTransaction()">Print</button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="footer-container">
+            <div class="footer-section">
+                <h3>InventoryPro</h3>
+                <p>Track all inventory transactions easily and efficiently.</p>
+            </div>
+
+            <div class="footer-section">
+                <h4>Quick Links</h4>
+                <ul>
+                    <li><a href="#">Dashboard</a></li>
+                    <li><a href="#">Products</a></li>
+                    <li><a href="#">Reports</a></li>
+                    <li><a href="#">Transaction History</a></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4>Contact</h4>
+                <p>Email: support@inventorypro.com</p>
+                <p>Phone: +855 12 345 678</p>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            © 2025 InventoryPro System. All rights reserved.
+        </div>
+    </footer>
+
+</body>
+<script src="/Frontend/static/js/transition-history.js"></script>
+</html>
