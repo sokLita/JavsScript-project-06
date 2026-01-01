@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Management</title>
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="/Frontend/static/css/sale.css">
+
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <div>
+                <h1>Sales Management Dashboard</h1>
+                <div class="generated-date" id="generatedDate">Loading...</div>
+            </div>
+            <div class="action-buttons">
+                <button class="btn btn-primary" onclick="openNewSaleModal()">
+                    <i class='bx bx-plus'></i> New Sale
+                </button>
+                <button class="btn btn-secondary" onclick="exportSalesReport()">
+                    <i class='bx bx-download'></i> Export Report
+                </button>
+            </div>
+        </header>
+
+        <!-- Dashboard Controls -->
+        <div class="controls">
+            <div class="filters">
+                <div class="filter-group">
+                    <label for="timeRange">Time Period</label>
+                    <select id="timeRange" class="filter-select" onchange="updateSalesData()">
+                        <option value="7">Last 7 Days</option>
+                        <option value="30" selected>Last 30 Days</option>
+                        <option value="90">Last 90 Days</option>
+                        <option value="365">Last Year</option>
+                        <option value="custom">Custom Range</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label for="statusFilter">Status</label>
+                    <select id="statusFilter" class="filter-select" onchange="filterSalesTable()">
+                        <option value="all">All Status</option>
+                        <option value="paid">Paid</option>
+                        <option value="pending">Pending</option>
+                        <option value="refunded">Refunded</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label for="customerFilter">Customer</label>
+                    <select id="customerFilter" class="filter-select" onchange="filterSalesTable()">
+                        <option value="all">All Customers</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Cards -->
+        <section class="summary">
+            <div class="card total-sales">
+                <p class="card-label">Total Sales</p>
+                <p class="card-value" id="totalSales">0</p>
+                <div class="card-trend" id="salesTrend">Loading...</div>
+            </div>
+            <div class="card total-revenue">
+                <p class="card-label">Total Revenue</p>
+                <p class="card-value" id="totalRevenue">$0.00</p>
+                <div class="card-trend" id="revenueTrend">Loading...</div>
+            </div>
+            <div class="card items-sold">
+                <p class="card-label">Items Sold</p>
+                <p class="card-value" id="itemsSold">0</p>
+                <div class="card-trend" id="itemsTrend">Loading...</div>
+            </div>
+            <div class="card average-order">
+                <p class="card-label">Average Order Value</p>
+                <p class="card-value" id="averageOrder">$0.00</p>
+                <div class="card-trend" id="aovTrend">Loading...</div>
+            </div>
+        </section>
+
+        <!-- Charts Section -->
+        <section class="charts-section">
+            <div class="chart-card">
+                <div class="chart-header">
+                    <div class="chart-title">Sales Trend</div>
+                    <div class="chart-actions">
+                        <button class="chart-btn" onclick="toggleChartType('salesTrendChart')">
+                            <i class='bx bx-bar-chart'></i>
+                        </button>
+                        <button class="chart-btn" onclick="downloadChart('salesTrendChart')">
+                            <i class='bx bx-download'></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="salesTrendChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card">
+                <div class="chart-header">
+                    <div class="chart-title">Revenue by Category</div>
+                    <div class="chart-actions">
+                        <button class="chart-btn" onclick="toggleChartType('categoryChart')">
+                            <i class='bx bx-pie-chart'></i>
+                        </button>
+                        <button class="chart-btn" onclick="downloadChart('categoryChart')">
+                            <i class='bx bx-download'></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Product Performance -->
+        <section>
+            <h2>Top Performing Products</h2>
+            <div class="product-performance" id="productPerformance">
+                <!-- Product performance cards will be inserted here -->
+            </div>
+        </section>
+
+        <!-- Recent Sales Table -->
+        <section>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2>Recent Sales</h2>
+                <button class="btn btn-secondary" onclick="refreshSalesData()">
+                    <i class='bx bx-refresh'></i> Refresh
+                </button>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Invoice No.</th>
+                        <th>Customer</th>
+                        <th>Date</th>
+                        <th>Items</th>
+                        <th>Total Amount</th>
+                        <th>Status</th>
+                        <th>Recorded By</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="salesTableBody">
+                    <!-- Sales data will be populated by JavaScript -->
+                </tbody>
+            </table>
+            <div style="text-align: center; margin-top: 20px;">
+                <button class="btn btn-secondary" onclick="loadMoreSales()">
+                    <i class='bx bx-show'></i> Load More
+                </button>
+            </div>
+        </section>
+
+        <!-- New Sale Modal -->
+        <div class="modal" id="newSaleModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class='bx bx-cart'></i> New Sale</h3>
+                    <button class="close-modal" onclick="closeNewSaleModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id="newSaleForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="customerName">Customer Name *</label>
+                                <input type="text" id="customerName" class="form-control" placeholder="Enter customer name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="customerEmail">Customer Email</label>
+                                <input type="email" id="customerEmail" class="form-control" placeholder="customer@example.com">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="saleItems">Sale Items *</label>
+                            <div style="margin-bottom: 10px;">
+                                <button type="button" class="btn btn-secondary" onclick="addSaleItem()">
+                                    <i class='bx bx-plus'></i> Add Item
+                                </button>
+                            </div>
+                            <div id="saleItemsContainer">
+                                <!-- Sale items will be added here -->
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="paymentMethod">Payment Method *</label>
+                                <select id="paymentMethod" class="form-control" required>
+                                    <option value="">Select payment method</option>
+                                    <option value="cash">Cash</option>
+                                    <option value="credit_card">Credit Card</option>
+                                    <option value="bank_transfer">Bank Transfer</option>
+                                    <option value="digital_wallet">Digital Wallet</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="saleStatus">Status *</label>
+                                <select id="saleStatus" class="form-control" required>
+                                    <option value="paid">Paid</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="refunded">Refunded</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="notes">Notes</label>
+                            <textarea id="notes" class="form-control" rows="3" placeholder="Additional notes..."></textarea>
+                        </div>
+
+                        <div class="form-group" style="background: #f8f9fa; padding: 15px; border-radius: 6px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                                <span>Subtotal:</span>
+                                <span id="subtotalAmount">$0.00</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                                <span>Tax (10%):</span>
+                                <span id="taxAmount">$0.00</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; font-weight: 600; font-size: 18px;">
+                                <span>Total:</span>
+                                <span id="totalAmount">$0.00</span>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeNewSaleModal()">Cancel</button>
+                    <button class="btn btn-primary" onclick="processNewSale()">
+                        <i class='bx bx-check'></i> Complete Sale
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Notification -->
+        <div class="toast" id="notificationToast">
+            <div class="toast-icon">
+                <i class='bx bx-check-circle'></i>
+            </div>
+            <div class="toast-message" id="toastMessage">Operation completed successfully!</div>
+            <button class="toast-close" onclick="hideToast()">&times;</button>
+        </div>
+    </div>
+<script src="/Frontend/static/js/sale.js"></script>
+</body>
+
+</html>
