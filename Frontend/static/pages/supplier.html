@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="/Frontend/static/css/supplier.css">
+    
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+</head>
+
+<body>
+    <header>
+        <h1>Supplier Management</h1>
+        <button class="btn-add">
+            Add New Supplier
+        </button>
+    </header>
+
+    <!-- Cards View -->
+    <div class="cards">
+        <div class="card">
+            <h3>Tech Supplies Inc.</h3>
+            <div class="actions">
+                <button class="action-btn edit" title="Edit"><i class='bx bx-edit-alt'></i></button>
+                <button class="action-btn delete" title="Delete"><i class='bx bx-trash'></i></button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Fashion Wholesale Co.</h3>
+            <div class="actions">
+                <button class="action-btn edit" title="Edit"><i class='bx bx-edit-alt'></i></button>
+                <button class="action-btn delete" title="Delete"><i class='bx bx-trash'></i></button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Food Distributors Ltd.</h3>
+            <div class="actions">
+                <button class="action-btn edit" title="Edit"><i class='bx bx-edit-alt'></i></button>
+                <button class="action-btn delete" title="Delete"><i class='bx bx-trash'></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table View -->
+    <table>
+        <thead>
+            <tr>
+                <th>Supplier Name</th>
+                <th>Contact Person</th>
+                <th>Phone</th>
+                <th>Email</th>
+                <th>Products Supplied</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+    </table>
+    <script src="/Frontend/static/js/supplier.js"></script>
+</body>
+
+</html>
