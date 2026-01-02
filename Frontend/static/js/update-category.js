@@ -16,12 +16,12 @@ function draw(filter=""){
   data.filter(d => d.id.includes(filter) || d.name.toLowerCase().includes(filter.toLowerCase()))
       .forEach((d,i)=>{
     rowsEl.innerHTML += `
-      <tr class="${d.qty<50?'low':''}">
+      <tr class="${d.qty>30?'low':''}">
         <td>${d.id}</td>
         <td>${d.type}</td>
         <td>${d.name}</td>
         <td>${d.qty}</td>
-        <td><span class="badge ${d.qty<50?'yes':'no'}">${d.qty<50?'Yes':'No'}</span></td>
+        <td><span class="badge ${d.qty>30?'yes':'no'}">${d.qty>30?'Yes':'No'}</span></td>
         <td class="actions">
           <button class="edit" onclick="editItem(${i})"><i class="fa fa-edit"></i></button>
           <button class="delete" onclick="del(${i})"><i class="fa fa-trash"></i></button>

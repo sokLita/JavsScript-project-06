@@ -123,9 +123,8 @@ tbody tr.low{background:#fff3cd}
   font-size:12px;
   font-weight:600;
 }
-.yes{background:#f8d7da;color:#c0392b}
-.no{background:#d4edda;color:#27ae60}
-
+.yes{background:#bee7d7;color:#27ae60}
+.no{background:#f66f6f;color:#c0392b}
 /* ===== Actions ===== */
 
 .actions{
