@@ -1,781 +1,1299 @@
-// transaction-history.js - Transaction History Management
+// Check authentication on page load
+document.addEventListener("DOMContentLoaded", function () {
+  // Get user info from localStorage
+  const userRole = localStorage.getItem("userRole") || "admin";
+  const userName = localStorage.getItem("userName") || "Administrator";
 
-document.addEventListener('DOMContentLoaded', function () {
-    // Initialize transaction history
-    initializeTransactionHistory();
-    setupEventListeners();
-    loadTransactionData();
-    updateStatsCards();
-    setupSidebarNavigation();
+  // Update UI with user info
+  document.getElementById("userAvatar").textContent = userName
+    .charAt(0)
+    .toUpperCase();
+
+  // Initialize transaction data
+  initializeCharts();
+  loadTransactionData();
+  setupEventListeners();
 });
 
-// Global variables
-let transactions = [];
-let filteredTransactions = [];
-let currentPage = 1;
-const itemsPerPage = 10;
-let currentFilters = {
-    type: 'all',
-    item: '',
-    dateFrom: '',
-    dateTo: ''
+// Sample transaction data
+let transactionData = {
+  transactions: [
+    {
+      id: "TXN-2023-001",
+      date: "2023-10-18 14:30",
+      type: "sale",
+      product: "Wireless Bluetooth Headphones",
+      quantity: 2,
+      amount: 179.98,
+      user: "Admin",
+      reference: "ORD-2023-001",
+      customer: "John Smith",
+      paymentStatus: "paid",
+      details: "Sale completed through online store",
+    },
+    {
+      id: "TXN-2023-002",
+      date: "2023-10-18 11:15",
+      type: "purchase",
+      product: "Ergonomic Office Chair",
+      quantity: 5,
+      amount: -1249.95,
+      user: "Manager",
+      reference: "PO-2023-045",
+      supplier: "Supplier ABC",
+      status: "received",
+      details: "Purchase order from supplier",
+    },
+    {
+      id: "TXN-2023-003",
+      date: "2023-10-17 16:45",
+      type: "stock-in",
+      product: "Smart Fitness Watch",
+      quantity: 20,
+      amount: 0,
+      user: "Admin",
+      reference: "STK-IN-023",
+      source: "Supplier XYZ",
+      details: "Stock received from supplier",
+    },
+    {
+      id: "TXN-2023-004",
+      date: "2023-10-17 10:20",
+      type: "stock-out",
+      product: "Premium Notebook Set",
+      quantity: -15,
+      amount: 0,
+      user: "Staff",
+      reference: "STK-OUT-128",
+      destination: "Warehouse A",
+      details: "Stock transferred to warehouse",
+    },
+    {
+      id: "TXN-2023-005",
+      date: "2023-10-16 09:30",
+      type: "adjustment",
+      product: "Desk Lamp with Wireless Charger",
+      quantity: -3,
+      amount: 0,
+      user: "Admin",
+      reference: "ADJ-2023-012",
+      reason: "Damaged during handling",
+      details: "Stock adjustment due to damaged goods",
+    },
+    {
+      id: "TXN-2023-006",
+      date: "2023-10-15 13:10",
+      type: "sale",
+      product: "Bluetooth Portable Speaker",
+      quantity: 1,
+      amount: 59.99,
+      user: "Manager",
+      reference: "ORD-2023-004",
+      customer: "Emily Davis",
+      paymentStatus: "paid",
+      details: "In-store purchase",
+    },
+    {
+      id: "TXN-2023-007",
+      date: "2023-10-14 15:45",
+      type: "transfer",
+      product: "Stainless Steel Water Bottle",
+      quantity: 25,
+      amount: 0,
+      user: "Staff",
+      reference: "TRF-2023-008",
+      from: "Main Warehouse",
+      to: "Retail Store",
+      details: "Stock transfer between locations",
+    },
+    {
+      id: "TXN-2023-008",
+      date: "2023-10-14 12:30",
+      type: "return",
+      product: "Wireless Gaming Mouse",
+      quantity: 1,
+      amount: -79.99,
+      user: "Admin",
+      reference: "RET-2023-005",
+      customer: "Robert Wilson",
+      reason: "Defective product",
+      details: "Customer return with refund",
+    },
+    {
+      id: "TXN-2023-009",
+      date: "2023-10-13 09:15",
+      type: "purchase",
+      product: "Wireless Bluetooth Headphones",
+      quantity: 50,
+      amount: -2249.5,
+      user: "Manager",
+      reference: "PO-2023-044",
+      supplier: "Global Supplies Inc.",
+      status: "pending",
+      details: "Bulk purchase order",
+    },
+    {
+      id: "TXN-2023-010",
+      date: "2023-10-12 16:20",
+      type: "sale",
+      product: "Smart Fitness Watch",
+      quantity: 1,
+      amount: 199.99,
+      user: "Staff",
+      reference: "ORD-2023-003",
+      customer: "Michael Chen",
+      paymentStatus: "pending",
+      details: "Online order, payment pending",
+    },
+    {
+      id: "TXN-2023-011",
+      date: "2023-10-11 11:45",
+      type: "adjustment",
+      product: "Premium Notebook Set",
+      quantity: 10,
+      amount: 0,
+      user: "Admin",
+      reference: "ADJ-2023-011",
+      reason: "Found during inventory count",
+      details: "Positive adjustment after inventory count",
+    },
+    {
+      id: "TXN-2023-012",
+      date: "2023-10-10 14:10",
+      type: "stock-in",
+      product: "Bluetooth Portable Speaker",
+      quantity: 30,
+      amount: 0,
+      user: "Manager",
+      reference: "STK-IN-022",
+      source: "Prime Distributors",
+      details: "New stock received",
+    },
+  ],
+  activities: [
+    {
+      timestamp: "2023-10-18 15:30",
+      activity: "User login",
+      user: "Admin",
+      ip: "192.168.1.100",
+      details: "Successful login from office network",
+    },
+    {
+      timestamp: "2023-10-18 14:45",
+      activity: "Product added",
+      user: "Manager",
+      ip: "192.168.1.105",
+      details: "Added new product: Wireless Keyboard",
+    },
+    {
+      timestamp: "2023-10-18 13:20",
+      activity: "Stock adjustment",
+      user: "Admin",
+      ip: "192.168.1.100",
+      details: "Adjusted stock for damaged items",
+    },
+    {
+      timestamp: "2023-10-18 11:30",
+      activity: "Report generated",
+      user: "Staff",
+      ip: "192.168.1.110",
+      details: "Monthly sales report generated",
+    },
+    {
+      timestamp: "2023-10-18 10:15",
+      activity: "User permission changed",
+      user: "Admin",
+      ip: "192.168.1.100",
+      details: "Updated permissions for staff user",
+    },
+    {
+      timestamp: "2023-10-18 09:45",
+      activity: "Backup created",
+      user: "System",
+      ip: "192.168.1.1",
+      details: "Daily system backup completed",
+    },
+  ],
 };
 
-// Initialize transaction history
-function initializeTransactionHistory() {
-    // Load saved filters from localStorage
-    loadSavedFilters();
+// Current page for pagination
+let currentPage = 1;
+const itemsPerPage = 10;
+let filteredTransactions = [...transactionData.transactions];
 
-    // Set default date range to last 30 days
-    setDefaultDateRange();
+// Initialize charts
+function initializeCharts() {
+  // Transaction Trend Chart
+  const trendCtx = document
+    .getElementById("transactionTrendChart")
+    .getContext("2d");
+  const trendChart = new Chart(trendCtx, {
+    type: "line",
+    data: {
+      labels: [
+        "Oct 1",
+        "Oct 5",
+        "Oct 10",
+        "Oct 15",
+        "Oct 20",
+        "Oct 25",
+        "Oct 30",
+      ],
+      datasets: [
+        {
+          label: "Sales",
+          data: [12, 18, 15, 22, 25, 20, 28],
+          borderColor: "#27ae60",
+          backgroundColor: "rgba(39, 174, 96, 0.1)",
+          borderWidth: 2,
+          fill: true,
+          tension: 0.4,
+        },
+        {
+          label: "Purchases",
+          data: [8, 10, 12, 15, 14, 16, 18],
+          borderColor: "#3498db",
+          backgroundColor: "rgba(52, 152, 219, 0.1)",
+          borderWidth: 2,
+          fill: true,
+          tension: 0.4,
+        },
+        {
+          label: "Stock Movements",
+          data: [5, 8, 6, 10, 12, 9, 11],
+          borderColor: "#9b59b6",
+          backgroundColor: "rgba(155, 89, 182, 0.1)",
+          borderWidth: 2,
+          fill: true,
+          tension: 0.4,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          position: "top",
+        },
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: "Number of Transactions",
+          },
+        },
+      },
+    },
+  });
+
+  // Transaction Type Chart
+  const typeCtx = document
+    .getElementById("transactionTypeChart")
+    .getContext("2d");
+  const typeChart = new Chart(typeCtx, {
+    type: "doughnut",
+    data: {
+      labels: [
+        "Sales",
+        "Purchases",
+        "Stock In",
+        "Stock Out",
+        "Adjustments",
+        "Transfers",
+        "Returns",
+      ],
+      datasets: [
+        {
+          data: [35, 25, 15, 10, 8, 5, 2],
+          backgroundColor: [
+            "#27ae60",
+            "#3498db",
+            "#9b59b6",
+            "#f39c12",
+            "#e74c3c",
+            "#1abc9c",
+            "#95a5a6",
+          ],
+          borderWidth: 1,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          position: "bottom",
+        },
+      },
+    },
+  });
+
+  // Update chart on period change
+  document
+    .getElementById("trendPeriod")
+    .addEventListener("change", function () {
+      // In a real app, you would fetch new data based on the selected period
+      trendChart.update();
+      typeChart.update();
+    });
 }
 
-// Load saved filters from localStorage
-function loadSavedFilters() {
-    const savedFilters = localStorage.getItem('transactionFilters');
-    if (savedFilters) {
-        currentFilters = JSON.parse(savedFilters);
+// Load transaction data into tables
+function loadTransactionData() {
+  updateTransactionOverview();
+  loadAllTransactionsTable();
+  loadSalesTransactionsTable();
+  loadActivitiesTable();
+  renderPagination();
+}
 
-        // Apply saved filters to form controls
-        document.getElementById('transactionType').value = currentFilters.type;
-        document.getElementById('itemFilter').value = currentFilters.item;
-        document.getElementById('dateFrom').value = currentFilters.dateFrom;
-        document.getElementById('dateTo').value = currentFilters.dateTo;
+// Update transaction overview statistics
+function updateTransactionOverview() {
+  const totalTransactions = transactionData.transactions.length;
+  const salesTransactions = transactionData.transactions.filter(
+    (t) => t.type === "sale"
+  ).length;
+  const purchaseTransactions = transactionData.transactions.filter(
+    (t) => t.type === "purchase"
+  ).length;
+  const stockTransactions = transactionData.transactions.filter(
+    (t) =>
+      t.type === "stock-in" || t.type === "stock-out" || t.type === "transfer"
+  ).length;
+
+  document.getElementById("totalTransactions").textContent = totalTransactions;
+  document.getElementById("salesTransactions").textContent = salesTransactions;
+  document.getElementById("purchaseTransactions").textContent =
+    purchaseTransactions;
+  document.getElementById("stockTransactions").textContent = stockTransactions;
+}
+
+// Load all transactions table
+function loadAllTransactionsTable() {
+  const allTransactionsTable = document.getElementById("allTransactionsTable");
+  allTransactionsTable.innerHTML = "";
+
+  // Get transactions for current page
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const pageTransactions = filteredTransactions.slice(startIndex, endIndex);
+
+  if (pageTransactions.length === 0) {
+    allTransactionsTable.innerHTML = `
+                    <tr>
+                        <td colspan="9" style="text-align: center; padding: 40px; color: #7f8c8d;">
+                            <i class="fas fa-search" style="font-size: 40px; margin-bottom: 15px;"></i>
+                            <div>No transactions found</div>
+                            <div style="font-size: 14px; margin-top: 10px;">Try adjusting your filters</div>
+                        </td>
+                    </tr>
+                `;
+    return;
+  }
+
+  pageTransactions.forEach((transaction) => {
+    const row = document.createElement("tr");
+
+    // Determine type badge
+    let typeClass = "";
+    let typeText = "";
+    switch (transaction.type) {
+      case "sale":
+        typeClass = "status-sale";
+        typeText = "Sale";
+        break;
+      case "purchase":
+        typeClass = "status-purchase";
+        typeText = "Purchase";
+        break;
+      case "stock-in":
+        typeClass = "status-stock-in";
+        typeText = "Stock In";
+        break;
+      case "stock-out":
+        typeClass = "status-stock-out";
+        typeText = "Stock Out";
+        break;
+      case "adjustment":
+        typeClass = "status-adjustment";
+        typeText = "Adjustment";
+        break;
+      case "transfer":
+        typeClass = "status-transfer";
+        typeText = "Transfer";
+        break;
+      case "return":
+        typeClass = "status-return";
+        typeText = "Return";
+        break;
     }
-}
 
-// Save filters to localStorage
-function saveFilters() {
-    localStorage.setItem('transactionFilters', JSON.stringify(currentFilters));
-}
-
-// Set default date range (last 30 days)
-function setDefaultDateRange() {
-    const today = new Date();
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(today.getDate() - 30);
-
-    const dateFromInput = document.getElementById('dateFrom');
-    const dateToInput = document.getElementById('dateTo');
-
-    if (!currentFilters.dateFrom) {
-        dateFromInput.valueAsDate = thirtyDaysAgo;
-        currentFilters.dateFrom = formatDateForInput(thirtyDaysAgo);
+    // Format amount
+    let amountDisplay = "";
+    if (transaction.amount > 0) {
+      amountDisplay = `<span style="color: var(--success-color); font-weight: 600;">$${transaction.amount.toFixed(
+        2
+      )}</span>`;
+    } else if (transaction.amount < 0) {
+      amountDisplay = `<span style="color: var(--accent-color); font-weight: 600;">$${Math.abs(
+        transaction.amount
+      ).toFixed(2)}</span>`;
+    } else {
+      amountDisplay = '<span style="color: #7f8c8d;">-</span>';
     }
 
-    if (!currentFilters.dateTo) {
-        dateToInput.valueAsDate = today;
-        currentFilters.dateTo = formatDateForInput(today);
+    // Format quantity
+    let quantityDisplay = transaction.quantity;
+    if (
+      transaction.type === "stock-out" ||
+      transaction.type === "adjustment" ||
+      transaction.type === "return"
+    ) {
+      quantityDisplay = `<span style="color: var(--accent-color);">${transaction.quantity}</span>`;
+    } else if (
+      transaction.type === "stock-in" ||
+      transaction.type === "transfer"
+    ) {
+      quantityDisplay = `<span style="color: var(--success-color);">+${transaction.quantity}</span>`;
     }
+
+    row.innerHTML = `
+                    <td><strong>${transaction.id}</strong></td>
+                    <td>${transaction.date}</td>
+                    <td><span class="status-badge ${typeClass}">${typeText}</span></td>
+                    <td>${transaction.product}</td>
+                    <td>${quantityDisplay}</td>
+                    <td>${amountDisplay}</td>
+                    <td>${transaction.user}</td>
+                    <td>${transaction.reference}</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="viewTransactionDetails('${transaction.id}')">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline" onclick="printTransaction('${transaction.id}')">
+                            <i class="fas fa-print"></i>
+                        </button>
+                    </td>
+                `;
+    allTransactionsTable.appendChild(row);
+  });
 }
 
-// Format date for input field
-function formatDateForInput(date) {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+// Load sales transactions table
+function loadSalesTransactionsTable() {
+  const salesTransactionsTable = document.getElementById(
+    "salesTransactionsTable"
+  );
+  salesTransactionsTable.innerHTML = "";
+
+  const salesTransactions = transactionData.transactions.filter(
+    (t) => t.type === "sale"
+  );
+
+  if (salesTransactions.length === 0) {
+    salesTransactionsTable.innerHTML = `
+                    <tr>
+                        <td colspan="8" style="text-align: center; padding: 40px; color: #7f8c8d;">
+                            <i class="fas fa-shopping-cart" style="font-size: 40px; margin-bottom: 15px;"></i>
+                            <div>No sales transactions found</div>
+                        </td>
+                    </tr>
+                `;
+    return;
+  }
+
+  salesTransactions.forEach((transaction) => {
+    const row = document.createElement("tr");
+
+    // Calculate total items
+    const totalItems = transaction.quantity;
+
+    // Determine payment status
+    let paymentStatus = "";
+    if (transaction.paymentStatus === "paid") {
+      paymentStatus =
+        '<span style="color: var(--success-color); font-weight: 600;">Paid</span>';
+    } else {
+      paymentStatus =
+        '<span style="color: var(--warning-color); font-weight: 600;">Pending</span>';
+    }
+
+    row.innerHTML = `
+                    <td><strong>${transaction.id}</strong></td>
+                    <td>${transaction.date}</td>
+                    <td>${transaction.customer || "N/A"}</td>
+                    <td>${totalItems} items</td>
+                    <td><strong>₹${transaction.amount.toFixed(2)}</strong></td>
+                    <td>${paymentStatus}</td>
+                    <td>${transaction.user}</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="viewTransactionDetails('${
+                          transaction.id
+                        }')">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline" onclick="printTransaction('${
+                          transaction.id
+                        }')">
+                            <i class="fas fa-print"></i>
+                        </button>
+                    </td>
+                `;
+    salesTransactionsTable.appendChild(row);
+  });
+}
+
+// Load activities table
+function loadActivitiesTable() {
+  const activitiesTable = document.getElementById("activitiesTable");
+  activitiesTable.innerHTML = "";
+
+  transactionData.activities.forEach((activity) => {
+    const row = document.createElement("tr");
+
+    row.innerHTML = `
+                    <td>${activity.timestamp}</td>
+                    <td><strong>${activity.activity}</strong></td>
+                    <td>${activity.user}</td>
+                    <td><code>${activity.ip}</code></td>
+                    <td>${activity.details}</td>
+                `;
+    activitiesTable.appendChild(row);
+  });
+}
+
+// Filter transactions
+function filterTransactions() {
+  const startDate = document.getElementById("startDate").value;
+  const endDate = document.getElementById("endDate").value;
+  const typeFilter = document.getElementById("transactionTypeFilter").value;
+  const userFilter = document.getElementById("userFilter").value;
+  const searchTerm = document
+    .getElementById("transactionSearch")
+    .value.toLowerCase();
+
+  filteredTransactions = transactionData.transactions.filter((transaction) => {
+    // Date filter
+    const transactionDate = transaction.date.split(" ")[0];
+    let matchesDate = true;
+    if (startDate && endDate) {
+      matchesDate = transactionDate >= startDate && transactionDate <= endDate;
+    }
+
+    // Type filter
+    const matchesType = !typeFilter || transaction.type === typeFilter;
+
+    // User filter
+    const matchesUser =
+      !userFilter ||
+      transaction.user.toLowerCase().includes(userFilter.toLowerCase());
+
+    // Search filter
+    const matchesSearch =
+      !searchTerm ||
+      transaction.id.toLowerCase().includes(searchTerm) ||
+      transaction.product.toLowerCase().includes(searchTerm) ||
+      transaction.reference.toLowerCase().includes(searchTerm) ||
+      (transaction.customer &&
+        transaction.customer.toLowerCase().includes(searchTerm)) ||
+      (transaction.supplier &&
+        transaction.supplier.toLowerCase().includes(searchTerm));
+
+    return matchesDate && matchesType && matchesUser && matchesSearch;
+  });
+
+  // Reset to first page
+  currentPage = 1;
+
+  // Reload tables
+  loadAllTransactionsTable();
+  loadSalesTransactionsTable();
+  renderPagination();
+}
+
+// Render pagination
+function renderPagination() {
+  const pagination = document.getElementById("pagination");
+  pagination.innerHTML = "";
+
+  const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
+
+  if (totalPages <= 1) return;
+
+  // Previous button
+  const prevBtn = document.createElement("button");
+  prevBtn.className = `page-btn ${currentPage === 1 ? "disabled" : ""}`;
+  prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
+  prevBtn.disabled = currentPage === 1;
+  prevBtn.onclick = () => {
+    if (currentPage > 1) {
+      currentPage--;
+      loadAllTransactionsTable();
+      renderPagination();
+    }
+  };
+  pagination.appendChild(prevBtn);
+
+  // Page buttons
+  const maxVisiblePages = 5;
+  let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+  let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+  // Adjust start page if we're near the end
+  if (endPage - startPage + 1 < maxVisiblePages) {
+    startPage = Math.max(1, endPage - maxVisiblePages + 1);
+  }
+
+  for (let i = startPage; i <= endPage; i++) {
+    const pageBtn = document.createElement("button");
+    pageBtn.className = `page-btn ${i === currentPage ? "active" : ""}`;
+    pageBtn.textContent = i;
+    pageBtn.onclick = () => {
+      currentPage = i;
+      loadAllTransactionsTable();
+      renderPagination();
+    };
+    pagination.appendChild(pageBtn);
+  }
+
+  // Next button
+  const nextBtn = document.createElement("button");
+  nextBtn.className = `page-btn ${
+    currentPage === totalPages ? "disabled" : ""
+  }`;
+  nextBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
+  nextBtn.disabled = currentPage === totalPages;
+  nextBtn.onclick = () => {
+    if (currentPage < totalPages) {
+      currentPage++;
+      loadAllTransactionsTable();
+      renderPagination();
+    }
+  };
+  pagination.appendChild(nextBtn);
+}
+
+// View transaction details
+function viewTransactionDetails(transactionId) {
+  const transaction = transactionData.transactions.find(
+    (t) => t.id === transactionId
+  );
+  if (!transaction) return;
+
+  document.getElementById(
+    "detailsTitle"
+  ).textContent = `Transaction: ${transaction.id}`;
+
+  // Determine type badge
+  let typeClass = "";
+  let typeText = "";
+  let typeIcon = "";
+  switch (transaction.type) {
+    case "sale":
+      typeClass = "status-sale";
+      typeText = "Sale";
+      typeIcon = "fa-shopping-cart";
+      break;
+    case "purchase":
+      typeClass = "status-purchase";
+      typeText = "Purchase";
+      typeIcon = "fa-truck";
+      break;
+    case "stock-in":
+      typeClass = "status-stock-in";
+      typeText = "Stock In";
+      typeIcon = "fa-arrow-down";
+      break;
+    case "stock-out":
+      typeClass = "status-stock-out";
+      typeText = "Stock Out";
+      typeIcon = "fa-arrow-up";
+      break;
+    case "adjustment":
+      typeClass = "status-adjustment";
+      typeText = "Adjustment";
+      typeIcon = "fa-exchange-alt";
+      break;
+    case "transfer":
+      typeClass = "status-transfer";
+      typeText = "Transfer";
+      typeIcon = "fa-truck-moving";
+      break;
+    case "return":
+      typeClass = "status-return";
+      typeText = "Return";
+      typeIcon = "fa-undo";
+      break;
+  }
+
+  // Generate details content based on transaction type
+  let detailsContent = "";
+
+  if (transaction.type === "sale") {
+    detailsContent = `
+                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 30px; margin-bottom: 30px;">
+                        <div>
+                            <h4 style="margin-bottom: 15px;">Transaction Information</h4>
+                            <table style="width: 100%;">
+                                <tr>
+                                    <td style="padding: 8px 0; color: #7f8c8d;">Transaction ID:</td>
+                                    <td style="padding: 8px 0; font-weight: 600;">${
+                                      transaction.id
+                                    }</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px 0; color: #7f8c8d;">Date & Time:</td>
+                                    <td style="padding: 8px 0; font-weight: 600;">${
+                                      transaction.date
+                                    }</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px 0; color: #7f8c8d;">Type:</td>
+                                    <td style="padding: 8px 0;"><span class="status-badge ${typeClass}"><i class="fas ${typeIcon}"></i> ${typeText}</span></td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px 0; color: #7f8c8d;">Reference:</td>
+                                    <td style="padding: 8px 0; font-weight: 600;">${
+                                      transaction.reference
+                                    }</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px 0; color: #7f8c8d;">User:</td>
+                                    <td style="padding: 8px 0; font-weight: 600;">${
+                                      transaction.user
+                                    }</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div>
+                            <h4 style="margin-bottom: 15px;">Customer Information</h4>
+                            <table style="width: 100%;">
+                                <tr>
+                                    <td style="padding: 8px 0; color: #7f8c8d;">Customer:</td>
+                                    <td style="padding: 8px 0; font-weight: 600;">${
+                                      transaction.customer || "N/A"
+                                    }</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px 0; color: #7f8c8d;">Payment Status:</td>
+                                    <td style="padding: 8px 0;">
+                                        ${
+                                          transaction.paymentStatus === "paid"
+                                            ? '<span style="color: var(--success-color); font-weight: 600;">Paid</span>'
+                                            : '<span style="color: var(--warning-color); font-weight: 600;">Pending</span>'
+                                        }
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-bottom: 30px;">
+                        <h4 style="margin-bottom: 15px;">Transaction Details</h4>
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Product</th>
+                                        <th>Quantity</th>
+                                        <th>Unit Price</th>
+                                        <th>Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>${transaction.product}</td>
+                                        <td>${transaction.quantity}</td>
+                                        <td>$${(
+                                          transaction.amount /
+                                          transaction.quantity
+                                        ).toFixed(2)}</td>
+                                        <td><strong>₹${transaction.amount.toFixed(
+                                          2
+                                        )}</strong></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4 style="margin-bottom: 15px;">Additional Information</h4>
+                        <p style="color: #7f8c8d; font-style: italic;">${
+                          transaction.details
+                        }</p>
+                    </div>
+                `;
+  } else if (transaction.type === "purchase") {
+    detailsContent = `
+                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 30px; margin-bottom: 30px;">
+                        <div>
+                            <h4 style="margin-bottom: 15px;">Transaction Information</h4>
+                            <table style="width: 100%;">
+                                <tr>
+                                    <td style="padding: 8px 0; color: #7f8c8d;">Transaction ID:</td>
+                                    <td style="padding: 8px 0; font-weight: 600;">${
+                                      transaction.id
+                                    }</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px 0; color: #7f8c8d;">Date & Time:</td>
+                                    <td style="padding: 8px 0; font-weight: 600;">${
+                                      transaction.date
+                                    }</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px 0; color: #7f8c8d;">Type:</td>
+                                    <td style="padding: 8px 0;"><span class="status-badge ${typeClass}"><i class="fas ${typeIcon}"></i> ${typeText}</span></td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px 0; color: #7f8c8d;">Reference:</td>
+                                    <td style="padding: 8px 0; font-weight: 600;">${
+                                      transaction.reference
+                                    }</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px 0; color: #7f8c8d;">User:</td>
+                                    <td style="padding: 8px 0; font-weight: 600;">${
+                                      transaction.user
+                                    }</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div>
+                            <h4 style="margin-bottom: 15px;">Supplier Information</h4>
+                            <table style="width: 100%;">
+                                <tr>
+                                    <td style="padding: 8px 0; color: #7f8c8d;">Supplier:</td>
+                                    <td style="padding: 8px 0; font-weight: 600;">${
+                                      transaction.supplier || "N/A"
+                                    }</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px 0; color: #7f8c8d;">Status:</td>
+                                    <td style="padding: 8px 0;">
+                                        ${
+                                          transaction.status === "received"
+                                            ? '<span style="color: var(--success-color); font-weight: 600;">Received</span>'
+                                            : '<span style="color: var(--warning-color); font-weight: 600;">Pending</span>'
+                                        }
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-bottom: 30px;">
+                        <h4 style="margin-bottom: 15px;">Transaction Details</h4>
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Product</th>
+                                        <th>Quantity</th>
+                                        <th>Unit Cost</th>
+                                        <th>Total Cost</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>${transaction.product}</td>
+                                        <td>${transaction.quantity}</td>
+                                        <td>$${(
+                                          Math.abs(transaction.amount) /
+                                          transaction.quantity
+                                        ).toFixed(2)}</td>
+                                        <td><strong style="color: var(--accent-color);">$${Math.abs(
+                                          transaction.amount
+                                        ).toFixed(2)}</strong></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4 style="margin-bottom: 15px;">Additional Information</h4>
+                        <p style="color: #7f8c8d; font-style: italic;">${
+                          transaction.details
+                        }</p>
+                    </div>
+                `;
+  } else {
+    // Generic transaction details for other types
+    detailsContent = `
+                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 30px; margin-bottom: 30px;">
+                        <div>
+                            <h4 style="margin-bottom: 15px;">Transaction Information</h4>
+                            <table style="width: 100%;">
+                                <tr>
+                                    <td style="padding: 8px 0; color: #7f8c8d;">Transaction ID:</td>
+                                    <td style="padding: 8px 0; font-weight: 600;">${
+                                      transaction.id
+                                    }</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px 0; color: #7f8c8d;">Date & Time:</td>
+                                    <td style="padding: 8px 0; font-weight: 600;">${
+                                      transaction.date
+                                    }</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px 0; color: #7f8c8d;">Type:</td>
+                                    <td style="padding: 8px 0;"><span class="status-badge ${typeClass}"><i class="fas ${typeIcon}"></i> ${typeText}</span></td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px 0; color: #7f8c8d;">Reference:</td>
+                                    <td style="padding: 8px 0; font-weight: 600;">${
+                                      transaction.reference
+                                    }</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px 0; color: #7f8c8d;">User:</td>
+                                    <td style="padding: 8px 0; font-weight: 600;">${
+                                      transaction.user
+                                    }</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div>
+                            <h4 style="margin-bottom: 15px;">Transaction Summary</h4>
+                            <table style="width: 100%;">
+                                <tr>
+                                    <td style="padding: 8px 0; color: #7f8c8d;">Product:</td>
+                                    <td style="padding: 8px 0; font-weight: 600;">${
+                                      transaction.product
+                                    }</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px 0; color: #7f8c8d;">Quantity:</td>
+                                    <td style="padding: 8px 0; font-weight: 600;">
+                                        ${transaction.quantity > 0 ? "+" : ""}${
+      transaction.quantity
+    }
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px 0; color: #7f8c8d;">Amount:</td>
+                                    <td style="padding: 8px 0; font-weight: 600;">
+                                        ${
+                                          transaction.amount !== 0
+                                            ? transaction.amount > 0
+                                              ? `<span style="color: var(--success-color);">$${transaction.amount.toFixed(
+                                                  2
+                                                )}</span>`
+                                              : `<span style="color: var(--accent-color);">$${Math.abs(
+                                                  transaction.amount
+                                                ).toFixed(2)}</span>`
+                                            : "-"
+                                        }
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4 style="margin-bottom: 15px;">Additional Information</h4>
+                        <p style="color: #7f8c8d; font-style: italic;">${
+                          transaction.details
+                        }</p>
+                        ${
+                          transaction.reason
+                            ? `<p><strong>Reason:</strong> ${transaction.reason}</p>`
+                            : ""
+                        }
+                        ${
+                          transaction.source
+                            ? `<p><strong>Source:</strong> ${transaction.source}</p>`
+                            : ""
+                        }
+                        ${
+                          transaction.destination
+                            ? `<p><strong>Destination:</strong> ${transaction.destination}</p>`
+                            : ""
+                        }
+                        ${
+                          transaction.from && transaction.to
+                            ? `<p><strong>Transfer:</strong> From ${transaction.from} to ${transaction.to}</p>`
+                            : ""
+                        }
+                    </div>
+                `;
+  }
+
+  const detailsContainer = document.getElementById("transactionDetailsContent");
+  detailsContainer.innerHTML = detailsContent;
+
+  // Show the details panel
+  document.getElementById("transactionDetails").classList.add("active");
+
+  // Scroll to the details panel
+  document
+    .getElementById("transactionDetails")
+    .scrollIntoView({ behavior: "smooth" });
+}
+
+// Close transaction details
+function closeTransactionDetails() {
+  document.getElementById("transactionDetails").classList.remove("active");
+}
+
+// Print transaction
+function printTransaction(transactionId) {
+  alert(`Printing transaction: ${transactionId}`);
+  // In a real app, this would open a print dialog with the transaction details
+}
+
+// Show export modal
+function showExportModal() {
+  document.getElementById("exportModal").classList.add("active");
+}
+
+// Handle export date range change
+function handleExportDateRangeChange() {
+  const dateRange = document.getElementById("exportDateRange").value;
+  const customDateRange = document.getElementById("customDateRange");
+
+  if (dateRange === "custom") {
+    customDateRange.style.display = "grid";
+  } else {
+    customDateRange.style.display = "none";
+  }
+}
+
+// Process export
+function processExport(event) {
+  event.preventDefault();
+
+  const format = document.getElementById("exportFormat").value;
+  const dateRange = document.getElementById("exportDateRange").value;
+  const transactionType = document.getElementById(
+    "exportTransactionType"
+  ).value;
+
+  // Show success notification
+  showNotification(
+    `Transaction history exported as ${format.toUpperCase()} file!`,
+    "success"
+  );
+
+  // Close modal
+  document.getElementById("exportModal").classList.remove("active");
+
+  // Reset form
+  document.getElementById("exportForm").reset();
+  document.getElementById("customDateRange").style.display = "none";
+}
+
+// Clear all filters
+function clearFilters() {
+  document.getElementById("startDate").value = "2023-10-01";
+  document.getElementById("endDate").value = "2023-10-31";
+  document.getElementById("transactionTypeFilter").value = "";
+  document.getElementById("userFilter").value = "";
+  document.getElementById("transactionSearch").value = "";
+
+  filteredTransactions = [...transactionData.transactions];
+  currentPage = 1;
+
+  loadAllTransactionsTable();
+  loadSalesTransactionsTable();
+  renderPagination();
+
+  showNotification("All filters cleared!", "success");
+}
+
+// Generate report
+function generateReport() {
+  // In a real app, this would generate a comprehensive report
+  showNotification("Transaction report generated successfully!", "success");
+}
+
+// Handle tab switching
+function switchTab(tabName) {
+  // Hide all tabs
+  document.getElementById("allTab").style.display = "none";
+  document.getElementById("salesTab").style.display = "none";
+
+  // Show selected tab
+  if (tabName === "all") {
+    document.getElementById("allTab").style.display = "block";
+  } else if (tabName === "sales") {
+    document.getElementById("salesTab").style.display = "block";
+  }
+
+  // Update tab buttons
+  document.querySelectorAll(".tab").forEach((tab) => {
+    tab.classList.remove("active");
+  });
+  event.target.classList.add("active");
+}
+
+// Show notification
+function showNotification(message, type) {
+  const notification = document.createElement("div");
+  notification.style.position = "fixed";
+  notification.style.top = "20px";
+  notification.style.right = "20px";
+  notification.style.padding = "15px 20px";
+  notification.style.borderRadius = "8px";
+  notification.style.color = "white";
+  notification.style.fontWeight = "600";
+  notification.style.zIndex = "10000";
+  notification.style.boxShadow = "0 5px 15px rgba(0,0,0,0.2)";
+  notification.style.display = "flex";
+  notification.style.alignItems = "center";
+  notification.style.gap = "10px";
+
+  if (type === "success") {
+    notification.style.backgroundColor = "var(--success-color)";
+    notification.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+  } else if (type === "error") {
+    notification.style.backgroundColor = "var(--accent-color)";
+    notification.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
+  } else {
+    notification.style.backgroundColor = "var(--secondary-color)";
+    notification.innerHTML = `<i class="fas fa-info-circle"></i> ${message}`;
+  }
+
+  document.body.appendChild(notification);
+
+  // Remove notification after 3 seconds
+  setTimeout(() => {
+    notification.remove();
+  }, 3000);
 }
 
 // Setup event listeners
 function setupEventListeners() {
-    // Filter controls
-    document.getElementById('transactionType').addEventListener('change', updateFilters);
-    document.getElementById('itemFilter').addEventListener('input', updateFilters);
-    document.getElementById('dateFrom').addEventListener('change', updateFilters);
-    document.getElementById('dateTo').addEventListener('change', updateFilters);
-
-    // Apply filters button
-    document.querySelector('.btn-apply[onclick="applyFilters()"]').addEventListener('click', applyFilters);
-
-    // Export button
-    document.querySelector('.btn-apply[onclick="exportTransactionHistory()"]').addEventListener('click', exportTransactionHistory);
-
-    // Close modal button
-    document.querySelector('.close-modal').addEventListener('click', closeModal);
-
-    // Modal close on outside click
-    document.getElementById('transactionModal').addEventListener('click', function (e) {
-        if (e.target === this) closeModal();
+  // Sidebar toggle
+  document
+    .getElementById("sidebarToggle")
+    .addEventListener("click", function () {
+      document.getElementById("sidebar").classList.toggle("collapsed");
     });
 
-    // Print button in modal
-    document.querySelector('.btn-apply[onclick="printTransaction()"]').addEventListener('click', printTransaction);
-}
-
-// Update filters from form controls
-function updateFilters() {
-    currentFilters.type = document.getElementById('transactionType').value;
-    currentFilters.item = document.getElementById('itemFilter').value.toLowerCase();
-    currentFilters.dateFrom = document.getElementById('dateFrom').value;
-    currentFilters.dateTo = document.getElementById('dateTo').value;
-
-    // Validate date range
-    if (currentFilters.dateFrom && currentFilters.dateTo) {
-        const fromDate = new Date(currentFilters.dateFrom);
-        const toDate = new Date(currentFilters.dateTo);
-
-        if (fromDate > toDate) {
-            showNotification('Start date cannot be after end date', 'error');
-            return;
-        }
-    }
-}
-
-// Apply filters and refresh table
-function applyFilters() {
-    updateFilters();
-    saveFilters();
-    filterTransactions();
-    updateStatsCards();
-    renderTransactionTable();
-    showNotification('Filters applied successfully', 'success');
-}
-
-// Load transaction data
-function loadTransactionData() {
-    // Sample transaction data for demonstration
-    // In a real application, this would come from an API
-    transactions = generateSampleTransactions(100);
-    filterTransactions();
-    renderTransactionTable();
-}
-
-// Generate sample transactions
-function generateSampleTransactions(count) {
-    const transactionTypes = ['restock', 'sale', 'return', 'adjustment'];
-    const items = [
-        { name: 'Laptop Dell', category: 'Electronics', price: 1200 },
-        { name: 'Mouse Logitech', category: 'Accessories', price: 25 },
-        { name: 'Keyboard Mechanical', category: 'Accessories', price: 80 },
-        { name: 'Monitor 27"', category: 'Electronics', price: 300 },
-        { name: 'Webcam HD', category: 'Electronics', price: 50 },
-        { name: 'Desk Chair', category: 'Furniture', price: 150 },
-        { name: 'Office Desk', category: 'Furniture', price: 400 },
-        { name: 'Printer', category: 'Electronics', price: 200 },
-        { name: 'Paper A4', category: 'Office Supplies', price: 5 },
-        { name: 'Ink Cartridge', category: 'Office Supplies', price: 30 }
-    ];
-
-    const users = ['Admin User', 'Manager John', 'Sales Sarah', 'Warehouse Mike'];
-
-    const transactions = [];
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - 60); // Last 60 days
-
-    for (let i = 0; i < count; i++) {
-        const transactionType = transactionTypes[Math.floor(Math.random() * transactionTypes.length)];
-        const item = items[Math.floor(Math.random() * items.length)];
-        const quantity = transactionType === 'sale' ?
-            Math.floor(Math.random() * 5) + 1 :
-            transactionType === 'restock' ?
-                Math.floor(Math.random() * 20) + 5 :
-                Math.floor(Math.random() * 3) + 1;
-
-        // Different pricing logic based on transaction type
-        let unitPrice = item.price;
-        let totalValue;
-
-        if (transactionType === 'sale') {
-            unitPrice = item.price * 1.2; // Sales are 20% more expensive
-            totalValue = unitPrice * quantity;
-        } else if (transactionType === 'restock') {
-            unitPrice = item.price * 0.9; // Restock at 90% of price
-            totalValue = unitPrice * quantity;
-        } else {
-            totalValue = unitPrice * quantity;
-        }
-
-        // Random date within the last 60 days
-        const randomDays = Math.floor(Math.random() * 60);
-        const transactionDate = new Date(startDate);
-        transactionDate.setDate(transactionDate.getDate() + randomDays);
-
-        // Random time
-        const hours = Math.floor(Math.random() * 24);
-        const minutes = Math.floor(Math.random() * 60);
-        transactionDate.setHours(hours, minutes);
-
-        transactions.push({
-            id: `TRX-${String(i + 1).padStart(5, '0')}`,
-            type: transactionType,
-            date: transactionDate.toISOString(),
-            item: item.name,
-            category: item.category,
-            quantity: quantity,
-            unitPrice: parseFloat(unitPrice.toFixed(2)),
-            totalValue: parseFloat(totalValue.toFixed(2)),
-            user: users[Math.floor(Math.random() * users.length)],
-            notes: getTransactionNotes(transactionType, item.name, quantity)
-        });
-    }
-
-    // Sort by date (newest first)
-    return transactions.sort((a, b) => new Date(b.date) - new Date(a.date));
-}
-
-// Get transaction notes based on type
-function getTransactionNotes(type, item, quantity) {
-    const notes = {
-        restock: `Restocked ${quantity} units of ${item}`,
-        sale: `Sold ${quantity} units of ${item}`,
-        return: `Returned ${quantity} units of ${item}`,
-        adjustment: `Adjusted inventory by ${quantity} units for ${item}`
-    };
-    return notes[type] || 'Transaction completed';
-}
-
-// Filter transactions based on current filters
-function filterTransactions() {
-    filteredTransactions = transactions.filter(transaction => {
-        // Filter by type
-        if (currentFilters.type !== 'all' && transaction.type !== currentFilters.type) {
-            return false;
-        }
-
-        // Filter by item name
-        if (currentFilters.item && !transaction.item.toLowerCase().includes(currentFilters.item)) {
-            return false;
-        }
-
-        // Filter by date range
-        const transactionDate = new Date(transaction.date);
-        if (currentFilters.dateFrom) {
-            const fromDate = new Date(currentFilters.dateFrom);
-            if (transactionDate < fromDate) return false;
-        }
-
-        if (currentFilters.dateTo) {
-            const toDate = new Date(currentFilters.dateTo);
-            toDate.setHours(23, 59, 59, 999); // End of day
-            if (transactionDate > toDate) return false;
-        }
-
-        return true;
+  // Mobile menu toggle
+  document
+    .getElementById("mobileMenuToggle")
+    .addEventListener("click", function () {
+      document.getElementById("sidebar").classList.toggle("active");
     });
 
-    // Update total transactions count
-    document.getElementById('totalTransactions').textContent =
-        `${filteredTransactions.length} transaction${filteredTransactions.length !== 1 ? 's' : ''} found`;
-}
-
-// Render transaction table
-function renderTransactionTable() {
-    const tableBody = document.getElementById('transactionTableBody');
-
-    if (filteredTransactions.length === 0) {
-        tableBody.innerHTML = `
-            <tr>
-                <td colspan="9" class="empty-table">
-                    <i class="bx bx-search"></i>
-                    <p>No transactions found matching your filters</p>
-                </td>
-            </tr>
-        `;
-        updatePagination();
-        return;
-    }
-
-    // Calculate pagination
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = Math.min(startIndex + itemsPerPage, filteredTransactions.length);
-    const pageTransactions = filteredTransactions.slice(startIndex, endIndex);
-
-    // Render table rows
-    tableBody.innerHTML = pageTransactions.map(transaction => `
-        <tr class="transaction-row ${transaction.type}" 
-            data-id="${transaction.id}"
-            onclick="showTransactionDetails('${transaction.id}')">
-            <td>
-                <div class="transaction-date">${formatDate(transaction.date)}</div>
-                <div class="transaction-time">${formatTime(transaction.date)}</div>
-            </td>
-            <td>
-                <div class="transaction-id">${transaction.id}</div>
-            </td>
-            <td>
-                <span class="transaction-type type-${transaction.type}">
-                    <i class="bx bx-${getTransactionTypeIcon(transaction.type)}"></i>
-                    ${capitalizeFirstLetter(transaction.type)}
-                </span>
-            </td>
-            <td>
-                <div class="transaction-item">${transaction.item}</div>
-                <div class="transaction-category">${transaction.category}</div>
-            </td>
-            <td>
-                <div class="transaction-quantity ${transaction.quantity > 10 ? 'quantity-high' : transaction.quantity < 0 ? 'quantity-negative' : ''}">
-                    ${transaction.quantity > 0 ? '+' : ''}${transaction.quantity}
-                </div>
-            </td>
-            <td>
-                <div class="transaction-price">$${transaction.unitPrice.toFixed(2)}</div>
-            </td>
-            <td>
-                <div class="transaction-total">$${transaction.totalValue.toFixed(2)}</div>
-            </td>
-            <td>
-                <div class="transaction-user">${transaction.user}</div>
-            </td>
-            <td>
-                <div class="transaction-actions">
-                    <button class="btn-action view" onclick="event.stopPropagation(); showTransactionDetails('${transaction.id}')">
-                        <i class="bx bx-show"></i>
-                    </button>
-                    <button class="btn-action print" onclick="event.stopPropagation(); printSpecificTransaction('${transaction.id}')">
-                        <i class="bx bx-printer"></i>
-                    </button>
-                </div>
-            </td>
-        </tr>
-    `).join('');
-
-    updatePagination();
-}
-
-// Update pagination controls
-function updatePagination() {
-    const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
-    const paginationContainer = document.querySelector('.pagination');
-
-    if (totalPages <= 1) {
-        paginationContainer.style.display = 'none';
-        return;
-    }
-
-    paginationContainer.style.display = 'flex';
-
-    // Clear existing buttons
-    paginationContainer.innerHTML = '';
-
-    // Previous button
-    const prevButton = document.createElement('button');
-    prevButton.className = 'pagination-btn';
-    prevButton.innerHTML = '<i class="bx bx-chevron-left"></i>';
-    prevButton.disabled = currentPage === 1;
-    prevButton.onclick = () => changePage(currentPage - 1);
-    paginationContainer.appendChild(prevButton);
-
-    // Page buttons
-    const maxVisiblePages = 5;
-    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-
-    if (endPage - startPage + 1 < maxVisiblePages) {
-        startPage = Math.max(1, endPage - maxVisiblePages + 1);
-    }
-
-    for (let i = startPage; i <= endPage; i++) {
-        const pageButton = document.createElement('button');
-        pageButton.className = `pagination-btn ${i === currentPage ? 'active' : ''}`;
-        pageButton.textContent = i;
-        pageButton.onclick = () => changePage(i);
-        paginationContainer.appendChild(pageButton);
-    }
-
-    // Next button
-    const nextButton = document.createElement('button');
-    nextButton.className = 'pagination-btn';
-    nextButton.innerHTML = '<i class="bx bx-chevron-right"></i>';
-    nextButton.disabled = currentPage === totalPages;
-    nextButton.onclick = () => changePage(currentPage + 1);
-    paginationContainer.appendChild(nextButton);
-}
-
-// Change page
-function changePage(page) {
-    if (page < 1 || page > Math.ceil(filteredTransactions.length / itemsPerPage)) {
-        return;
-    }
-
-    currentPage = page;
-    renderTransactionTable();
-
-    // Scroll to top of table
-    document.querySelector('.transaction-table-container').scrollIntoView({
-        behavior: 'smooth',
-        block: 'start'
-    });
-}
-
-// Update stats cards
-function updateStatsCards() {
-    const stats = {
-        restock: 0,
-        sale: 0,
-        return: 0,
-        adjustment: 0
-    };
-
-    // Count transactions by type for the current month
-    const currentMonth = new Date().getMonth();
-    const currentYear = new Date().getFullYear();
-
-    filteredTransactions.forEach(transaction => {
-        const transactionDate = new Date(transaction.date);
-        if (transactionDate.getMonth() === currentMonth &&
-            transactionDate.getFullYear() === currentYear) {
-            stats[transaction.type]++;
-        }
+  // Logout buttons
+  document.getElementById("logoutBtn").addEventListener("click", logout);
+  document
+    .getElementById("logoutSidebar")
+    .addEventListener("click", function (e) {
+      e.preventDefault();
+      logout();
     });
 
-    // Update stats cards
-    document.querySelectorAll('.stat-card').forEach((card, index) => {
-        const statName = ['restock', 'sale', 'return', 'adjustment'][index];
-        card.querySelector('h3').textContent = stats[statName];
+  // Action buttons
+  document
+    .getElementById("exportAllBtn")
+    .addEventListener("click", showExportModal);
+  document
+    .getElementById("generateReportBtn")
+    .addEventListener("click", generateReport);
+  document
+    .getElementById("clearFiltersBtn")
+    .addEventListener("click", clearFilters);
+
+  // Apply filters button
+  document
+    .getElementById("applyFiltersBtn")
+    .addEventListener("click", filterTransactions);
+
+  // View all activities button
+  document
+    .getElementById("viewAllActivitiesBtn")
+    .addEventListener("click", function () {
+      alert("This would show all system activities in a separate page.");
     });
-}
 
-// Show transaction details in modal
-function showTransactionDetails(transactionId) {
-    const transaction = transactions.find(t => t.id === transactionId);
-    if (!transaction) return;
-
-    const modal = document.getElementById('transactionModal');
-    const modalTitle = document.getElementById('modalTitle');
-    const modalBody = document.getElementById('modalBody');
-
-    modalTitle.textContent = `Transaction Details - ${transaction.id}`;
-
-    modalBody.innerHTML = `
-        <div class="transaction-detail">
-            <div class="detail-header detail-${transaction.type}">
-                <div class="detail-type">
-                    <i class="bx bx-${getTransactionTypeIcon(transaction.type)}"></i>
-                    <span>${capitalizeFirstLetter(transaction.type)}</span>
-                </div>
-                <div class="detail-id">${transaction.id}</div>
-            </div>
-            
-            <div class="detail-body">
-                <div class="detail-row">
-                    <div class="detail-label">Date & Time</div>
-                    <div class="detail-value">${formatDateTime(transaction.date)}</div>
-                </div>
-                
-                <div class="detail-row">
-                    <div class="detail-label">Item</div>
-                    <div class="detail-value">${transaction.item}</div>
-                </div>
-                
-                <div class="detail-row">
-                    <div class="detail-label">Category</div>
-                    <div class="detail-value">${transaction.category}</div>
-                </div>
-                
-                <div class="detail-row">
-                    <div class="detail-label">Quantity</div>
-                    <div class="detail-value ${transaction.quantity > 0 ? 'positive' : 'negative'}">
-                        ${transaction.quantity > 0 ? '+' : ''}${transaction.quantity} units
-                    </div>
-                </div>
-                
-                <div class="detail-row">
-                    <div class="detail-label">Unit Price</div>
-                    <div class="detail-value">$${transaction.unitPrice.toFixed(2)}</div>
-                </div>
-                
-                <div class="detail-row">
-                    <div class="detail-label">Total Value</div>
-                    <div class="detail-value">$${transaction.totalValue.toFixed(2)}</div>
-                </div>
-                
-                <div class="detail-row">
-                    <div class="detail-label">Processed By</div>
-                    <div class="detail-value">${transaction.user}</div>
-                </div>
-                
-                <div class="detail-row">
-                    <div class="detail-label">Notes</div>
-                    <div class="detail-value">${transaction.notes}</div>
-                </div>
-            </div>
-            
-            <div class="detail-footer">
-                <div class="detail-summary">
-                    <strong>Summary:</strong> ${getTransactionSummary(transaction)}
-                </div>
-            </div>
-        </div>
-    `;
-
-    modal.style.display = 'block';
-}
-
-// Get transaction type icon
-function getTransactionTypeIcon(type) {
-    const icons = {
-        restock: 'box',
-        sale: 'cart',
-        return: 'refresh',
-        adjustment: 'edit'
-    };
-    return icons[type] || 'receipt';
-}
-
-// Get transaction summary
-function getTransactionSummary(transaction) {
-    switch (transaction.type) {
-        case 'restock':
-            return `Added ${transaction.quantity} units of ${transaction.item} to inventory`;
-        case 'sale':
-            return `Sold ${transaction.quantity} units of ${transaction.item}`;
-        case 'return':
-            return `Returned ${transaction.quantity} units of ${transaction.item}`;
-        case 'adjustment':
-            return `Adjusted inventory by ${transaction.quantity} units`;
-        default:
-            return 'Transaction completed';
-    }
-}
-
-// Close modal
-function closeModal() {
-    document.getElementById('transactionModal').style.display = 'none';
-}
-
-// Print transaction
-function printTransaction() {
-    const modalContent = document.querySelector('.transaction-detail').cloneNode(true);
-
-    // Create print window
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(`
-        <html>
-        <head>
-            <title>Transaction Receipt</title>
-            <style>
-                body { font-family: Arial, sans-serif; padding: 20px; }
-                .receipt-header { text-align: center; margin-bottom: 30px; }
-                .receipt-header h1 { color: #333; }
-                .receipt-info { margin-bottom: 20px; }
-                .receipt-row { display: flex; justify-content: space-between; margin-bottom: 10px; }
-                .receipt-label { font-weight: bold; }
-                .receipt-footer { margin-top: 30px; text-align: center; font-size: 12px; color: #666; }
-                .positive { color: #4CAF50; }
-                .negative { color: #f44336; }
-                .type-restock { color: #2196F3; }
-                .type-sale { color: #4CAF50; }
-                .type-return { color: #FF9800; }
-                .type-adjustment { color: #9C27B0; }
-                @media print {
-                    body { padding: 0; }
-                    .no-print { display: none; }
-                }
-            </style>
-        </head>
-        <body>
-            <div class="receipt-header">
-                <h1>InventoryPro Transaction Receipt</h1>
-                <p>Transaction Details</p>
-            </div>
-            ${modalContent.innerHTML}
-            <div class="receipt-footer">
-                <p>Printed on ${new Date().toLocaleString()}</p>
-                <p>InventoryPro Transaction System © ${new Date().getFullYear()}</p>
-            </div>
-        </body>
-        </html>
-    `);
-
-    printWindow.document.close();
-    printWindow.focus();
-
-    setTimeout(() => {
-        printWindow.print();
-        printWindow.close();
-    }, 250);
-}
-
-// Print specific transaction
-function printSpecificTransaction(transactionId) {
-    const transaction = transactions.find(t => t.id === transactionId);
-    if (transaction) {
-        showTransactionDetails(transactionId);
-        setTimeout(() => {
-            printTransaction();
-            closeModal();
-        }, 500);
-    }
-}
-
-// Export transaction history
-function exportTransactionHistory() {
-    try {
-        // Create export data
-        const exportData = filteredTransactions.map(transaction => ({
-            'Transaction ID': transaction.id,
-            'Date': formatDateTime(transaction.date),
-            'Type': capitalizeFirstLetter(transaction.type),
-            'Item': transaction.item,
-            'Category': transaction.category,
-            'Quantity': transaction.quantity,
-            'Unit Price': `$${transaction.unitPrice.toFixed(2)}`,
-            'Total Value': `$${transaction.totalValue.toFixed(2)}`,
-            'User': transaction.user,
-            'Notes': transaction.notes
-        }));
-
-        // Convert to CSV
-        const headers = Object.keys(exportData[0]);
-        const csvRows = [headers.join(',')];
-
-        exportData.forEach(row => {
-            const values = headers.map(header => {
-                const value = row[header];
-                // Escape quotes and wrap in quotes if contains comma
-                const escaped = String(value).replace(/"/g, '""');
-                return escaped.includes(',') ? `"${escaped}"` : escaped;
-            });
-            csvRows.push(values.join(','));
-        });
-
-        const csvString = csvRows.join('\n');
-        const blob = new Blob([csvString], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-
-        a.href = url;
-        a.download = `transaction_history_${new Date().toISOString().split('T')[0]}.csv`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-
-        showNotification(`Exported ${exportData.length} transactions to CSV`, 'success');
-
-    } catch (error) {
-        console.error('Export error:', error);
-        showNotification('Failed to export transaction history', 'error');
-    }
-}
-
-// Format date
-function formatDate(dateString) {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
+  // Tab buttons
+  document.querySelectorAll(".tab").forEach((tab) => {
+    tab.addEventListener("click", function () {
+      const tabName = this.getAttribute("data-tab");
+      switchTab(tabName);
     });
-}
+  });
 
-// Format time
-function formatTime(dateString) {
-    const date = new Date(dateString);
-    return date.toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit'
+  // Close details button
+  document
+    .getElementById("closeDetailsBtn")
+    .addEventListener("click", closeTransactionDetails);
+
+  // Modal close buttons
+  document
+    .getElementById("closeExportModal")
+    .addEventListener("click", function () {
+      document.getElementById("exportModal").classList.remove("active");
     });
-}
 
-// Format date and time
-function formatDateTime(dateString) {
-    return `${formatDate(dateString)} ${formatTime(dateString)}`;
-}
-
-// Capitalize first letter
-function capitalizeFirstLetter(string) {
-    return string.charAt(0).toUpperCase() + string.slice(1);
-}
-
-// Setup sidebar navigation
-function setupSidebarNavigation() {
-    const sidebarItems = document.querySelectorAll('.sidebar li');
-    sidebarItems.forEach(item => {
-        item.addEventListener('click', function () {
-            // Remove active class from all items
-            sidebarItems.forEach(li => li.classList.remove('active'));
-            // Add active class to clicked item
-            this.classList.add('active');
-
-            // In a real application, you would navigate to different pages here
-            const pageName = this.textContent.trim();
-            showNotification(`Navigating to ${pageName}`, 'info');
-        });
+  // Cancel export button
+  document
+    .getElementById("cancelExportBtn")
+    .addEventListener("click", function () {
+      document.getElementById("exportModal").classList.remove("active");
     });
-}
 
-// Show notification
-function showNotification(message, type = 'info') {
-    // Check if notification element exists
-    let notification = document.querySelector('.notification');
+  // Export date range change
+  document
+    .getElementById("exportDateRange")
+    .addEventListener("change", handleExportDateRangeChange);
 
-    if (!notification) {
-        notification = document.createElement('div');
-        notification.className = `notification notification-${type}`;
+  // Export form submission
+  document
+    .getElementById("exportForm")
+    .addEventListener("submit", processExport);
 
-        const style = document.createElement('style');
-        style.textContent = `
-            .notification {
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                padding: 15px 20px;
-                border-radius: 8px;
-                color: white;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                min-width: 300px;
-                max-width: 400px;
-                z-index: 10000;
-                animation: slideIn 0.3s ease-out;
-                box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            }
-            .notification-success { 
-                background: linear-gradient(135deg, #4CAF50, #45a049);
-                border-left: 4px solid #2E7D32;
-            }
-            .notification-error { 
-                background: linear-gradient(135deg, #f44336, #e53935);
-                border-left: 4px solid #c62828;
-            }
-            .notification-info { 
-                background: linear-gradient(135deg, #2196F3, #1E88E5);
-                border-left: 4px solid #1565C0;
-            }
-            .notification-content {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-            }
-            .notification-content i {
-                font-size: 20px;
-            }
-            @keyframes slideIn {
-                from { transform: translateX(100%); opacity: 0; }
-                to { transform: translateX(0); opacity: 1; }
-            }
-        `;
-        document.head.appendChild(style);
-        document.body.appendChild(notification);
+  // Search input (real-time filtering)
+  document
+    .getElementById("transactionSearch")
+    .addEventListener("input", function () {
+      // Add delay for better performance
+      clearTimeout(this.timer);
+      this.timer = setTimeout(() => {
+        filterTransactions();
+      }, 500);
+    });
+
+  // Other filter changes
+  document
+    .getElementById("transactionTypeFilter")
+    .addEventListener("change", filterTransactions);
+  document
+    .getElementById("userFilter")
+    .addEventListener("change", filterTransactions);
+  document
+    .getElementById("startDate")
+    .addEventListener("change", filterTransactions);
+  document
+    .getElementById("endDate")
+    .addEventListener("change", filterTransactions);
+
+  // Close modals when clicking outside
+  window.addEventListener("click", function (e) {
+    if (e.target.classList.contains("modal")) {
+      e.target.classList.remove("active");
     }
-
-    // Set notification content
-    notification.className = `notification notification-${type}`;
-    notification.innerHTML = `
-        <div class="notification-content">
-            <i class="bx bx-${type === 'success' ? 'check-circle' : type === 'error' ? 'x-circle' : 'info-circle'}"></i>
-            <span>${message}</span>
-        </div>
-    `;
-
-    // Show notification
-    notification.style.display = 'flex';
-
-    // Auto hide after 3 seconds
-    setTimeout(() => {
-        notification.style.display = 'none';
-    }, 3000);
+  });
 }
 
-// Make functions available globally
-window.applyFilters = applyFilters;
-window.exportTransactionHistory = exportTransactionHistory;
-window.closeModal = closeModal;
-window.printTransaction = printTransaction;
-window.changePage = changePage;
-window.showTransactionDetails = showTransactionDetails;
-window.printSpecificTransaction = printSpecificTransaction;
+// Logout function
+function logout() {
+  if (confirm("Are you sure you want to logout?")) {
+    // Clear authentication data
+    localStorage.removeItem("loggedIn");
+    localStorage.removeItem("userRole");
+    localStorage.removeItem("userName");
+
+    // Redirect to login page
+    window.location.href = "login.html";
+  }
+}

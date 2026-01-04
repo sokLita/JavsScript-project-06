@@ -1,777 +1,932 @@
-document.addEventListener('DOMContentLoaded', function () {
-
-    let inventory = JSON.parse(localStorage.getItem('inventory')) || [];
-    let recentScans = JSON.parse(localStorage.getItem('recentScans')) || [];
-    let recentActivity = JSON.parse(localStorage.getItem('recentActivity')) || [];
-    let scanner = null;
-    let currentCamera = 'environment';
-    let isScannerActive = false;
-
-    const startScannerBtn = document.getElementById('startScannerBtn');
-    const stopScannerBtn = document.getElementById('stopScannerBtn');
-    const uploadImageBtn = document.getElementById('uploadImageBtn');
-    const imageUpload = document.getElementById('imageUpload');
-    const scannerVideo = document.getElementById('scannerVideo');
-    const scannerCanvas = document.getElementById('scannerCanvas');
-    const scannerPlaceholder = document.getElementById('scannerPlaceholder');
-
-    const scannerModal = document.getElementById('scannerModal');
-    const modalScannerVideo = document.getElementById('modalScannerVideo');
-    const closeScannerModal = document.getElementById('closeScannerModal');
-    const switchCameraBtn = document.getElementById('switchCameraBtn');
-    const scanFromFileBtn = document.getElementById('scanFromFileBtn');
-
-    const quickAddForm = document.getElementById('quickAddForm');
-    const itemCodeInput = document.getElementById('itemCode');
-    const itemNameInput = document.getElementById('itemName');
-    const itemCategoryInput = document.getElementById('itemCategory');
-    const itemQuantityInput = document.getElementById('itemQuantity');
-    const itemPriceInput = document.getElementById('itemPrice');
-    const itemDescriptionInput = document.getElementById('itemDescription');
-    const clearFormBtn = document.getElementById('clearFormBtn');
-
-    const recentScansContainer = document.getElementById('recentScans');
-    const activityList = document.getElementById('activityList');
-    const inventoryTableBody = document.getElementById('inventoryTableBody');
-    const itemDetails = document.getElementById('itemDetails');
-    const exportBtn = document.getElementById('exportBtn');
-
-    const searchInput = document.querySelector('.search-box input');
-    const refreshBtn = document.querySelector('.refresh');
-
-    const totalScansEl = document.querySelector('.div1 .total-scan p:first-child');
-    const totalItemsEl = document.querySelector('.div2 .total-scan p:first-child');
-    const todayScansEl = document.querySelector('.div3 .total-scan p:first-child');
-    const lowStockEl = document.querySelector('.div4 .total-scan p:first-child');
-
-    const toast = document.getElementById('notificationToast');
-    const toastMessage = document.getElementById('toastMessage');
-
-    initApp();
-
-    function initApp() {
-        updateMetrics();
-        loadRecentScans();
-        loadRecentActivity();
-        loadInventoryTable();
-        setupEventListeners();
-
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            showToast('Camera not supported in your browser', 'error');
-            startScannerBtn.disabled = true;
-        }
-    }
-
-    function setupEventListeners() {
-        startScannerBtn.addEventListener('click', startQuickScanner);
-        stopScannerBtn.addEventListener('click', stopQuickScanner);
-        uploadImageBtn.addEventListener('click', () => imageUpload.click());
-        imageUpload.addEventListener('change', handleImageUpload);
-
-        closeScannerModal.addEventListener('click', closeModal);
-        switchCameraBtn.addEventListener('click', switchCamera);
-        scanFromFileBtn.addEventListener('click', () => imageUpload.click());
-
-        quickAddForm.addEventListener('submit', handleFormSubmit);
-        clearFormBtn.addEventListener('click', clearForm);
-
-        exportBtn.addEventListener('click', exportToCSV);
-        searchInput.addEventListener('input', handleSearch);
-        refreshBtn.addEventListener('click', refreshData);
-
-        scannerModal.addEventListener('click', (e) => {
-            if (e.target === scannerModal) closeModal();
-        });
-
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && scannerModal.classList.contains('active')) {
-                closeModal();
-            }
-        });
-    }
-
-    async function startQuickScanner() {
-        try {
-            const constraints = {
-                video: {
-                    facingMode: currentCamera,
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 }
-                },
-                audio: false
-            };
-
-            const stream = await navigator.mediaDevices.getUserMedia(constraints);
-            scannerVideo.srcObject = stream;
-
-            scannerVideo.style.display = 'block';
-            scannerPlaceholder.style.display = 'none';
-            startScannerBtn.disabled = true;
-            stopScannerBtn.disabled = false;
-            isScannerActive = true;
-
-            startScanDetection();
-
-            showToast('Scanner started successfully');
-
-        } catch (error) {
-            console.error('Error accessing camera:', error);
-            showToast('Failed to access camera. Please check permissions.', 'error');
-        }
-    }
-
-    function stopQuickScanner() {
-        if (scannerVideo.srcObject) {
-            const tracks = scannerVideo.srcObject.getTracks();
-            tracks.forEach(track => track.stop());
-            scannerVideo.srcObject = null;
-        }
-
-        scannerVideo.style.display = 'none';
-        scannerPlaceholder.style.display = 'flex';
-        startScannerBtn.disabled = false;
-        stopScannerBtn.disabled = true;
-        isScannerActive = false;
-
-        showToast('Scanner stopped');
-    }
-
-    function startScanDetection() {
-        const ctx = scannerCanvas.getContext('2d');
-        scannerCanvas.width = scannerVideo.videoWidth;
-        scannerCanvas.height = scannerVideo.videoHeight;
-
-        function detectBarcode() {
-            if (!isScannerActive) return;
-
-            ctx.drawImage(scannerVideo, 0, 0, scannerCanvas.width, scannerCanvas.height);
-            const imageData = ctx.getImageData(0, 0, scannerCanvas.width, scannerCanvas.height);
-
-            if (Math.random() < 0.01) {
-                simulateBarcodeScan();
-            }
-
-            requestAnimationFrame(detectBarcode);
-        }
-
-        detectBarcode();
-    }
-
-    function simulateBarcodeScan() {
-        const barcodes = [
-            'ITEM001', 'ITEM002', 'ITEM003', 'ITEM004',
-            'ITEM005', 'ITEM006', 'ITEM007', 'ITEM008'
-        ];
-
-        const randomBarcode = barcodes[Math.floor(Math.random() * barcodes.length)];
-        handleScanResult(randomBarcode);
-    }
-
-    function handleScanResult(code) {
-        const existingItem = inventory.find(item => item.code === code);
-
-        if (existingItem) {
-            existingItem.lastScanned = new Date().toISOString();
-            existingItem.quantity = (existingItem.quantity || 1) - 1;
-            updateInventoryItem(existingItem);
-
-            displayItemDetails(existingItem);
-            showToast(`Item scanned: ${existingItem.name}`);
-        } else {
-            itemCodeInput.value = code;
-            itemNameInput.focus();
-            showToast(`New item detected: ${code}`, 'info');
-        }
-
-        addRecentScan(code);
-
-        addActivity(`Scanned item: ${code}`, 'scan');
-
-        updateMetrics();
-    }
-
-    function handleImageUpload(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = function (e) {
-            const simulatedCode = 'IMG-' + Date.now().toString().slice(-6);
-            handleScanResult(simulatedCode);
-
-            event.target.value = '';
-        };
-        reader.readAsDataURL(file);
-    }
-
-    function openModal() {
-        scannerModal.classList.add('active');
-        document.body.style.overflow = 'hidden';
-        startModalScanner();
-    }
-
-    function closeModal() {
-        scannerModal.classList.remove('active');
-        document.body.style.overflow = '';
-        stopModalScanner();
-    }
-
-    async function startModalScanner() {
-        try {
-            const constraints = {
-                video: {
-                    facingMode: currentCamera,
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 }
-                },
-                audio: false
-            };
-
-            const stream = await navigator.mediaDevices.getUserMedia(constraints);
-            modalScannerVideo.srcObject = stream;
-
-            startModalScanDetection();
-
-        } catch (error) {
-            console.error('Error accessing camera:', error);
-            showToast('Failed to access camera', 'error');
-        }
-    }
-
-    function stopModalScanner() {
-        if (modalScannerVideo.srcObject) {
-            const tracks = modalScannerVideo.srcObject.getTracks();
-            tracks.forEach(track => track.stop());
-            modalScannerVideo.srcObject = null;
-        }
-    }
-
-    function startModalScanDetection() {
-        // Similar to quick scanner detection
-        // You would implement actual barcode scanning here
-    }
-
-    function switchCamera() {
-        currentCamera = currentCamera === 'environment' ? 'user' : 'environment';
-        stopModalScanner();
-        startModalScanner();
-        showToast(`Switched to ${currentCamera === 'environment' ? 'back' : 'front'} camera`);
-    }
-
-    function handleFormSubmit(event) {
-        event.preventDefault();
-
-        const newItem = {
-            id: Date.now().toString(),
-            code: itemCodeInput.value || 'ITEM' + Date.now().toString().slice(-6),
-            name: itemNameInput.value,
-            category: itemCategoryInput.value,
-            quantity: parseInt(itemQuantityInput.value) || 1,
-            price: parseFloat(itemPriceInput.value) || 0,
-            description: itemDescriptionInput.value,
-            lastScanned: new Date().toISOString(),
-            createdAt: new Date().toISOString()
-        };
-
-        const existingIndex = inventory.findIndex(item => item.code === newItem.code);
-
-        if (existingIndex > -1) {
-            inventory[existingIndex] = { ...inventory[existingIndex], ...newItem };
-            showToast(`Item updated: ${newItem.name}`);
-        } else {
-            inventory.push(newItem);
-            showToast(`Item added: ${newItem.name}`);
-        }
-
-        localStorage.setItem('inventory', JSON.stringify(inventory));
-
-        loadInventoryTable();
-        updateMetrics();
-        clearForm();
-
-        addActivity(`${existingIndex > -1 ? 'Updated' : 'Added'} item: ${newItem.name}`, 'inventory');
-    }
-
-    function clearForm() {
-        quickAddForm.reset();
-        itemCodeInput.value = '';
-        itemQuantityInput.value = '1';
-    }
-
-    function updateInventoryItem(updatedItem) {
-        const index = inventory.findIndex(item => item.id === updatedItem.id || item.code === updatedItem.code);
-        if (index > -1) {
-            inventory[index] = updatedItem;
-            localStorage.setItem('inventory', JSON.stringify(inventory));
-            loadInventoryTable();
-        }
-    }
-
-    function deleteInventoryItem(itemId) {
-        if (confirm('Are you sure you want to delete this item?')) {
-            const item = inventory.find(item => item.id === itemId);
-            inventory = inventory.filter(item => item.id !== itemId);
-            localStorage.setItem('inventory', JSON.stringify(inventory));
-
-            showToast(`Item deleted: ${item?.name || 'Unknown'}`, 'warning');
-            loadInventoryTable();
-            updateMetrics();
-            addActivity(`Deleted item: ${item?.name || 'Unknown'}`, 'delete');
-        }
-    }
-
-    function editInventoryItem(itemId) {
-        const item = inventory.find(item => item.id === itemId);
-        if (item) {
-            itemCodeInput.value = item.code;
-            itemNameInput.value = item.name;
-            itemCategoryInput.value = item.category;
-            itemQuantityInput.value = item.quantity;
-            itemPriceInput.value = item.price;
-            itemDescriptionInput.value = item.description;
-
-            document.querySelector('.quick-add-form').scrollIntoView({ behavior: 'smooth' });
-            itemNameInput.focus();
-        }
-    }
-
-    function loadInventoryTable() {
-        if (!inventoryTableBody) return;
-
-        inventoryTableBody.innerHTML = '';
-
-        inventory.forEach(item => {
-            const row = document.createElement('tr');
-
-            let quantityClass = '';
-            let quantityText = item.quantity;
-            if (item.quantity <= 5) {
-                quantityClass = 'badge-warning';
-                if (item.quantity <= 2) {
-                    quantityClass = 'badge-danger';
-                }
-            } else if (item.quantity > 20) {
-                quantityClass = 'badge-success';
-            }
-
-            row.innerHTML = `
-                <td><strong>${item.code}</strong></td>
-                <td>${item.name}</td>
-                <td><span class="badge">${item.category || 'Uncategorized'}</span></td>
-                <td><span class="badge ${quantityClass}">${item.quantity}</span></td>
-                <td>$${parseFloat(item.price).toFixed(2)}</td>
-                <td>${formatDate(item.lastScanned)}</td>
-                <td>
-                    <div class="action-buttons">
-                        <button class="action-btn edit" onclick="window.editItem('${item.id}')">
-                            <i class="fas fa-edit"></i> Edit
-                        </button>
-                        <button class="action-btn delete" onclick="window.deleteItem('${item.id}')">
-                            <i class="fas fa-trash"></i> Delete
-                        </button>
-                        <button class="action-btn view" onclick="window.viewItem('${item.id}')">
-                            <i class="fas fa-eye"></i> View
-                        </button>
-                    </div>
-                </td>
-            `;
-
-            inventoryTableBody.appendChild(row);
-        });
-    }
-
-    function displayItemDetails(item) {
-        if (!itemDetails) return;
-
-        const lowStock = item.quantity <= 5;
-        const outOfStock = item.quantity <= 0;
-
-        itemDetails.innerHTML = `
-            <div class="item-detail-view">
-                <div class="item-header">
-                    <h4>${item.name}</h4>
-                    <span class="item-code">${item.code}</span>
-                </div>
-                
-                <div class="item-info">
-                    <div class="info-row">
-                        <span class="label">Category:</span>
-                        <span class="value">${item.category || 'N/A'}</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="label">Quantity:</span>
-                        <span class="value ${outOfStock ? 'text-danger' : lowStock ? 'text-warning' : 'text-success'}">
-                            ${item.quantity} ${outOfStock ? '(Out of Stock)' : lowStock ? '(Low Stock)' : ''}
-                        </span>
-                    </div>
-                    <div class="info-row">
-                        <span class="label">Price:</span>
-                        <span class="value">$${parseFloat(item.price).toFixed(2)}</span>
-                    </div>
-                    <div class="info-row">
-                        <span class="label">Last Scanned:</span>
-                        <span class="value">${formatDate(item.lastScanned)}</span>
-                    </div>
-                </div>
-                
-                ${item.description ? `
-                <div class="item-description">
-                    <h5>Description</h5>
-                    <p>${item.description}</p>
-                </div>` : ''}
-                
-                <div class="item-actions">
-                    <button class="btn btn-primary" onclick="window.editItem('${item.id}')">
-                        <i class="fas fa-edit"></i> Edit Item
-                    </button>
-                    <button class="btn btn-secondary" onclick="window.scanAgain()">
-                        <i class="fas fa-redo"></i> Scan Again
-                    </button>
-                </div>
-            </div>
-        `;
-    }
-
-    function loadRecentScans() {
-        if (!recentScansContainer) return;
-
-        recentScansContainer.innerHTML = '';
-
-        const recent = recentScans.slice(0, 5);
-
-        if (recent.length === 0) {
-            recentScansContainer.innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-search"></i>
-                    <p>No recent scans</p>
-                </div>
-            `;
-            return;
-        }
-
-        recent.forEach(scan => {
-            const scanElement = document.createElement('div');
-            scanElement.className = 'scan-item';
-            scanElement.innerHTML = `
-                <i class="fas fa-barcode"></i>
-                <div class="scan-details">
-                    <div class="code">${scan.code}</div>
-                    <div class="time">${formatTime(scan.timestamp)}</div>
-                </div>
-            `;
-            recentScansContainer.appendChild(scanElement);
-        });
-    }
-
-    function loadRecentActivity() {
-        if (!activityList) return;
-
-        activityList.innerHTML = '';
-
-        const recentActivityList = recentActivity.slice(0, 10); // Show last 10 activities
-
-        if (recentActivityList.length === 0) {
-            activityList.innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-history"></i>
-                    <p>No recent activity</p>
-                </div>
-            `;
-            return;
-        }
-
-        recentActivityList.forEach(activity => {
-            const activityElement = document.createElement('div');
-            activityElement.className = 'activity-item';
-
-            let icon = 'fas fa-info-circle';
-            let color = '#4361ee';
-
-            switch (activity.type) {
-                case 'scan':
-                    icon = 'fas fa-camera';
-                    color = '#4361ee';
-                    break;
-                case 'inventory':
-                    icon = 'fas fa-box';
-                    color = '#10b981';
-                    break;
-                case 'delete':
-                    icon = 'fas fa-trash';
-                    color = '#ef4444';
-                    break;
-            }
-
-            activityElement.innerHTML = `
-                <i class="${icon}" style="color: ${color}"></i>
-                <div class="activity-content">
-                    <p>${activity.message}</p>
-                    <div class="activity-time">${formatTime(activity.timestamp)}</div>
-                </div>
-            `;
-
-            activityList.appendChild(activityElement);
-        });
-    }
-
-    function addRecentScan(code) {
-        const scan = {
-            code,
-            timestamp: new Date().toISOString()
-        };
-
-        recentScans.unshift(scan);
-        if (recentScans.length > 20) recentScans.pop();
-
-        localStorage.setItem('recentScans', JSON.stringify(recentScans));
-        loadRecentScans();
-    }
-
-    function addActivity(message, type = 'info') {
-        const activity = {
-            message,
-            type,
-            timestamp: new Date().toISOString()
-        };
-
-        recentActivity.unshift(activity);
-        if (recentActivity.length > 50) recentActivity.pop();
-
-        localStorage.setItem('recentActivity', JSON.stringify(recentActivity));
-        loadRecentActivity();
-    }
-
-    function updateMetrics() {
-        totalScansEl.textContent = recentScans.length;
-
-        totalItemsEl.textContent = inventory.length;
-
-        const today = new Date().toDateString();
-        const todayScans = recentScans.filter(scan =>
-            new Date(scan.timestamp).toDateString() === today
-        ).length;
-        todayScansEl.textContent = todayScans;
-
-        const lowStockCount = inventory.filter(item => item.quantity <= 5).length;
-        lowStockEl.textContent = lowStockCount;
-    }
-
-    function formatDate(dateString) {
-        if (!dateString) return 'Never';
-
-        const date = new Date(dateString);
-        const now = new Date();
-        const diffTime = Math.abs(now - date);
-        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-        if (diffDays === 0) {
-            return 'Today';
-        } else if (diffDays === 1) {
-            return 'Yesterday';
-        } else if (diffDays < 7) {
-            return `${diffDays} days ago`;
-        } else {
-            return date.toLocaleDateString();
-        }
-    }
-
-    function formatTime(dateString) {
-        const date = new Date(dateString);
-        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    }
-
-    function showToast(message, type = 'success') {
-        toastMessage.textContent = message;
-
-        const icon = toast.querySelector('i');
-        switch (type) {
-            case 'error':
-                icon.className = 'fas fa-exclamation-circle';
-                toast.style.borderLeftColor = '#ef4444';
-                break;
-            case 'warning':
-                icon.className = 'fas fa-exclamation-triangle';
-                toast.style.borderLeftColor = '#f59e0b';
-                break;
-            case 'info':
-                icon.className = 'fas fa-info-circle';
-                toast.style.borderLeftColor = '#3b82f6';
-                break;
-            default:
-                icon.className = 'fas fa-check-circle';
-                toast.style.borderLeftColor = '#10b981';
-        }
-
-        toast.classList.add('show');
-
-        setTimeout(() => {
-            toast.classList.remove('show');
-        }, 3000);
-    }
-
-    function exportToCSV() {
-        if (inventory.length === 0) {
-            showToast('No data to export', 'warning');
-            return;
-        }
-
-        const headers = ['Code', 'Name', 'Category', 'Quantity', 'Price', 'Description', 'Last Scanned'];
-        const csvContent = [
-            headers.join(','),
-            ...inventory.map(item => [
-                `"${item.code}"`,
-                `"${item.name}"`,
-                `"${item.category}"`,
-                item.quantity,
-                item.price,
-                `"${item.description || ''}"`,
-                `"${formatDate(item.lastScanned)}"`
-            ].join(','))
-        ].join('\n');
-
-        const blob = new Blob([csvContent], { type: 'text/csv' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `inventory-${new Date().toISOString().split('T')[0]}.csv`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-
-        showToast('Inventory exported as CSV');
-        addActivity('Exported inventory to CSV', 'inventory');
-    }
-
-    function handleSearch(event) {
-        const searchTerm = event.target.value.toLowerCase();
-
-        if (!searchTerm) {
-            loadInventoryTable();
-            return;
-        }
-
-        const filtered = inventory.filter(item =>
-            item.code.toLowerCase().includes(searchTerm) ||
-            item.name.toLowerCase().includes(searchTerm) ||
-            item.category.toLowerCase().includes(searchTerm)
-        );
-
-        inventoryTableBody.innerHTML = '';
-
-        filtered.forEach(item => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td><strong>${item.code}</strong></td>
-                <td>${item.name}</td>
-                <td><span class="badge">${item.category || 'Uncategorized'}</span></td>
-                <td><span class="badge">${item.quantity}</span></td>
-                <td>$${parseFloat(item.price).toFixed(2)}</td>
-                <td>${formatDate(item.lastScanned)}</td>
-                <td>
-                    <div class="action-buttons">
-                        <button class="action-btn edit" onclick="window.editItem('${item.id}')">
-                            <i class="fas fa-edit"></i> Edit
-                        </button>
-                        <button class="action-btn delete" onclick="window.deleteItem('${item.id}')">
-                            <i class="fas fa-trash"></i> Delete
-                        </button>
-                    </div>
-                </td>
-            `;
-            inventoryTableBody.appendChild(row);
-        });
-    }
-
-    function refreshData() {
-        refreshBtn.style.transform = 'rotate(360deg)';
-        setTimeout(() => {
-            refreshBtn.style.transform = '';
-        }, 500);
-
-        inventory = JSON.parse(localStorage.getItem('inventory')) || [];
-        recentScans = JSON.parse(localStorage.getItem('recentScans')) || [];
-        recentActivity = JSON.parse(localStorage.getItem('recentActivity')) || [];
-
-        loadInventoryTable();
-        loadRecentScans();
-        loadRecentActivity();
-        updateMetrics();
-
-        showToast('Data refreshed successfully');
-    }
-
-    window.editItem = editInventoryItem;
-    window.deleteItem = deleteInventoryItem;
-
-    window.viewItem = function (itemId) {
-        const item = inventory.find(item => item.id === itemId);
-        if (item) {
-            displayItemDetails(item);
-            document.querySelector('.item-details').scrollIntoView({ behavior: 'smooth' });
-        }
-    };
-
-    window.scanAgain = function () {
-        if (isScannerActive) {
-            itemCodeInput.value = '';
-            itemNameInput.focus();
-        } else {
-            startScannerBtn.click();
-        }
-    };
-
-    if (inventory.length === 0) {
-        const demoItems = [
-            {
-                id: '1',
-                code: 'ITEM001',
-                name: 'Wireless Mouse',
-                category: 'electronics',
-                quantity: 25,
-                price: 29.99,
-                description: 'Wireless optical mouse with USB receiver',
-                lastScanned: new Date().toISOString(),
-                createdAt: new Date().toISOString()
-            },
-            {
-                id: '2',
-                code: 'ITEM002',
-                name: 'Keyboard',
-                category: 'electronics',
-                quantity: 18,
-                price: 59.99,
-                description: 'Mechanical gaming keyboard',
-                lastScanned: new Date(Date.now() - 86400000).toISOString(), // Yesterday
-                createdAt: new Date().toISOString()
-            },
-            {
-                id: '3',
-                code: 'ITEM003',
-                name: 'Notebook',
-                category: 'books',
-                quantity: 3,
-                price: 9.99,
-                description: 'Hardcover notebook, 200 pages',
-                lastScanned: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
-                createdAt: new Date().toISOString()
-            }
-        ];
-
-        inventory = demoItems;
-        localStorage.setItem('inventory', JSON.stringify(inventory));
-        loadInventoryTable();
-        updateMetrics();
-    }
-
-    if (recentActivity.length === 0) {
-        const demoActivity = [
-            { message: 'System initialized', type: 'info', timestamp: new Date().toISOString() },
-            { message: 'Demo items loaded', type: 'inventory', timestamp: new Date().toISOString() }
-        ];
-
-        recentActivity = demoActivity;
-        localStorage.setItem('recentActivity', JSON.stringify(recentActivity));
-        loadRecentActivity();
-    }
+// Check authentication on page load
+document.addEventListener("DOMContentLoaded", function () {
+  // Get user info from localStorage
+  const userRole = localStorage.getItem("userRole") || "admin";
+  const userName = localStorage.getItem("userName") || "Administrator";
+
+  // Update UI with user info
+  document.getElementById("userAvatar").textContent = userName
+    .charAt(0)
+    .toUpperCase();
+
+  // Initialize scanner data
+  initializeScanner();
+  loadScanHistory();
+  setupEventListeners();
+
+  // Check user permissions
+  if (userRole === "staff") {
+    document.getElementById("updateStockBtn").style.display = "none";
+  }
 });
+
+// Scanner state
+let scannerState = {
+  isActive: false,
+  torchOn: false,
+  scannedToday: 0,
+  currentProduct: null,
+  scanHistory: [],
+};
+
+// Sample product database (barcode -> product)
+const productDatabase = {
+  5901234123457: {
+    id: "P001",
+    name: "Wireless Bluetooth Headphones",
+    sku: "WH-2023-001",
+    category: "Electronics",
+    price: 89.99,
+    cost: 45.5,
+    stock: 45,
+    minStock: 10,
+    description: "High-quality wireless headphones with noise cancellation",
+    status: "in-stock",
+  },
+  5901234123458: {
+    id: "P002",
+    name: "Ergonomic Office Chair",
+    sku: "OC-2023-002",
+    category: "Furniture",
+    price: 249.99,
+    cost: 150.0,
+    stock: 12,
+    minStock: 5,
+    description: "Adjustable office chair with lumbar support",
+    status: "in-stock",
+  },
+  5901234123459: {
+    id: "P003",
+    name: "Smart Fitness Watch",
+    sku: "FW-2023-003",
+    category: "Electronics",
+    price: 199.99,
+    cost: 120.0,
+    stock: 3,
+    minStock: 10,
+    description: "Waterproof fitness tracker with heart rate monitor",
+    status: "low-stock",
+  },
+  5901234123460: {
+    id: "P004",
+    name: "Desk Lamp with Wireless Charger",
+    sku: "DL-2023-004",
+    category: "Home",
+    price: 49.99,
+    cost: 25.0,
+    stock: 0,
+    minStock: 15,
+    description: "LED desk lamp with built-in wireless charging pad",
+    status: "out-of-stock",
+  },
+  5901234123461: {
+    id: "P005",
+    name: "Premium Notebook Set",
+    sku: "NS-2023-005",
+    category: "Stationery",
+    price: 24.99,
+    cost: 12.5,
+    stock: 120,
+    minStock: 30,
+    description: "Set of 3 premium hardcover notebooks",
+    status: "in-stock",
+  },
+  5901234123462: {
+    id: "P006",
+    name: "Wireless Gaming Mouse",
+    sku: "GM-2023-006",
+    category: "Electronics",
+    price: 79.99,
+    cost: 40.0,
+    stock: 5,
+    minStock: 10,
+    description: "High-precision wireless gaming mouse",
+    status: "low-stock",
+  },
+};
+
+// Initialize scanner
+function initializeScanner() {
+  // Load scanned count from localStorage
+  const today = new Date().toDateString();
+  const storedCount = localStorage.getItem(`scannedCount_${today}`);
+  scannerState.scannedToday = storedCount ? parseInt(storedCount) : 0;
+
+  // Update UI
+  updateScannedCount();
+
+  // Load scan history from localStorage
+  const storedHistory = localStorage.getItem("scanHistory");
+  if (storedHistory) {
+    scannerState.scanHistory = JSON.parse(storedHistory);
+  }
+}
+
+// Start scanner
+function startScanner() {
+  if (scannerState.isActive) return;
+
+  scannerState.isActive = true;
+
+  // Update UI
+  document.getElementById("scannerStatus").textContent = "Scanner Online";
+  document.getElementById("scannerStatus").className =
+    "status-badge status-success";
+  document.getElementById("scannerPlaceholder").style.display = "none";
+  document.getElementById("scannerOverlay").style.display = "flex";
+  document.getElementById("startScannerBtn").disabled = true;
+  document.getElementById("stopScannerBtn").disabled = false;
+
+  // Show scanning animation
+  showNotification(
+    "Scanner started. Position barcode within the frame.",
+    "success"
+  );
+
+  // In a real app, this would initialize the camera
+  // For demo, we'll simulate with a timer that auto-scans occasionally
+  simulateAutoScan();
+}
+
+// Stop scanner
+function stopScanner() {
+  if (!scannerState.isActive) return;
+
+  scannerState.isActive = false;
+
+  // Update UI
+  document.getElementById("scannerStatus").textContent = "Scanner Offline";
+  document.getElementById("scannerStatus").className =
+    "status-badge status-danger";
+  document.getElementById("scannerPlaceholder").style.display = "flex";
+  document.getElementById("scannerOverlay").style.display = "none";
+  document.getElementById("startScannerBtn").disabled = false;
+  document.getElementById("stopScannerBtn").disabled = true;
+
+  // Turn off torch if on
+  if (scannerState.torchOn) {
+    toggleTorch();
+  }
+
+  showNotification("Scanner stopped.", "info");
+}
+
+// Toggle torch
+function toggleTorch() {
+  scannerState.torchOn = !scannerState.torchOn;
+  const torchBtn = document.getElementById("toggleTorchBtn");
+
+  if (scannerState.torchOn) {
+    torchBtn.innerHTML = '<i class="fas fa-lightbulb"></i> Torch On';
+    torchBtn.classList.remove("btn-outline");
+    torchBtn.classList.add("btn-warning");
+    showNotification("Torch turned on", "info");
+  } else {
+    torchBtn.innerHTML = '<i class="fas fa-lightbulb"></i> Torch';
+    torchBtn.classList.remove("btn-warning");
+    torchBtn.classList.add("btn-outline");
+    showNotification("Torch turned off", "info");
+  }
+}
+
+// Simulate auto scanning (for demo purposes)
+function simulateAutoScan() {
+  if (!scannerState.isActive) return;
+
+  // 10% chance to auto-scan every 5 seconds
+  if (Math.random() < 0.1) {
+    setTimeout(() => {
+      if (scannerState.isActive) {
+        performScan(getRandomBarcode());
+      }
+    }, 2000);
+  }
+
+  // Schedule next check
+  setTimeout(simulateAutoScan, 5000);
+}
+
+// Perform a scan
+function performScan(barcode) {
+  if (!scannerState.isActive) {
+    showNotification("Please start the scanner first.", "warning");
+    return;
+  }
+
+  // Update scanned count
+  scannerState.scannedToday++;
+  const today = new Date().toDateString();
+  localStorage.setItem(
+    `scannedCount_${today}`,
+    scannerState.scannedToday.toString()
+  );
+  updateScannedCount();
+
+  // Update barcode display
+  document.getElementById("barcodeDisplay").textContent = barcode;
+
+  // Lookup product
+  const product = productDatabase[barcode];
+
+  if (product) {
+    // Product found
+    scannerState.currentProduct = product;
+    displayProductInfo(product);
+    addToScanHistory(product, barcode);
+
+    // Play success sound (in a real app)
+    showNotification(`Product found: ${product.name}`, "success");
+  } else {
+    // Product not found
+    scannerState.currentProduct = null;
+    document.getElementById("productResult").innerHTML = `
+                    <div style="text-align: center; padding: 20px;">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 40px; color: #f39c12; margin-bottom: 15px;"></i>
+                        <h4 style="color: #f39c12; margin-bottom: 10px;">Product Not Found</h4>
+                        <p>No product found for barcode: ${barcode}</p>
+                        <button class="btn btn-primary" onclick="addNewProduct('${barcode}')" style="margin-top: 15px;">
+                            <i class="fas fa-plus"></i> Add New Product
+                        </button>
+                    </div>
+                `;
+    document.getElementById("productInfo").style.display = "none";
+
+    // Add to history anyway
+    addToScanHistory(null, barcode);
+
+    showNotification("Product not found in database.", "warning");
+  }
+}
+
+// Test scan with random product
+function testScan() {
+  const barcodes = Object.keys(productDatabase);
+  if (barcodes.length === 0) return;
+
+  const randomBarcode = barcodes[Math.floor(Math.random() * barcodes.length)];
+  performScan(randomBarcode);
+}
+
+// Display product information
+function displayProductInfo(product) {
+  const productInfo = document.getElementById("productInfo");
+  const productResult = document.getElementById("productResult");
+
+  // Update product info
+  document.getElementById("productName").textContent = product.name;
+  document.getElementById("productSKU").textContent = product.sku;
+  document.getElementById(
+    "productPrice"
+  ).textContent = `₹${product.price.toFixed(2)}`;
+  document.getElementById(
+    "productStock"
+  ).textContent = `${product.stock} units`;
+
+  // Update status badge
+  const statusBadge = document.getElementById("productStatus");
+  statusBadge.textContent =
+    product.status === "in-stock"
+      ? "In Stock"
+      : product.status === "low-stock"
+      ? "Low Stock"
+      : "Out of Stock";
+  statusBadge.className =
+    product.status === "in-stock"
+      ? "status-badge status-success"
+      : product.status === "low-stock"
+      ? "status-badge status-warning"
+      : "status-badge status-danger";
+
+  // Show product info and hide result message
+  productInfo.style.display = "block";
+  productResult.innerHTML = "";
+
+  // Update product image (in a real app, this would be the actual product image)
+  document.querySelector(".product-image i").className = getProductIcon(
+    product.category
+  );
+}
+
+// Get product icon based on category
+function getProductIcon(category) {
+  switch (category.toLowerCase()) {
+    case "electronics":
+      return "fas fa-headphones";
+    case "furniture":
+      return "fas fa-chair";
+    case "home":
+      return "fas fa-home";
+    case "stationery":
+      return "fas fa-pen";
+    case "sports":
+      return "fas fa-running";
+    default:
+      return "fas fa-box";
+  }
+}
+
+// Add to scan history
+function addToScanHistory(product, barcode) {
+  const scanRecord = {
+    id: Date.now(),
+    timestamp: new Date().toLocaleString(),
+    barcode: barcode,
+    product: product ? product.name : "Unknown Product",
+    sku: product ? product.sku : "N/A",
+    status: product ? "found" : "not_found",
+  };
+
+  scannerState.scanHistory.unshift(scanRecord);
+
+  // Keep only last 50 records
+  if (scannerState.scanHistory.length > 50) {
+    scannerState.scanHistory.pop();
+  }
+
+  // Save to localStorage
+  localStorage.setItem("scanHistory", JSON.stringify(scannerState.scanHistory));
+
+  // Update history display
+  loadScanHistory();
+}
+
+// Load scan history
+function loadScanHistory() {
+  const historyList = document.getElementById("scanHistoryList");
+  historyList.innerHTML = "";
+
+  if (scannerState.scanHistory.length === 0) {
+    historyList.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #7f8c8d;">
+                        <i class="fas fa-history" style="font-size: 40px; margin-bottom: 15px;"></i>
+                        <div>No scan history yet</div>
+                        <div style="font-size: 14px; margin-top: 10px;">Scan products to see history here</div>
+                    </div>
+                `;
+    return;
+  }
+
+  scannerState.scanHistory.forEach((record) => {
+    const historyItem = document.createElement("div");
+    historyItem.className = "history-item";
+
+    const icon =
+      record.status === "found" ? "fa-check-circle" : "fa-exclamation-circle";
+    const iconColor =
+      record.status === "found"
+        ? "var(--success-color)"
+        : "var(--warning-color)";
+
+    historyItem.innerHTML = `
+                    <div class="history-icon" style="background: ${
+                      record.status === "found"
+                        ? "rgba(39, 174, 96, 0.1)"
+                        : "rgba(243, 156, 18, 0.1)"
+                    }; color: ${iconColor}">
+                        <i class="fas ${icon}"></i>
+                    </div>
+                    <div class="history-details">
+                        <div class="history-product">${record.product}</div>
+                        <div class="history-time">${record.timestamp} • ${
+      record.barcode
+    }</div>
+                    </div>
+                    <div class="history-action">
+                        <button class="btn btn-sm btn-outline" onclick="rescanBarcode('${
+                          record.barcode
+                        }')">
+                            <i class="fas fa-redo"></i>
+                        </button>
+                    </div>
+                `;
+
+    historyList.appendChild(historyItem);
+  });
+}
+
+// Clear scan history
+function clearScanHistory() {
+  if (
+    confirm(
+      "Are you sure you want to clear all scan history? This cannot be undone."
+    )
+  ) {
+    scannerState.scanHistory = [];
+    localStorage.removeItem("scanHistory");
+    loadScanHistory();
+    showNotification("Scan history cleared.", "success");
+  }
+}
+
+// Clear scan results
+function clearResults() {
+  document.getElementById("barcodeDisplay").textContent =
+    "No barcode scanned yet";
+  document.getElementById("productResult").innerHTML = `
+                <p style="text-align: center; color: #7f8c8d;">Scan a barcode to see product details</p>
+            `;
+  document.getElementById("productInfo").style.display = "none";
+  scannerState.currentProduct = null;
+  showNotification("Results cleared.", "info");
+}
+
+// Update scanned count display
+function updateScannedCount() {
+  document.getElementById(
+    "scannedCount"
+  ).textContent = `Scanned today: ${scannerState.scannedToday} items`;
+}
+
+// Get random barcode for testing
+function getRandomBarcode() {
+  const barcodes = Object.keys(productDatabase);
+  return barcodes[Math.floor(Math.random() * barcodes.length)];
+}
+
+// Enter barcode manually
+function enterBarcode(barcode) {
+  document.getElementById("manualBarcode").value = barcode;
+}
+
+// Manual barcode lookup
+function manualLookup() {
+  const barcode = document.getElementById("manualBarcode").value.trim();
+
+  if (!barcode) {
+    showNotification("Please enter a barcode.", "warning");
+    return;
+  }
+
+  if (barcode.length < 12 || barcode.length > 13) {
+    showNotification("Barcode should be 12-13 digits.", "warning");
+    return;
+  }
+
+  // If scanner is active, use it, otherwise just look up
+  if (scannerState.isActive) {
+    performScan(barcode);
+  } else {
+    // Just look up without scanner
+    const product = productDatabase[barcode];
+    document.getElementById("barcodeDisplay").textContent = barcode;
+
+    if (product) {
+      scannerState.currentProduct = product;
+      displayProductInfo(product);
+      addToScanHistory(product, barcode);
+      showNotification(`Product found: ${product.name}`, "success");
+    } else {
+      scannerState.currentProduct = null;
+      document.getElementById("productResult").innerHTML = `
+                        <div style="text-align: center; padding: 20px;">
+                            <i class="fas fa-exclamation-triangle" style="font-size: 40px; color: #f39c12; margin-bottom: 15px;"></i>
+                            <h4 style="color: #f39c12; margin-bottom: 10px;">Product Not Found</h4>
+                            <p>No product found for barcode: ${barcode}</p>
+                            <button class="btn btn-primary" onclick="addNewProduct('${barcode}')" style="margin-top: 15px;">
+                                <i class="fas fa-plus"></i> Add New Product
+                            </button>
+                        </div>
+                    `;
+      document.getElementById("productInfo").style.display = "none";
+      addToScanHistory(null, barcode);
+      showNotification("Product not found in database.", "warning");
+    }
+  }
+
+  // Clear input
+  document.getElementById("manualBarcode").value = "";
+}
+
+// Rescan barcode from history
+function rescanBarcode(barcode) {
+  // Start scanner if not active
+  if (!scannerState.isActive) {
+    startScanner();
+    setTimeout(() => performScan(barcode), 1000);
+  } else {
+    performScan(barcode);
+  }
+}
+
+// Add new product
+function addNewProduct(barcode) {
+  alert(
+    `This would open a form to add a new product with barcode: ${barcode}\n\nIn a real application, this would redirect to the product management page with the barcode pre-filled.`
+  );
+}
+
+// View current product
+function viewCurrentProduct() {
+  if (!scannerState.currentProduct) {
+    showNotification("No product selected.", "warning");
+    return;
+  }
+
+  alert(
+    `Viewing product: ${scannerState.currentProduct.name}\n\nIn a real application, this would open the product details page.`
+  );
+}
+
+// Update stock for current product
+function updateStock() {
+  if (!scannerState.currentProduct) {
+    showNotification("No product selected.", "warning");
+    return;
+  }
+
+  document.getElementById("updateProductName").textContent =
+    scannerState.currentProduct.name;
+  document.getElementById("currentStockValue").textContent =
+    scannerState.currentProduct.stock;
+  document.getElementById("updateQuantity").value = 1;
+  document.getElementById("updateNotes").value = "";
+
+  document.getElementById("stockUpdateModal").classList.add("active");
+}
+
+// Process stock update
+function processStockUpdate(event) {
+  event.preventDefault();
+
+  if (!scannerState.currentProduct) return;
+
+  const updateType = document.getElementById("updateType").value;
+  const quantity = parseInt(document.getElementById("updateQuantity").value);
+  const reason = document.getElementById("updateReason").value;
+  const notes = document.getElementById("updateNotes").value;
+
+  if (quantity <= 0) {
+    showNotification("Please enter a valid quantity.", "warning");
+    return;
+  }
+
+  // Update product stock
+  if (updateType === "add") {
+    scannerState.currentProduct.stock += quantity;
+  } else if (updateType === "remove") {
+    scannerState.currentProduct.stock -= quantity;
+    if (scannerState.currentProduct.stock < 0) {
+      scannerState.currentProduct.stock = 0;
+    }
+  } else if (updateType === "set") {
+    scannerState.currentProduct.stock = quantity;
+  }
+
+  // Update status
+  if (scannerState.currentProduct.stock === 0) {
+    scannerState.currentProduct.status = "out-of-stock";
+  } else if (
+    scannerState.currentProduct.stock <= scannerState.currentProduct.minStock
+  ) {
+    scannerState.currentProduct.status = "low-stock";
+  } else {
+    scannerState.currentProduct.status = "in-stock";
+  }
+
+  // Update database (in a real app, this would be saved to server)
+  productDatabase[
+    Object.keys(productDatabase).find(
+      (key) => productDatabase[key].id === scannerState.currentProduct.id
+    )
+  ] = scannerState.currentProduct;
+
+  // Close modal
+  document.getElementById("stockUpdateModal").classList.remove("active");
+
+  // Update display
+  displayProductInfo(scannerState.currentProduct);
+
+  // Add to history
+  addToScanHistory(
+    scannerState.currentProduct,
+    Object.keys(productDatabase).find(
+      (key) => productDatabase[key].id === scannerState.currentProduct.id
+    )
+  );
+
+  showNotification(
+    `Stock updated successfully. New stock: ${scannerState.currentProduct.stock} units`,
+    "success"
+  );
+}
+
+// Sell current product
+function sellProduct() {
+  if (!scannerState.currentProduct) {
+    showNotification("No product selected.", "warning");
+    return;
+  }
+
+  if (scannerState.currentProduct.stock <= 0) {
+    showNotification("Product is out of stock.", "warning");
+    return;
+  }
+
+  document.getElementById("saleProductName").textContent =
+    scannerState.currentProduct.name;
+  document.getElementById("availableStock").textContent =
+    scannerState.currentProduct.stock;
+  document.getElementById("saleQuantity").value = 1;
+  document.getElementById("saleQuantity").max =
+    scannerState.currentProduct.stock;
+  document.getElementById("salePrice").value =
+    scannerState.currentProduct.price;
+  document.getElementById("saleCustomer").value = "";
+
+  updateSaleSummary();
+  document.getElementById("quickSaleModal").classList.add("active");
+}
+
+// Update sale summary
+function updateSaleSummary() {
+  const quantity = parseInt(document.getElementById("saleQuantity").value) || 0;
+  const price = parseFloat(document.getElementById("salePrice").value) || 0;
+  const subtotal = quantity * price;
+  const tax = subtotal * 0.18;
+  const total = subtotal + tax;
+
+  document.getElementById("saleSubtotal").textContent = `₹${subtotal.toFixed(
+    2
+  )}`;
+  document.getElementById("saleTax").textContent = `₹${tax.toFixed(2)}`;
+  document.getElementById("saleTotal").textContent = `₹${total.toFixed(2)}`;
+}
+
+// Process quick sale
+function processQuickSale(event) {
+  event.preventDefault();
+
+  if (!scannerState.currentProduct) return;
+
+  const quantity = parseInt(document.getElementById("saleQuantity").value);
+  const price = parseFloat(document.getElementById("salePrice").value);
+  const customer = document.getElementById("saleCustomer").value;
+
+  if (quantity <= 0) {
+    showNotification("Please enter a valid quantity.", "warning");
+    return;
+  }
+
+  if (quantity > scannerState.currentProduct.stock) {
+    showNotification(
+      `Insufficient stock. Only ${scannerState.currentProduct.stock} units available.`,
+      "warning"
+    );
+    return;
+  }
+
+  if (price <= 0) {
+    showNotification("Please enter a valid price.", "warning");
+    return;
+  }
+
+  // Update product stock
+  scannerState.currentProduct.stock -= quantity;
+
+  // Update status
+  if (scannerState.currentProduct.stock === 0) {
+    scannerState.currentProduct.status = "out-of-stock";
+  } else if (
+    scannerState.currentProduct.stock <= scannerState.currentProduct.minStock
+  ) {
+    scannerState.currentProduct.status = "low-stock";
+  }
+
+  // Update database
+  productDatabase[
+    Object.keys(productDatabase).find(
+      (key) => productDatabase[key].id === scannerState.currentProduct.id
+    )
+  ] = scannerState.currentProduct;
+
+  // Close modal
+  document.getElementById("quickSaleModal").classList.remove("active");
+
+  // Update display
+  displayProductInfo(scannerState.currentProduct);
+
+  // Show success message
+  const subtotal = quantity * price;
+  const tax = subtotal * 0.18;
+  const total = subtotal + tax;
+
+  showNotification(
+    `Sale processed successfully! ${quantity} x ${
+      scannerState.currentProduct.name
+    } = ₹${total.toFixed(2)}`,
+    "success"
+  );
+
+  // In a real app, this would create a sales record
+  console.log(
+    `Sale recorded: ${quantity} x ${scannerState.currentProduct.name} to ${
+      customer || "Walk-in Customer"
+    } for ₹${total.toFixed(2)}`
+  );
+}
+
+// Show notification
+function showNotification(message, type) {
+  const notification = document.createElement("div");
+  notification.style.position = "fixed";
+  notification.style.top = "20px";
+  notification.style.right = "20px";
+  notification.style.padding = "15px 20px";
+  notification.style.borderRadius = "8px";
+  notification.style.color = "white";
+  notification.style.fontWeight = "600";
+  notification.style.zIndex = "10000";
+  notification.style.boxShadow = "0 5px 15px rgba(0,0,0,0.2)";
+  notification.style.display = "flex";
+  notification.style.alignItems = "center";
+  notification.style.gap = "10px";
+
+  if (type === "success") {
+    notification.style.backgroundColor = "var(--success-color)";
+    notification.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+  } else if (type === "error") {
+    notification.style.backgroundColor = "var(--accent-color)";
+    notification.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
+  } else if (type === "warning") {
+    notification.style.backgroundColor = "var(--warning-color)";
+    notification.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${message}`;
+  } else {
+    notification.style.backgroundColor = "var(--secondary-color)";
+    notification.innerHTML = `<i class="fas fa-info-circle"></i> ${message}`;
+  }
+
+  document.body.appendChild(notification);
+
+  // Remove notification after 3 seconds
+  setTimeout(() => {
+    notification.remove();
+  }, 3000);
+}
+
+// Setup event listeners
+function setupEventListeners() {
+  // Sidebar toggle
+  document
+    .getElementById("sidebarToggle")
+    .addEventListener("click", function () {
+      document.getElementById("sidebar").classList.toggle("collapsed");
+    });
+
+  // Mobile menu toggle
+  document
+    .getElementById("mobileMenuToggle")
+    .addEventListener("click", function () {
+      document.getElementById("sidebar").classList.toggle("active");
+    });
+
+  // Logout buttons
+  document.getElementById("logoutBtn").addEventListener("click", logout);
+  document
+    .getElementById("logoutSidebar")
+    .addEventListener("click", function (e) {
+      e.preventDefault();
+      logout();
+    });
+
+  // Scanner buttons
+  document
+    .getElementById("startScannerBtn")
+    .addEventListener("click", startScanner);
+  document
+    .getElementById("stopScannerBtn")
+    .addEventListener("click", stopScanner);
+  document.getElementById("scanNowBtn").addEventListener("click", function () {
+    if (scannerState.isActive) {
+      performScan(getRandomBarcode());
+    } else {
+      showNotification("Please start the scanner first.", "warning");
+    }
+  });
+  document.getElementById("testScanBtn").addEventListener("click", testScan);
+  document
+    .getElementById("toggleTorchBtn")
+    .addEventListener("click", toggleTorch);
+
+  // Clear buttons
+  document
+    .getElementById("clearResultsBtn")
+    .addEventListener("click", clearResults);
+  document
+    .getElementById("clearHistoryBtn")
+    .addEventListener("click", clearScanHistory);
+
+  // Product action buttons
+  document
+    .getElementById("viewProductBtn")
+    .addEventListener("click", viewCurrentProduct);
+  document
+    .getElementById("updateStockBtn")
+    .addEventListener("click", updateStock);
+  document
+    .getElementById("sellProductBtn")
+    .addEventListener("click", sellProduct);
+
+  // Manual lookup
+  document
+    .getElementById("manualScanBtn")
+    .addEventListener("click", manualLookup);
+  document
+    .getElementById("manualBarcode")
+    .addEventListener("keypress", function (e) {
+      if (e.key === "Enter") {
+        manualLookup();
+      }
+    });
+
+  // Modal close buttons
+  document
+    .getElementById("closeStockUpdateModal")
+    .addEventListener("click", function () {
+      document.getElementById("stockUpdateModal").classList.remove("active");
+    });
+  document
+    .getElementById("closeQuickSaleModal")
+    .addEventListener("click", function () {
+      document.getElementById("quickSaleModal").classList.remove("active");
+    });
+
+  // Cancel buttons
+  document
+    .getElementById("cancelStockUpdateBtn")
+    .addEventListener("click", function () {
+      document.getElementById("stockUpdateModal").classList.remove("active");
+    });
+  document
+    .getElementById("cancelQuickSaleBtn")
+    .addEventListener("click", function () {
+      document.getElementById("quickSaleModal").classList.remove("active");
+    });
+
+  // Form submissions
+  document
+    .getElementById("stockUpdateForm")
+    .addEventListener("submit", processStockUpdate);
+  document
+    .getElementById("quickSaleForm")
+    .addEventListener("submit", processQuickSale);
+
+  // Sale form updates
+  document
+    .getElementById("saleQuantity")
+    .addEventListener("input", updateSaleSummary);
+  document
+    .getElementById("salePrice")
+    .addEventListener("input", updateSaleSummary);
+
+  // Close modals when clicking outside
+  window.addEventListener("click", function (e) {
+    if (e.target.classList.contains("modal")) {
+      e.target.classList.remove("active");
+    }
+  });
+
+  // Keyboard shortcuts
+  document.addEventListener("keydown", function (e) {
+    // Ctrl+S to start scanner
+    if (e.ctrlKey && e.key === "s") {
+      e.preventDefault();
+      if (!scannerState.isActive) {
+        startScanner();
+      }
+    }
+    // Ctrl+E to stop scanner
+    if (e.ctrlKey && e.key === "e") {
+      e.preventDefault();
+      if (scannerState.isActive) {
+        stopScanner();
+      }
+    }
+    // Space to scan (when scanner is active)
+    if (e.key === " " && scannerState.isActive) {
+      e.preventDefault();
+      performScan(getRandomBarcode());
+    }
+    // Escape to clear results
+    if (e.key === "Escape") {
+      clearResults();
+    }
+  });
+}
+
+// Logout function
+function logout() {
+  if (confirm("Are you sure you want to logout?")) {
+    // Stop scanner if active
+    if (scannerState.isActive) {
+      stopScanner();
+    }
+
+    // Clear authentication data
+    localStorage.removeItem("loggedIn");
+    localStorage.removeItem("userRole");
+    localStorage.removeItem("userName");
+
+    // Redirect to login page
+    window.location.href = "login.html";
+  }
+}

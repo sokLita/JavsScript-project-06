@@ -1,1183 +1,1494 @@
+// Check authentication on page load
+document.addEventListener("DOMContentLoaded", function () {
+  // Get user info from localStorage
+  const userRole = localStorage.getItem("userRole") || "admin";
+  const userName = localStorage.getItem("userName") || "Administrator";
 
-        // purchase.js - Purchase Management System
+  // Update UI with user info
+  document.getElementById("userAvatar").textContent = userName
+    .charAt(0)
+    .toUpperCase();
 
-        document.addEventListener('DOMContentLoaded', function () {
-            // Initialize the purchase management system
-            initializePurchaseSystem();
-            setupEventListeners();
-            loadPurchaseData();
-            loadSuppliers();
-            setupFormValidation();
-            initializeModal();
-        });
+  // Initialize purchase data
+  initializeCharts();
+  loadPurchaseData();
+  setupEventListeners();
 
-        // Global variables
-        let purchaseData = [];
-        let suppliersData = [];
-        let currentPage = 1;
-        const itemsPerPage = 10;
-        let filters = {
-            status: ['completed', 'pending'],
-            startDate: null,
-            endDate: null,
-            supplier: '',
-            minAmount: null,
-            maxAmount: null
-        };
+  // Check user permissions
+  if (userRole === "staff") {
+    document.getElementById("importPurchasesBtn").style.display = "none";
+    document.getElementById("generateReorderBtn").style.display = "none";
+  }
+});
 
-        // Initialize the purchase system
-        function initializePurchaseSystem() {
-            // Set today's date as default for purchase date
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('purchaseDate').value = today;
+// Sample purchase data
+let purchaseData = {
+  orders: [
+    {
+      id: "PO-2023-001",
+      date: "2023-10-18",
+      supplier: "Supplier ABC",
+      supplierId: "supplier1",
+      items: [
+        {
+          name: "Wireless Bluetooth Headphones",
+          quantity: 50,
+          unitPrice: 45.5,
+          total: 2275.0,
+        },
+        {
+          name: "Smart Fitness Watch",
+          quantity: 25,
+          unitPrice: 120.0,
+          total: 3000.0,
+        },
+      ],
+      subtotal: 5275.0,
+      tax: 949.5,
+      shipping: 150.0,
+      total: 6374.5,
+      status: "received",
+      expectedDelivery: "2023-10-25",
+      actualDelivery: "2023-10-24",
+      paymentTerms: "net30",
+      notes: "Priority order for holiday season",
+      timeline: [
+        {
+          date: "2023-10-18",
+          status: "Ordered",
+          description: "Purchase order submitted",
+        },
+        {
+          date: "2023-10-20",
+          status: "Confirmed",
+          description: "Supplier confirmed order",
+        },
+        {
+          date: "2023-10-24",
+          status: "Received",
+          description: "Order delivered and verified",
+        },
+      ],
+    },
+    {
+      id: "PO-2023-002",
+      date: "2023-10-15",
+      supplier: "Supplier XYZ",
+      supplierId: "supplier2",
+      items: [
+        {
+          name: "Ergonomic Office Chair",
+          quantity: 20,
+          unitPrice: 150.0,
+          total: 3000.0,
+        },
+      ],
+      subtotal: 3000.0,
+      tax: 540.0,
+      shipping: 200.0,
+      total: 3740.0,
+      status: "ordered",
+      expectedDelivery: "2023-10-30",
+      actualDelivery: null,
+      paymentTerms: "net45",
+      notes: "New office setup",
+      timeline: [
+        {
+          date: "2023-10-15",
+          status: "Ordered",
+          description: "Purchase order submitted",
+        },
+        {
+          date: "2023-10-16",
+          status: "Confirmed",
+          description: "Supplier confirmed order",
+        },
+      ],
+    },
+    {
+      id: "PO-2023-003",
+      date: "2023-10-10",
+      supplier: "Global Supplies Inc.",
+      supplierId: "supplier3",
+      items: [
+        {
+          name: "Desk Lamp with Wireless Charger",
+          quantity: 100,
+          unitPrice: 25.0,
+          total: 2500.0,
+        },
+        {
+          name: "Stainless Steel Water Bottle",
+          quantity: 200,
+          unitPrice: 15.0,
+          total: 3000.0,
+        },
+      ],
+      subtotal: 5500.0,
+      tax: 990.0,
+      shipping: 300.0,
+      total: 6790.0,
+      status: "pending",
+      expectedDelivery: "2023-11-05",
+      actualDelivery: null,
+      paymentTerms: "net30",
+      notes: "Bulk order for Q4",
+      timeline: [
+        {
+          date: "2023-10-10",
+          status: "Draft",
+          description: "Purchase order created",
+        },
+      ],
+    },
+    {
+      id: "PO-2023-004",
+      date: "2023-10-05",
+      supplier: "Prime Distributors",
+      supplierId: "supplier4",
+      items: [
+        {
+          name: "Premium Notebook Set",
+          quantity: 500,
+          unitPrice: 12.5,
+          total: 6250.0,
+        },
+        {
+          name: "Bluetooth Portable Speaker",
+          quantity: 100,
+          unitPrice: 30.0,
+          total: 3000.0,
+        },
+      ],
+      subtotal: 9250.0,
+      tax: 1665.0,
+      shipping: 450.0,
+      total: 11365.0,
+      status: "received",
+      expectedDelivery: "2023-10-20",
+      actualDelivery: "2023-10-18",
+      paymentTerms: "cod",
+      notes: "Early delivery requested",
+      timeline: [
+        {
+          date: "2023-10-05",
+          status: "Ordered",
+          description: "Purchase order submitted",
+        },
+        {
+          date: "2023-10-06",
+          status: "Confirmed",
+          description: "Supplier confirmed order",
+        },
+        {
+          date: "2023-10-18",
+          status: "Received",
+          description: "Order delivered 2 days early",
+        },
+      ],
+    },
+    {
+      id: "PO-2023-005",
+      date: "2023-10-01",
+      supplier: "Supplier ABC",
+      supplierId: "supplier1",
+      items: [
+        {
+          name: "Wireless Gaming Mouse",
+          quantity: 75,
+          unitPrice: 40.0,
+          total: 3000.0,
+        },
+      ],
+      subtotal: 3000.0,
+      tax: 540.0,
+      shipping: 100.0,
+      total: 3640.0,
+      status: "cancelled",
+      expectedDelivery: "2023-10-15",
+      actualDelivery: null,
+      paymentTerms: "net30",
+      notes: "Cancelled due to quality concerns",
+      timeline: [
+        {
+          date: "2023-10-01",
+          status: "Ordered",
+          description: "Purchase order submitted",
+        },
+        {
+          date: "2023-10-10",
+          status: "Cancelled",
+          description: "Order cancelled after quality review",
+        },
+      ],
+    },
+    {
+      id: "PO-2023-006",
+      date: "2023-09-28",
+      supplier: "Supplier XYZ",
+      supplierId: "supplier2",
+      items: [
+        {
+          name: "Ergonomic Office Chair",
+          quantity: 15,
+          unitPrice: 155.0,
+          total: 2325.0,
+        },
+        {
+          name: "Desk Accessories Set",
+          quantity: 50,
+          unitPrice: 35.0,
+          total: 1750.0,
+        },
+      ],
+      subtotal: 4075.0,
+      tax: 733.5,
+      shipping: 180.0,
+      total: 4988.5,
+      status: "overdue",
+      expectedDelivery: "2023-10-10",
+      actualDelivery: null,
+      paymentTerms: "net45",
+      notes: "Follow up required - delayed shipment",
+      timeline: [
+        {
+          date: "2023-09-28",
+          status: "Ordered",
+          description: "Purchase order submitted",
+        },
+        {
+          date: "2023-09-30",
+          status: "Confirmed",
+          description: "Supplier confirmed order",
+        },
+      ],
+    },
+  ],
+  suppliers: [
+    {
+      id: "supplier1",
+      name: "Supplier ABC",
+      contact: "John Smith",
+      email: "john@supplierabc.com",
+      phone: "+91 98765 43210",
+      orders: 24,
+      totalSpent: 245680.5,
+      rating: 4.5,
+      leadTime: "3-5 days",
+      status: "active",
+    },
+    {
+      id: "supplier2",
+      name: "Supplier XYZ",
+      contact: "Sarah Johnson",
+      email: "sarah@supplierxyz.com",
+      phone: "+91 98765 43211",
+      orders: 18,
+      totalSpent: 189450.75,
+      rating: 4.2,
+      leadTime: "5-7 days",
+      status: "active",
+    },
+    {
+      id: "supplier3",
+      name: "Global Supplies Inc.",
+      contact: "Michael Chen",
+      email: "michael@globalsupplies.com",
+      phone: "+91 98765 43212",
+      orders: 12,
+      totalSpent: 156820.3,
+      rating: 4.7,
+      leadTime: "7-10 days",
+      status: "active",
+    },
+    {
+      id: "supplier4",
+      name: "Prime Distributors",
+      contact: "Emily Davis",
+      email: "emily@primedistributors.com",
+      phone: "+91 98765 43213",
+      orders: 8,
+      totalSpent: 98450.6,
+      rating: 4.0,
+      leadTime: "10-14 days",
+      status: "active",
+    },
+  ],
+  reorderSuggestions: [
+    {
+      product: "Smart Fitness Watch",
+      currentStock: 3,
+      minStock: 10,
+      reorderQty: 25,
+      lastPurchase: "2023-10-18",
+      suggestedSupplier: "Supplier ABC",
+      leadTime: "3-5 days",
+    },
+    {
+      product: "Wireless Gaming Mouse",
+      currentStock: 5,
+      minStock: 10,
+      reorderQty: 50,
+      lastPurchase: "2023-10-01",
+      suggestedSupplier: "Supplier ABC",
+      leadTime: "3-5 days",
+    },
+    {
+      product: "Desk Lamp with Wireless Charger",
+      currentStock: 0,
+      minStock: 15,
+      reorderQty: 100,
+      lastPurchase: "2023-10-10",
+      suggestedSupplier: "Global Supplies Inc.",
+      leadTime: "7-10 days",
+    },
+    {
+      product: "Ergonomic Office Chair",
+      currentStock: 12,
+      minStock: 5,
+      reorderQty: 20,
+      lastPurchase: "2023-10-15",
+      suggestedSupplier: "Supplier XYZ",
+      leadTime: "5-7 days",
+    },
+  ],
+  products: [
+    {
+      id: "P001",
+      name: "Wireless Bluetooth Headphones",
+      price: 45.5,
+      stock: 45,
+    },
+    {
+      id: "P002",
+      name: "Ergonomic Office Chair",
+      price: 150.0,
+      stock: 12,
+    },
+    { id: "P003", name: "Smart Fitness Watch", price: 120.0, stock: 3 },
+    {
+      id: "P004",
+      name: "Desk Lamp with Wireless Charger",
+      price: 25.0,
+      stock: 0,
+    },
+    { id: "P005", name: "Premium Notebook Set", price: 12.5, stock: 120 },
+    { id: "P006", name: "Wireless Gaming Mouse", price: 40.0, stock: 5 },
+    {
+      id: "P007",
+      name: "Stainless Steel Water Bottle",
+      price: 15.0,
+      stock: 65,
+    },
+    {
+      id: "P008",
+      name: "Bluetooth Portable Speaker",
+      price: 30.0,
+      stock: 18,
+    },
+    { id: "P009", name: "Desk Accessories Set", price: 35.0, stock: 25 },
+  ],
+};
 
-            // Generate a new reference number
-            generateReferenceNumber();
-        }
+// Initialize charts
+function initializeCharts() {
+  // Purchase Trend Chart
+  const purchaseCtx = document.getElementById("purchaseChart").getContext("2d");
+  const purchaseChart = new Chart(purchaseCtx, {
+    type: "bar",
+    data: {
+      labels: ["Sep", "Oct", "Nov", "Dec", "Jan", "Feb"],
+      datasets: [
+        {
+          label: "Purchase Value (₹)",
+          data: [125000, 156420, 142000, 168000, 135000, 152000],
+          backgroundColor: "#3498db",
+          borderColor: "#2980b9",
+          borderWidth: 1,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          position: "top",
+        },
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            callback: function (value) {
+              return "$" + value.toLocaleString();
+            },
+          },
+        },
+      },
+    },
+  });
 
-        // Setup all event listeners
-        function setupEventListeners() {
-            // Modal open/close buttons
-            document.getElementById('newPurchaseBtn').addEventListener('click', openPurchaseModal);
-            document.getElementById('closeModal').addEventListener('click', closePurchaseModal);
-            document.getElementById('cancelPurchase').addEventListener('click', closePurchaseModal);
+  // Supplier Distribution Chart
+  const supplierCtx = document.getElementById("supplierChart").getContext("2d");
+  const supplierChart = new Chart(supplierCtx, {
+    type: "doughnut",
+    data: {
+      labels: [
+        "Supplier ABC",
+        "Supplier XYZ",
+        "Global Supplies",
+        "Prime Distributors",
+      ],
+      datasets: [
+        {
+          data: [45, 25, 20, 10],
+          backgroundColor: ["#3498db", "#9b59b6", "#2ecc71", "#f39c12"],
+          borderWidth: 1,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          position: "bottom",
+        },
+      },
+    },
+  });
 
-            document.getElementById('addSupplierBtn').addEventListener('click', openSupplierModal);
-            document.getElementById('closeSupplierModal').addEventListener('click', closeSupplierModal);
-            document.getElementById('cancelSupplier').addEventListener('click', closeSupplierModal);
+  // Update chart on period change
+  document
+    .getElementById("purchasePeriod")
+    .addEventListener("change", function () {
+      // In a real app, you would fetch new data based on the selected period
+      purchaseChart.update();
+      supplierChart.update();
+    });
+}
 
-            document.getElementById('filterBtn').addEventListener('click', openFilterModal);
-            document.getElementById('closeFilterModal').addEventListener('click', closeFilterModal);
-            document.getElementById('resetFilters').addEventListener('click', resetFilters);
-            document.getElementById('applyFilters').addEventListener('click', applyFilters);
+// Load purchase data into tables
+function loadPurchaseData() {
+  loadPurchaseTable();
+  loadDraftTable();
+  loadReorderTable();
+  loadSuppliersTable();
+  updatePurchaseOverview();
+}
 
-            // Quick action buttons
-            document.getElementById('quickPurchaseBtn').addEventListener('click', quickPurchase);
-            document.getElementById('reorderBtn').addEventListener('click', reorderItems);
-            document.getElementById('bulkUploadBtn').addEventListener('click', bulkUpload);
-            document.getElementById('reportsBtn').addEventListener('click', showReports);
+// Load purchase orders table
+function loadPurchaseTable() {
+  const purchaseTable = document.getElementById("purchaseTable");
+  purchaseTable.innerHTML = "";
 
-            // Table actions
-            document.getElementById('selectAll').addEventListener('change', toggleSelectAll);
-            document.getElementById('exportBtn').addEventListener('click', exportPurchases);
-            document.getElementById('refreshBtn').addEventListener('click', refreshData);
+  purchaseData.orders.forEach((order) => {
+    const row = document.createElement("tr");
 
-            // Pagination
-            document.getElementById('prevPage').addEventListener('click', previousPage);
-            document.getElementById('nextPage').addEventListener('click', nextPage);
+    // Calculate total items
+    const totalItems = order.items.reduce(
+      (sum, item) => sum + item.quantity,
+      0
+    );
 
-            // Form submission
-            document.getElementById('purchaseForm').addEventListener('submit', submitPurchase);
-            document.getElementById('supplierForm').addEventListener('submit', saveSupplier);
-            document.getElementById('saveDraftBtn').addEventListener('click', saveAsDraft);
+    // Determine status badge
+    let statusClass = "";
+    let statusText = "";
+    switch (order.status) {
+      case "draft":
+        statusClass = "status-draft";
+        statusText = "Draft";
+        break;
+      case "pending":
+        statusClass = "status-pending";
+        statusText = "Pending";
+        break;
+      case "ordered":
+        statusClass = "status-ordered";
+        statusText = "Ordered";
+        break;
+      case "received":
+        statusClass = "status-received";
+        statusText = "Received";
+        break;
+      case "cancelled":
+        statusClass = "status-cancelled";
+        statusText = "Cancelled";
+        break;
+      case "overdue":
+        statusClass = "status-pending";
+        statusText = "Overdue";
+        break;
+    }
 
-            // Search functionality
-            document.getElementById('searchInput').addEventListener('input', debounce(searchPurchases, 300));
+    // Check if order is overdue
+    const today = new Date();
+    const expectedDate = new Date(order.expectedDelivery);
+    let isOverdue = false;
 
-            // Dynamic item addition in purchase form
-            document.getElementById('addItemBtn').addEventListener('click', addItemRow);
+    if (order.status === "ordered" || order.status === "pending") {
+      if (today > expectedDate) {
+        statusClass = "status-pending";
+        statusText = "Overdue";
+        isOverdue = true;
+      }
+    }
 
-            // Recalculate totals when item values change
-            document.addEventListener('input', function (e) {
-                if (e.target.matches('.item-quantity, .item-price, #taxRate, #discount')) {
-                    calculateTotals();
-                }
-            });
-
-            // Setup sidebar navigation
-            setupSidebarNavigation();
-        }
-
-        // Load sample purchase data
-        function loadPurchaseData() {
-            purchaseData = [
-                {
-                    id: 1,
-                    reference: 'PO-2024-001',
-                    supplier: 'Dell Cambodia',
-                    date: '2024-03-15',
-                    items: [
-                        { name: 'Laptop Dell XPS 13', quantity: 5, price: 1200, total: 6000 }
-                    ],
-                    status: 'completed',
-                    total: 6000,
-                    tax: 600,
-                    discount: 0,
-                    finalTotal: 6600,
-                    recordedBy: 'Admin User',
-                    notes: 'Regular inventory replenishment'
-                },
-                {
-                    id: 2,
-                    reference: 'PO-2024-002',
-                    supplier: 'Logitech Inc.',
-                    date: '2024-03-14',
-                    items: [
-                        { name: 'Wireless Mouse MX Master', quantity: 20, price: 25, total: 500 },
-                        { name: 'Mechanical Keyboard', quantity: 10, price: 80, total: 800 }
-                    ],
-                    status: 'completed',
-                    total: 1300,
-                    tax: 130,
-                    discount: 50,
-                    finalTotal: 1380,
-                    recordedBy: 'Admin User',
-                    notes: 'Office equipment upgrade'
-                },
-                {
-                    id: 3,
-                    reference: 'PO-2024-003',
-                    supplier: 'Samsung Electronics',
-                    date: '2024-03-10',
-                    items: [
-                        { name: '27" 4K Monitor', quantity: 8, price: 300, total: 2400 }
-                    ],
-                    status: 'pending',
-                    total: 2400,
-                    tax: 240,
-                    discount: 100,
-                    finalTotal: 2540,
-                    recordedBy: 'John Doe',
-                    notes: 'Pending approval from management'
-                },
-                {
-                    id: 4,
-                    reference: 'PO-2024-004',
-                    supplier: 'Razer Inc.',
-                    date: '2024-03-05',
-                    items: [
-                        { name: 'Gaming Mouse', quantity: 15, price: 60, total: 900 },
-                        { name: 'Gaming Keyboard', quantity: 10, price: 120, total: 1200 }
-                    ],
-                    status: 'completed',
-                    total: 2100,
-                    tax: 210,
-                    discount: 0,
-                    finalTotal: 2310,
-                    recordedBy: 'Jane Smith',
-                    notes: 'For gaming department'
-                },
-                {
-                    id: 5,
-                    reference: 'PO-2024-005',
-                    supplier: 'Apple Inc.',
-                    date: '2024-03-01',
-                    items: [
-                        { name: 'MacBook Pro 16"', quantity: 3, price: 2400, total: 7200 },
-                        { name: 'Magic Mouse', quantity: 5, price: 80, total: 400 }
-                    ],
-                    status: 'cancelled',
-                    total: 7600,
-                    tax: 760,
-                    discount: 200,
-                    finalTotal: 8160,
-                    recordedBy: 'Admin User',
-                    notes: 'Cancelled due to budget constraints'
-                },
-                {
-                    id: 6,
-                    reference: 'PO-2024-006',
-                    supplier: 'HP Inc.',
-                    date: '2024-02-28',
-                    items: [
-                        { name: 'HP LaserJet Printer', quantity: 4, price: 400, total: 1600 }
-                    ],
-                    status: 'draft',
-                    total: 1600,
-                    tax: 160,
-                    discount: 0,
-                    finalTotal: 1760,
-                    recordedBy: 'Admin User',
-                    notes: 'Draft - awaiting supplier confirmation'
-                },
-                {
-                    id: 7,
-                    reference: 'PO-2024-007',
-                    supplier: 'Microsoft',
-                    date: '2024-02-25',
-                    items: [
-                        { name: 'Surface Laptop 5', quantity: 6, price: 1300, total: 7800 },
-                        { name: 'Surface Pen', quantity: 10, price: 60, total: 600 }
-                    ],
-                    status: 'completed',
-                    total: 8400,
-                    tax: 840,
-                    discount: 300,
-                    finalTotal: 8940,
-                    recordedBy: 'John Doe',
-                    notes: 'For executive team'
-                },
-                {
-                    id: 8,
-                    reference: 'PO-2024-008',
-                    supplier: 'Lenovo',
-                    date: '2024-02-20',
-                    items: [
-                        { name: 'ThinkPad X1 Carbon', quantity: 8, price: 1500, total: 12000 }
-                    ],
-                    status: 'pending',
-                    total: 12000,
-                    tax: 1200,
-                    discount: 500,
-                    finalTotal: 12700,
-                    recordedBy: 'Jane Smith',
-                    notes: 'For IT department upgrade'
-                }
-            ];
-
-            renderPurchaseTable();
-            updateTableSummary();
-        }
-
-        // Load sample suppliers data
-        function loadSuppliers() {
-            suppliersData = [
-                {
-                    id: 1,
-                    name: 'Dell Cambodia',
-                    contactPerson: 'John Doe',
-                    email: 'john@dellcambodia.com',
-                    phone: '+855 12 345 678',
-                    address: 'Phnom Penh, Cambodia',
-                    category: 'Electronics',
-                    paymentTerms: 'Net 30 Days',
-                    totalPurchases: 5,
-                    lastOrder: '2024-03-15'
-                },
-                {
-                    id: 2,
-                    name: 'Logitech Inc.',
-                    contactPerson: 'Jane Smith',
-                    email: 'jane@logitech.com',
-                    phone: '+855 98 765 432',
-                    address: 'Phnom Penh, Cambodia',
-                    category: 'Accessories',
-                    paymentTerms: 'Net 60 Days',
-                    totalPurchases: 3,
-                    lastOrder: '2024-03-14'
-                },
-                {
-                    id: 3,
-                    name: 'Samsung Electronics',
-                    contactPerson: 'Robert Chen',
-                    email: 'robert@samsung.com',
-                    phone: '+855 11 222 333',
-                    address: 'Seoul, South Korea',
-                    category: 'Electronics',
-                    paymentTerms: 'Immediate',
-                    totalPurchases: 2,
-                    lastOrder: '2024-03-10'
-                },
-                {
-                    id: 4,
-                    name: 'Razer Inc.',
-                    contactPerson: 'Mike Johnson',
-                    email: 'mike@razer.com',
-                    phone: '+855 44 555 666',
-                    address: 'Singapore',
-                    category: 'Gaming',
-                    paymentTerms: 'Net 30 Days',
-                    totalPurchases: 1,
-                    lastOrder: '2024-03-05'
-                }
-            ];
-
-            renderSuppliers();
-        }
-
-        // Render purchase table
-        function renderPurchaseTable() {
-            const tableBody = document.getElementById('purchasesTableBody');
-            const filteredData = filterPurchases(purchaseData);
-            const paginatedData = paginateData(filteredData);
-
-            if (paginatedData.length === 0) {
-                tableBody.innerHTML = `
-            <tr>
-                <td colspan="9" class="empty-table">
-                    <div class="empty-state">
-                        <i class="fas fa-shopping-cart"></i>
-                        <p>No purchase orders found</p>
-                        <button class="btn-primary" id="createFirstPurchase">Create Your First Purchase</button>
-                    </div>
-                </td>
-            </tr>
-        `;
-
-                document.getElementById('createFirstPurchase')?.addEventListener('click', openPurchaseModal);
-                return;
-            }
-
-            tableBody.innerHTML = paginatedData.map(purchase => `
-        <tr data-id="${purchase.id}">
-            <td class="checkbox-col">
-                <input type="checkbox" class="row-checkbox" value="${purchase.id}">
-            </td>
-            <td>
-                <div class="reference-number">
-                    <strong>${purchase.reference}</strong>
-                    <div class="reference-actions">
-                        <button class="action-btn view" onclick="viewPurchase(${purchase.id})" title="View">
+    row.innerHTML = `
+                    <td><strong>${order.id}</strong></td>
+                    <td>${order.date}</td>
+                    <td>${order.supplier}</td>
+                    <td>${totalItems} items</td>
+                    <td><strong>$${order.total.toLocaleString()}</strong></td>
+                    <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                    <td>${order.expectedDelivery} ${
+      isOverdue ? '<span style="color: var(--accent-color);">⚠️</span>' : ""
+    }</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="viewPurchaseDetails('${
+                          order.id
+                        }')">
                             <i class="fas fa-eye"></i>
                         </button>
-                        <button class="action-btn copy" onclick="copyReference('${purchase.reference}')" title="Copy Reference">
-                            <i class="fas fa-copy"></i>
+                        <button class="btn btn-sm btn-warning" onclick="editPurchaseOrder('${
+                          order.id
+                        }')">
+                            <i class="fas fa-edit"></i>
                         </button>
+                        <button class="btn btn-sm btn-danger" onclick="deletePurchaseOrder('${
+                          order.id
+                        }')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+    purchaseTable.appendChild(row);
+  });
+}
+
+// Load draft orders table
+function loadDraftTable() {
+  const draftTable = document.getElementById("draftTable");
+  draftTable.innerHTML = "";
+
+  const draftOrders = purchaseData.orders.filter(
+    (order) => order.status === "pending"
+  );
+
+  if (draftOrders.length === 0) {
+    draftTable.innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 40px; color: #7f8c8d;">
+                            <i class="fas fa-edit" style="font-size: 40px; margin-bottom: 15px;"></i>
+                            <div>No draft orders found</div>
+                        </td>
+                    </tr>
+                `;
+    return;
+  }
+
+  draftOrders.forEach((order) => {
+    const row = document.createElement("tr");
+
+    // Calculate total items
+    const totalItems = order.items.reduce(
+      (sum, item) => sum + item.quantity,
+      0
+    );
+
+    row.innerHTML = `
+                    <td><strong>${order.id}</strong></td>
+                    <td>${order.date}</td>
+                    <td>${order.supplier}</td>
+                    <td>${totalItems} items</td>
+                    <td><strong>$${order.total.toLocaleString()}</strong></td>
+                    <td>
+                        <button class="btn btn-sm btn-success" onclick="submitPurchaseOrder('${
+                          order.id
+                        }')">
+                            <i class="fas fa-paper-plane"></i> Submit
+                        </button>
+                        <button class="btn btn-sm btn-warning" onclick="editPurchaseOrder('${
+                          order.id
+                        }')">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="deletePurchaseOrder('${
+                          order.id
+                        }')">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </td>
+                `;
+    draftTable.appendChild(row);
+  });
+}
+
+// Load reorder suggestions table
+function loadReorderTable() {
+  const reorderTable = document.getElementById("reorderTable");
+  reorderTable.innerHTML = "";
+
+  purchaseData.reorderSuggestions.forEach((suggestion) => {
+    const row = document.createElement("tr");
+
+    // Determine stock status
+    let stockStatus = "";
+    if (suggestion.currentStock === 0) {
+      stockStatus =
+        '<span style="color: var(--accent-color); font-weight: 600;">Out of Stock</span>';
+    } else if (suggestion.currentStock <= suggestion.minStock) {
+      stockStatus =
+        '<span style="color: var(--warning-color); font-weight: 600;">Low Stock</span>';
+    } else {
+      stockStatus =
+        '<span style="color: var(--success-color); font-weight: 600;">Adequate</span>';
+    }
+
+    row.innerHTML = `
+                    <td><strong>${suggestion.product}</strong><br>${stockStatus}</td>
+                    <td>${suggestion.currentStock}</td>
+                    <td>${suggestion.minStock}</td>
+                    <td>${suggestion.reorderQty}</td>
+                    <td>${suggestion.lastPurchase}</td>
+                    <td>${suggestion.suggestedSupplier}<br><small>${suggestion.leadTime}</small></td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="createReorder('${suggestion.product}')">
+                            <i class="fas fa-cart-plus"></i> Reorder
+                        </button>
+                    </td>
+                `;
+    reorderTable.appendChild(row);
+  });
+}
+
+// Load suppliers table
+function loadSuppliersTable() {
+  const suppliersTable = document.getElementById("suppliersTable");
+  suppliersTable.innerHTML = "";
+
+  purchaseData.suppliers.forEach((supplier) => {
+    const row = document.createElement("tr");
+
+    // Generate star rating
+    let stars = "";
+    const fullStars = Math.floor(supplier.rating);
+    const hasHalfStar = supplier.rating % 1 >= 0.5;
+
+    for (let i = 0; i < fullStars; i++) {
+      stars += '<i class="fas fa-star" style="color: #f39c12;"></i>';
+    }
+
+    if (hasHalfStar) {
+      stars += '<i class="fas fa-star-half-alt" style="color: #f39c12;"></i>';
+    }
+
+    const emptyStars = 5 - Math.ceil(supplier.rating);
+    for (let i = 0; i < emptyStars; i++) {
+      stars += '<i class="far fa-star" style="color: #f39c12;"></i>';
+    }
+
+    row.innerHTML = `
+                    <td><strong>${supplier.name}</strong><br><small>${
+      supplier.contact
+    }</small></td>
+                    <td>${supplier.email}<br>${supplier.phone}</td>
+                    <td>${supplier.orders}</td>
+                    <td><strong>$${supplier.totalSpent.toLocaleString()}</strong></td>
+                    <td>${stars}<br><small>${supplier.rating}/5</small></td>
+                    <td>${supplier.leadTime}</td>
+                    <td><span class="status-badge status-received">${
+                      supplier.status
+                    }</span></td>
+                `;
+    suppliersTable.appendChild(row);
+  });
+}
+
+// Update purchase overview statistics
+function updatePurchaseOverview() {
+  const totalPurchaseValue = purchaseData.orders.reduce(
+    (sum, order) => sum + order.total,
+    0
+  );
+  const completedOrders = purchaseData.orders.filter(
+    (order) => order.status === "received"
+  ).length;
+  const pendingOrders = purchaseData.orders.filter(
+    (order) => order.status === "pending" || order.status === "draft"
+  ).length;
+
+  // Calculate overdue orders
+  const today = new Date();
+  const overdueOrders = purchaseData.orders.filter((order) => {
+    if (order.status === "ordered" || order.status === "pending") {
+      const expectedDate = new Date(order.expectedDelivery);
+      return today > expectedDate;
+    }
+    return false;
+  }).length;
+
+  document.getElementById(
+    "totalPurchaseValue"
+  ).textContent = `$${totalPurchaseValue.toLocaleString()}`;
+  document.getElementById("completedOrders").textContent = completedOrders;
+  document.getElementById("pendingOrders").textContent = pendingOrders;
+  document.getElementById("overdueOrders").textContent = overdueOrders;
+}
+
+// View purchase order details
+function viewPurchaseDetails(orderId) {
+  const order = purchaseData.orders.find((o) => o.id === orderId);
+  if (!order) return;
+
+  document.getElementById(
+    "purchaseDetailsTitle"
+  ).textContent = `Purchase Order: ${order.id}`;
+
+  // Determine status badge
+  let statusClass = "";
+  let statusText = "";
+  switch (order.status) {
+    case "draft":
+      statusClass = "status-draft";
+      statusText = "Draft";
+      break;
+    case "pending":
+      statusClass = "status-pending";
+      statusText = "Pending";
+      break;
+    case "ordered":
+      statusClass = "status-ordered";
+      statusText = "Ordered";
+      break;
+    case "received":
+      statusClass = "status-received";
+      statusText = "Received";
+      break;
+    case "cancelled":
+      statusClass = "status-cancelled";
+      statusText = "Cancelled";
+      break;
+  }
+
+  // Check if order is overdue
+  const today = new Date();
+  const expectedDate = new Date(order.expectedDelivery);
+  let isOverdue = false;
+
+  if (order.status === "ordered" || order.status === "pending") {
+    if (today > expectedDate) {
+      statusClass = "status-pending";
+      statusText = "Overdue";
+      isOverdue = true;
+    }
+  }
+
+  // Generate items list HTML
+  let itemsHtml = "";
+  order.items.forEach((item, index) => {
+    itemsHtml += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${item.name}</td>
+                        <td>$${item.unitPrice.toFixed(2)}</td>
+                        <td>${item.quantity}</td>
+                        <td>₹${item.total.toFixed(2)}</td>
+                    </tr>
+                `;
+  });
+
+  // Generate timeline HTML
+  let timelineHtml = "";
+  order.timeline.forEach((event, index) => {
+    const isCompleted =
+      index < order.timeline.length - 1 ||
+      order.status === "received" ||
+      order.status === "cancelled";
+    const isActive =
+      index === order.timeline.length - 1 &&
+      (order.status === "ordered" || order.status === "pending");
+
+    let timelineClass = "";
+    if (isCompleted) {
+      timelineClass = "completed";
+    } else if (isActive) {
+      timelineClass = "active";
+    }
+
+    timelineHtml += `
+                    <div class="timeline-item ${timelineClass}">
+                        <div class="timeline-content">
+                            <div class="timeline-date">${event.date}</div>
+                            <div class="timeline-text">${event.status}</div>
+                            <div style="font-size: 14px; color: #7f8c8d;">${event.description}</div>
+                        </div>
+                    </div>
+                `;
+  });
+
+  const detailsContent = document.getElementById("purchaseDetailsContent");
+  detailsContent.innerHTML = `
+                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 30px; margin-bottom: 30px;">
+                    <div>
+                        <h4 style="margin-bottom: 15px;">Order Information</h4>
+                        <table style="width: 100%;">
+                            <tr>
+                                <td style="padding: 8px 0; color: #7f8c8d;">PO Number:</td>
+                                <td style="padding: 8px 0; font-weight: 600;">${
+                                  order.id
+                                }</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px 0; color: #7f8c8d;">Order Date:</td>
+                                <td style="padding: 8px 0; font-weight: 600;">${
+                                  order.date
+                                }</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px 0; color: #7f8c8d;">Order Status:</td>
+                                <td style="padding: 8px 0;"><span class="status-badge ${statusClass}">${statusText}</span></td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px 0; color: #7f8c8d;">Payment Terms:</td>
+                                <td style="padding: 8px 0; font-weight: 600;">
+                                    ${
+                                      order.paymentTerms === "net30"
+                                        ? "Net 30 Days"
+                                        : order.paymentTerms === "net45"
+                                        ? "Net 45 Days"
+                                        : order.paymentTerms === "net60"
+                                        ? "Net 60 Days"
+                                        : order.paymentTerms === "cod"
+                                        ? "Cash on Delivery"
+                                        : "Prepaid"
+                                    }
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div>
+                        <h4 style="margin-bottom: 15px;">Supplier Information</h4>
+                        <table style="width: 100%;">
+                            <tr>
+                                <td style="padding: 8px 0; color: #7f8c8d;">Supplier:</td>
+                                <td style="padding: 8px 0; font-weight: 600;">${
+                                  order.supplier
+                                }</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px 0; color: #7f8c8d;">Expected Delivery:</td>
+                                <td style="padding: 8px 0; font-weight: 600; ${
+                                  isOverdue ? "color: var(--accent-color);" : ""
+                                }">
+                                    ${order.expectedDelivery} ${
+    isOverdue ? " (Overdue)" : ""
+  }
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px 0; color: #7f8c8d;">Actual Delivery:</td>
+                                <td style="padding: 8px 0; font-weight: 600;">${
+                                  order.actualDelivery || "Not yet delivered"
+                                }</td>
+                            </tr>
+                        </table>
                     </div>
                 </div>
-            </td>
-            <td>
-                <div class="supplier-info">
-                    <strong>${purchase.supplier}</strong>
-                    <small>${formatDate(purchase.date)}</small>
-                </div>
-            </td>
-            <td>${formatDate(purchase.date)}</td>
-            <td>
-                <div class="items-count">
-                    <i class="fas fa-box"></i>
-                    ${purchase.items.length} item${purchase.items.length > 1 ? 's' : ''}
-                    <div class="items-preview">
-                        ${purchase.items.map(item => `${item.name} (${item.quantity})`).join(', ')}
+                
+                <div style="margin-bottom: 30px;">
+                    <h4 style="margin-bottom: 15px;">Order Timeline</h4>
+                    <div class="timeline">
+                        ${timelineHtml}
                     </div>
                 </div>
-            </td>
-            <td>
-                <span class="status-badge status-${purchase.status}">
-                    ${purchase.status.charAt(0).toUpperCase() + purchase.status.slice(1)}
-                </span>
-            </td>
-            <td>
-                <div class="amount-cell">
-                    <strong>$${purchase.finalTotal.toLocaleString()}</strong>
-                    <small>Subtotal: $${purchase.total.toLocaleString()}</small>
+                
+                <div style="margin-bottom: 30px;">
+                    <h4 style="margin-bottom: 15px;">Order Items</h4>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Product</th>
+                                    <th>Unit Price</th>
+                                    <th>Quantity</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${itemsHtml}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-            </td>
-            <td>${purchase.recordedBy}</td>
-            <td class="actions-cell">
-                <button class="action-btn view" onclick="viewPurchase(${purchase.id})" title="View Details">
-                    <i class="fas fa-eye"></i>
-                </button>
-                <button class="action-btn edit" onclick="editPurchase(${purchase.id})" title="Edit">
-                    <i class="fas fa-edit"></i>
-                </button>
-                <button class="action-btn delete" onclick="deletePurchase(${purchase.id})" title="Delete">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </td>
-        </tr>
-    `).join('');
-
-            updatePaginationControls(filteredData.length);
-        }
-
-        // Filter purchases based on active filters
-        function filterPurchases(data) {
-            return data.filter(purchase => {
-                // Filter by status
-                if (filters.status.length > 0 && !filters.status.includes(purchase.status)) {
-                    return false;
-                }
-
-                // Filter by date range
-                if (filters.startDate && new Date(purchase.date) < new Date(filters.startDate)) {
-                    return false;
-                }
-                if (filters.endDate && new Date(purchase.date) > new Date(filters.endDate)) {
-                    return false;
-                }
-
-                // Filter by supplier
-                if (filters.supplier && purchase.supplier.toLowerCase() !== filters.supplier.toLowerCase()) {
-                    return false;
-                }
-
-                // Filter by amount range
-                if (filters.minAmount !== null && purchase.finalTotal < filters.minAmount) {
-                    return false;
-                }
-                if (filters.maxAmount !== null && purchase.finalTotal > filters.maxAmount) {
-                    return false;
-                }
-
-                return true;
-            });
-        }
-
-        // Paginate data
-        function paginateData(data) {
-            const startIndex = (currentPage - 1) * itemsPerPage;
-            const endIndex = startIndex + itemsPerPage;
-            return data.slice(startIndex, endIndex);
-        }
-
-        // Update pagination controls
-        function updatePaginationControls(totalItems) {
-            const totalPages = Math.ceil(totalItems / itemsPerPage);
-
-            document.getElementById('currentPage').textContent = currentPage;
-            document.getElementById('totalPages').textContent = totalPages;
-            document.getElementById('prevPage').disabled = currentPage === 1;
-            document.getElementById('nextPage').disabled = currentPage === totalPages;
-
-            document.getElementById('showingCount').textContent = Math.min(totalItems, currentPage * itemsPerPage);
-            document.getElementById('totalCount').textContent = totalItems;
-
-            // Calculate total amount for current page
-            const filteredData = filterPurchases(purchaseData);
-            const paginatedData = paginateData(filteredData);
-            const pageTotal = paginatedData.reduce((sum, purchase) => sum + purchase.finalTotal, 0);
-
-            document.getElementById('tableTotal').textContent = `$${pageTotal.toLocaleString()}`;
-        }
-
-        // Previous page
-        function previousPage() {
-            if (currentPage > 1) {
-                currentPage--;
-                renderPurchaseTable();
-            }
-        }
-
-        // Next page
-        function nextPage() {
-            const filteredData = filterPurchases(purchaseData);
-            const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-
-            if (currentPage < totalPages) {
-                currentPage++;
-                renderPurchaseTable();
-            }
-        }
-
-        // Render suppliers
-        function renderSuppliers() {
-            const suppliersGrid = document.getElementById('suppliersGrid');
-
-            suppliersGrid.innerHTML = suppliersData.map(supplier => `
-        <div class="supplier-card" data-id="${supplier.id}">
-            <div class="supplier-header">
-                <div class="supplier-name">${supplier.name}</div>
-                <span class="supplier-category">${supplier.category}</span>
-            </div>
-            <div class="supplier-info">
-                <div><i class="fas fa-user"></i> ${supplier.contactPerson}</div>
-                <div><i class="fas fa-envelope"></i> ${supplier.email}</div>
-                <div><i class="fas fa-phone"></i> ${supplier.phone}</div>
-                <div><i class="fas fa-map-marker-alt"></i> ${supplier.address}</div>
-                <div><i class="fas fa-file-invoice-dollar"></i> ${supplier.paymentTerms}</div>
-                <div><i class="fas fa-shopping-cart"></i> ${supplier.totalPurchases} purchases</div>
-                <div><i class="fas fa-calendar"></i> Last order: ${formatDate(supplier.lastOrder)}</div>
-            </div>
-        </div>
-    `).join('');
-        }
-
-        // Open purchase modal
-        function openPurchaseModal() {
-            document.getElementById('purchaseModal').classList.add('show');
-            document.body.style.overflow = 'hidden';
-
-            // Initialize with one empty item row
-            const itemsTableBody = document.getElementById('itemsTableBody');
-            itemsTableBody.innerHTML = createItemRow();
-            calculateTotals();
-        }
-
-        // Close purchase modal
-        function closePurchaseModal() {
-            document.getElementById('purchaseModal').classList.remove('show');
-            document.body.style.overflow = 'auto';
-
-            // Reset form
-            document.getElementById('purchaseForm').reset();
-            generateReferenceNumber();
-
-            // Reset items table
-            const itemsTableBody = document.getElementById('itemsTableBody');
-            itemsTableBody.innerHTML = createItemRow();
-            calculateTotals();
-        }
-
-        // Open supplier modal
-        function openSupplierModal() {
-            document.getElementById('supplierModal').classList.add('show');
-            document.body.style.overflow = 'hidden';
-        }
-
-        // Close supplier modal
-        function closeSupplierModal() {
-            document.getElementById('supplierModal').classList.remove('show');
-            document.body.style.overflow = 'auto';
-            document.getElementById('supplierForm').reset();
-        }
-
-        // Open filter modal
-        function openFilterModal() {
-            document.getElementById('filterModal').classList.add('show');
-            document.body.style.overflow = 'hidden';
-
-            // Set default date range (last 30 days)
-            const endDate = new Date();
-            const startDate = new Date();
-            startDate.setDate(startDate.getDate() - 30);
-
-            document.getElementById('startDate').value = startDate.toISOString().split('T')[0];
-            document.getElementById('endDate').value = endDate.toISOString().split('T')[0];
-        }
-
-        // Close filter modal
-        function closeFilterModal() {
-            document.getElementById('filterModal').classList.remove('show');
-            document.body.style.overflow = 'auto';
-        }
-
-        // Reset filters
-        function resetFilters() {
-            filters = {
-                status: ['completed', 'pending'],
-                startDate: null,
-                endDate: null,
-                supplier: '',
-                minAmount: null,
-                maxAmount: null
-            };
-
-            // Reset form inputs
-            document.querySelectorAll('#filterModal input[type="checkbox"]').forEach(checkbox => {
-                checkbox.checked = ['completed', 'pending'].includes(checkbox.value);
-            });
-
-            document.getElementById('startDate').value = '';
-            document.getElementById('endDate').value = '';
-            document.getElementById('filterSupplier').value = '';
-            document.getElementById('minAmount').value = '';
-            document.getElementById('maxAmount').value = '';
-
-            applyFilters();
-        }
-
-        // Apply filters
-        function applyFilters() {
-            // Get status filters
-            const statusCheckboxes = document.querySelectorAll('#filterModal input[name="status"]:checked');
-            filters.status = Array.from(statusCheckboxes).map(cb => cb.value);
-
-            // Get date range
-            filters.startDate = document.getElementById('startDate').value || null;
-            filters.endDate = document.getElementById('endDate').value || null;
-
-            // Get supplier filter
-            filters.supplier = document.getElementById('filterSupplier').value || '';
-
-            // Get amount range
-            filters.minAmount = document.getElementById('minAmount').value ? parseFloat(document.getElementById('minAmount').value) : null;
-            filters.maxAmount = document.getElementById('maxAmount').value ? parseFloat(document.getElementById('maxAmount').value) : null;
-
-            // Reset to first page
-            currentPage = 1;
-
-            // Re-render table
-            renderPurchaseTable();
-
-            // Close modal
-            closeFilterModal();
-
-            showToast('Filters applied successfully', 'success');
-        }
-
-        // Create item row for purchase form
-        function createItemRow(index = 0) {
-            return `
-        <tr>
-            <td>
-                <input type="text" class="item-name" placeholder="Item name" required>
-            </td>
-            <td>
-                <input type="number" class="item-quantity" value="1" min="1" step="1" required>
-            </td>
-            <td>
-                <input type="number" class="item-price" value="0" min="0" step="0.01" required>
-            </td>
-            <td>
-                <input type="text" class="item-total" value="$0.00" readonly>
-            </td>
-            <td>
-                <button type="button" class="btn-remove-item" onclick="removeItemRow(this)" ${index === 0 ? 'disabled' : ''}>
-                    <i class="fas fa-times"></i>
-                </button>
-            </td>
-        </tr>
-    `;
-        }
-
-        // Add item row to purchase form
-        function addItemRow() {
-            const itemsTableBody = document.getElementById('itemsTableBody');
-            const rows = itemsTableBody.querySelectorAll('tr');
-            const newRow = createItemRow(rows.length);
-
-            itemsTableBody.insertAdjacentHTML('beforeend', newRow);
-            calculateTotals();
-        }
-
-        // Remove item row from purchase form
-        function removeItemRow(button) {
-            const row = button.closest('tr');
-            row.remove();
-            calculateTotals();
-        }
-
-        // Calculate totals for purchase form
-        function calculateTotals() {
-            const itemsTableBody = document.getElementById('itemsTableBody');
-            const rows = itemsTableBody.querySelectorAll('tr');
-
-            let subtotal = 0;
-
-            rows.forEach(row => {
-                const quantity = parseFloat(row.querySelector('.item-quantity').value) || 0;
-                const price = parseFloat(row.querySelector('.item-price').value) || 0;
-                const total = quantity * price;
-
-                row.querySelector('.item-total').value = `$${total.toFixed(2)}`;
-                subtotal += total;
-            });
-
-            const taxRate = parseFloat(document.getElementById('taxRate').value) || 0;
-            const discount = parseFloat(document.getElementById('discount').value) || 0;
-
-            const taxAmount = subtotal * (taxRate / 100);
-            const totalAmount = subtotal + taxAmount - discount;
-
-            // Update summary
-            document.getElementById('subtotal').textContent = `$${subtotal.toFixed(2)}`;
-            document.getElementById('taxAmount').textContent = `$${taxAmount.toFixed(2)}`;
-            document.getElementById('discountAmount').textContent = `$${discount.toFixed(2)}`;
-            document.getElementById('totalAmount').textContent = `$${totalAmount.toFixed(2)}`;
-        }
-
-        // Generate reference number
-        function generateReferenceNumber() {
-            const today = new Date();
-            const year = today.getFullYear();
-            const month = String(today.getMonth() + 1).padStart(2, '0');
-            const day = String(today.getDate()).padStart(2, '0');
-
-            // Count existing purchases for today
-            const todayPurchases = purchaseData.filter(p => {
-                const purchaseDate = new Date(p.date);
-                return purchaseDate.toDateString() === today.toDateString();
-            });
-
-            const nextNumber = todayPurchases.length + 1;
-            const reference = `PO-${year}${month}${day}-${String(nextNumber).padStart(3, '0')}`;
-
-            document.getElementById('referenceNo').value = reference;
-        }
-
-        // Submit purchase form
-        function submitPurchase(event) {
-            event.preventDefault();
-
-            // Get form data
-            const reference = document.getElementById('referenceNo').value;
-            const date = document.getElementById('purchaseDate').value;
-            const supplier = document.getElementById('supplier').value;
-            const taxRate = parseFloat(document.getElementById('taxRate').value) || 0;
-            const discount = parseFloat(document.getElementById('discount').value) || 0;
-            const notes = document.getElementById('notes').value;
-
-            // Get items
-            const items = [];
-            let subtotal = 0;
-
-            document.querySelectorAll('#itemsTableBody tr').forEach(row => {
-                const name = row.querySelector('.item-name').value;
-                const quantity = parseFloat(row.querySelector('.item-quantity').value) || 0;
-                const price = parseFloat(row.querySelector('.item-price').value) || 0;
-                const total = quantity * price;
-
-                if (name && quantity > 0 && price > 0) {
-                    items.push({ name, quantity, price, total });
-                    subtotal += total;
-                }
-            });
-
-            if (items.length === 0) {
-                showToast('Please add at least one item', 'error');
-                return;
-            }
-
-            // Calculate totals
-            const taxAmount = subtotal * (taxRate / 100);
-            const totalAmount = subtotal + taxAmount - discount;
-
-            // Create new purchase object
-            const newPurchase = {
-                id: purchaseData.length + 1,
-                reference,
-                supplier: document.querySelector(`#supplier option[value="${supplier}"]`).textContent,
-                date,
-                items,
-                status: 'pending',
-                total: subtotal,
-                tax: taxAmount,
-                discount,
-                finalTotal: totalAmount,
-                recordedBy: 'Admin User',
-                notes
-            };
-
-            // Add to purchase data
-            purchaseData.unshift(newPurchase);
-
-            // Save to localStorage (in a real app, this would be an API call)
-            localStorage.setItem('purchaseData', JSON.stringify(purchaseData));
-
-            // Close modal and refresh table
-            closePurchaseModal();
-            renderPurchaseTable();
-            updateTableSummary();
-
-            // Show success message
-            showToast('Purchase order created successfully!', 'success');
-        }
-
-        // Save as draft
-        function saveAsDraft() {
-            // Similar to submit but with draft status
-            const reference = document.getElementById('referenceNo').value;
-            const date = document.getElementById('purchaseDate').value;
-            const supplier = document.getElementById('supplier').value;
-            const taxRate = parseFloat(document.getElementById('taxRate').value) || 0;
-            const discount = parseFloat(document.getElementById('discount').value) || 0;
-            const notes = document.getElementById('notes').value;
-
-            const items = [];
-            let subtotal = 0;
-
-            document.querySelectorAll('#itemsTableBody tr').forEach(row => {
-                const name = row.querySelector('.item-name').value;
-                const quantity = parseFloat(row.querySelector('.item-quantity').value) || 0;
-                const price = parseFloat(row.querySelector('.item-price').value) || 0;
-                const total = quantity * price;
-
-                if (name && quantity > 0 && price > 0) {
-                    items.push({ name, quantity, price, total });
-                    subtotal += total;
-                }
-            });
-
-            const taxAmount = subtotal * (taxRate / 100);
-            const totalAmount = subtotal + taxAmount - discount;
-
-            const draftPurchase = {
-                id: purchaseData.length + 1,
-                reference,
-                supplier: document.querySelector(`#supplier option[value="${supplier}"]`).textContent,
-                date,
-                items,
-                status: 'draft',
-                total: subtotal,
-                tax: taxAmount,
-                discount,
-                finalTotal: totalAmount,
-                recordedBy: 'Admin User',
-                notes
-            };
-
-            purchaseData.unshift(draftPurchase);
-            localStorage.setItem('purchaseData', JSON.stringify(purchaseData));
-
-            closePurchaseModal();
-            renderPurchaseTable();
-            updateTableSummary();
-
-            showToast('Purchase order saved as draft', 'success');
-        }
-
-        // Save supplier
-        function saveSupplier(event) {
-            event.preventDefault();
-
-            const newSupplier = {
-                id: suppliersData.length + 1,
-                name: document.getElementById('supplierName').value,
-                contactPerson: document.getElementById('contactPerson').value,
-                email: document.getElementById('email').value,
-                phone: document.getElementById('phone').value,
-                address: document.getElementById('address').value,
-                paymentTerms: document.getElementById('paymentTerms').value,
-                category: document.getElementById('category').value,
-                totalPurchases: 0,
-                lastOrder: null
-            };
-
-            suppliersData.push(newSupplier);
-            localStorage.setItem('suppliersData', JSON.stringify(suppliersData));
-
-            closeSupplierModal();
-            renderSuppliers();
-
-            // Update supplier dropdown in purchase form
-            const supplierSelect = document.getElementById('supplier');
-            const option = document.createElement('option');
-            option.value = newSupplier.name.toLowerCase().replace(/\s+/g, '-');
-            option.textContent = newSupplier.name;
-            supplierSelect.appendChild(option);
-
-            showToast('Supplier added successfully', 'success');
-        }
-
-        // View purchase details
-        function viewPurchase(purchaseId) {
-            const purchase = purchaseData.find(p => p.id === purchaseId);
-            if (!purchase) return;
-
-            // In a real app, this would open a detailed view modal
-            const message = `
-        <strong>${purchase.reference}</strong><br>
-        Supplier: ${purchase.supplier}<br>
-        Date: ${formatDate(purchase.date)}<br>
-        Status: ${purchase.status}<br>
-        Total: $${purchase.finalTotal.toLocaleString()}<br><br>
-        Items:<br>
-        ${purchase.items.map(item => `• ${item.name} (${item.quantity} × $${item.price}) = $${item.total}`).join('<br>')}
-    `;
-
-            showToast(message, 'info', 5000);
-        }
-
-        // Edit purchase
-        function editPurchase(purchaseId) {
-            const purchase = purchaseData.find(p => p.id === purchaseId);
-            if (!purchase) return;
-
-            // Open modal with purchase data
-            openPurchaseModal();
-
-            // Populate form with purchase data
-            document.getElementById('referenceNo').value = purchase.reference;
-            document.getElementById('purchaseDate').value = purchase.date;
-            document.getElementById('supplier').value = purchase.supplier.toLowerCase().replace(/\s+/g, '-');
-            document.getElementById('taxRate').value = (purchase.tax / purchase.total * 100) || 0;
-            document.getElementById('discount').value = purchase.discount || 0;
-            document.getElementById('notes').value = purchase.notes || '';
-
-            // Populate items
-            const itemsTableBody = document.getElementById('itemsTableBody');
-            itemsTableBody.innerHTML = '';
-
-            purchase.items.forEach((item, index) => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-            <td>
-                <input type="text" class="item-name" value="${item.name}" required>
-            </td>
-            <td>
-                <input type="number" class="item-quantity" value="${item.quantity}" min="1" step="1" required>
-            </td>
-            <td>
-                <input type="number" class="item-price" value="${item.price}" min="0" step="0.01" required>
-            </td>
-            <td>
-                <input type="text" class="item-total" value="$${item.total.toFixed(2)}" readonly>
-            </td>
-            <td>
-                <button type="button" class="btn-remove-item" onclick="removeItemRow(this)" ${index === 0 ? 'disabled' : ''}>
-                    <i class="fas fa-times"></i>
-                </button>
-            </td>
-        `;
-                itemsTableBody.appendChild(row);
-            });
-
-            calculateTotals();
-
-            // Change submit button text
-            document.getElementById('submitPurchaseBtn').innerHTML = '<i class="fas fa-save"></i> Update Purchase Order';
-
-            // Store purchase ID for update
-            document.getElementById('purchaseForm').dataset.editId = purchaseId;
-        }
-
-        // Delete purchase
-        function deletePurchase(purchaseId) {
-            if (!confirm('Are you sure you want to delete this purchase order?')) {
-                return;
-            }
-
-            const index = purchaseData.findIndex(p => p.id === purchaseId);
-            if (index !== -1) {
-                const deleted = purchaseData.splice(index, 1)[0];
-                localStorage.setItem('purchaseData', JSON.stringify(purchaseData));
-
-                renderPurchaseTable();
-                updateTableSummary();
-
-                showToast(`Purchase order ${deleted.reference} deleted`, 'success');
-            }
-        }
-
-        // Copy reference number
-        function copyReference(reference) {
-            navigator.clipboard.writeText(reference)
-                .then(() => showToast('Reference copied to clipboard', 'success'))
-                .catch(() => showToast('Failed to copy reference', 'error'));
-        }
-
-        // Toggle select all checkbox
-        function toggleSelectAll() {
-            const selectAll = document.getElementById('selectAll').checked;
-            document.querySelectorAll('.row-checkbox').forEach(checkbox => {
-                checkbox.checked = selectAll;
-            });
-        }
-
-        // Export purchases
-        function exportPurchases() {
-            const selectedRows = Array.from(document.querySelectorAll('.row-checkbox:checked'))
-                .map(checkbox => parseInt(checkbox.value));
-
-            let dataToExport;
-            if (selectedRows.length > 0) {
-                dataToExport = purchaseData.filter(p => selectedRows.includes(p.id));
-            } else {
-                dataToExport = purchaseData;
-            }
-
-            // Create CSV content
-            const headers = ['Reference', 'Supplier', 'Date', 'Status', 'Total Amount', 'Recorded By'];
-            const csvRows = [
-                headers.join(','),
-                ...dataToExport.map(purchase => [
-                    purchase.reference,
-                    `"${purchase.supplier}"`,
-                    purchase.date,
-                    purchase.status,
-                    `$${purchase.finalTotal}`,
-                    purchase.recordedBy
-                ].join(','))
-            ];
-
-            const csvString = csvRows.join('\n');
-            const blob = new Blob([csvString], { type: 'text/csv' });
-            const url = URL.createObjectURL(blob);
-
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `purchases_export_${new Date().toISOString().split('T')[0]}.csv`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-
-            showToast('Purchases exported successfully', 'success');
-        }
-
-        // Refresh data
-        function refreshData() {
-            // In a real app, this would fetch from server
-            showToast('Refreshing purchase data...', 'info');
-
-            // Simulate API call
-            setTimeout(() => {
-                loadPurchaseData();
-                showToast('Purchase data refreshed', 'success');
-            }, 1000);
-        }
-
-        // Quick purchase action
-        function quickPurchase() {
-            openPurchaseModal();
-
-            // Pre-fill with common items
-            const itemsTableBody = document.getElementById('itemsTableBody');
-            itemsTableBody.innerHTML = `
-        <tr>
-            <td>
-                <input type="text" class="item-name" placeholder="Item name" required>
-            </td>
-            <td>
-                <input type="number" class="item-quantity" value="1" min="1" step="1" required>
-            </td>
-            <td>
-                <input type="number" class="item-price" value="0" min="0" step="0.01" required>
-            </td>
-            <td>
-                <input type="text" class="item-total" value="$0.00" readonly>
-            </td>
-            <td>
-                <button type="button" class="btn-remove-item" onclick="removeItemRow(this)" disabled>
-                    <i class="fas fa-times"></i>
-                </button>
-            </td>
-        </tr>
-    `;
-
-            calculateTotals();
-        }
-
-        // Reorder items
-        function reorderItems() {
-            // In a real app, this would show low stock items
-            showToast('Loading low stock items...', 'info');
-        }
-
-        // Bulk upload
-        function bulkUpload() {
-            // In a real app, this would open file upload dialog
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = '.csv,.xlsx,.xls';
-            input.onchange = function (e) {
-                showToast('File selected. Processing upload...', 'info');
-                // Process file here
-            };
-            input.click();
-        }
-
-        // Show reports
-        function showReports() {
-            showToast('Opening purchase reports...', 'info');
-            // In a real app, this would navigate to reports page
-        }
-
-        // Search purchases
-        function searchPurchases() {
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-
-            const filtered = purchaseData.filter(purchase => {
-                return (
-                    purchase.reference.toLowerCase().includes(searchTerm) ||
-                    purchase.supplier.toLowerCase().includes(searchTerm) ||
-                    purchase.recordedBy.toLowerCase().includes(searchTerm) ||
-                    purchase.items.some(item => item.name.toLowerCase().includes(searchTerm))
-                );
-            });
-
-            // Update display
-            purchaseData = filtered;
-            currentPage = 1;
-            renderPurchaseTable();
-        }
-
-        // Update table summary
-        function updateTableSummary() {
-            const totalPurchases = purchaseData.length;
-            const totalAmount = purchaseData.reduce((sum, p) => sum + p.finalTotal, 0);
-            const pendingOrders = purchaseData.filter(p => p.status === 'pending').length;
-
-            // Update stats cards (in a real app, these would be calculated)
-            document.querySelector('.stat-card:nth-child(1) .stat-value').textContent = `$${totalAmount.toLocaleString()}`;
-            document.querySelector('.stat-card:nth-child(2) .stat-value').textContent = pendingOrders;
-        }
-
-        // Format date
-        function formatDate(dateString) {
-            const date = new Date(dateString);
-            return date.toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric'
-            });
-        }
-
-        // Debounce function for search
-        function debounce(func, wait) {
-            let timeout;
-            return function executedFunction(...args) {
-                const later = () => {
-                    clearTimeout(timeout);
-                    func(...args);
-                };
-                clearTimeout(timeout);
-                timeout = setTimeout(later, wait);
-            };
-        }
-
-        // Setup sidebar navigation
-        function setupSidebarNavigation() {
-            const sidebarItems = document.querySelectorAll('.sidebar li');
-            sidebarItems.forEach(item => {
-                item.addEventListener('click', function () {
-                    sidebarItems.forEach(li => li.classList.remove('active'));
-                    this.classList.add('active');
-
-                    const pageName = this.textContent.trim();
-                    showToast(`Navigating to ${pageName}`, 'info');
-                });
-            });
-        }
-
-        // Show toast notification
-        function showToast(message, type = 'info', duration = 3000) {
-            const toast = document.getElementById('notificationToast');
-            const toastMessage = document.getElementById('toastMessage');
-
-            // Set message
-            toastMessage.innerHTML = message;
-
-            // Set type
-            toast.className = 'toast';
-            toast.classList.add(type);
-
-            // Show toast
-            toast.classList.add('show');
-
-            // Auto hide
-            setTimeout(() => {
-                toast.classList.remove('show');
-            }, duration);
-        }
-
-        // Setup form validation
-        function setupFormValidation() {
-            const forms = document.querySelectorAll('form');
-            forms.forEach(form => {
-                form.addEventListener('submit', function (e) {
-                    if (!form.checkValidity()) {
-                        e.preventDefault();
-                        e.stopPropagation();
-
-                        // Add validation styles
-                        const invalidFields = form.querySelectorAll(':invalid');
-                        invalidFields.forEach(field => {
-                            field.style.borderColor = '#f44336';
-                            field.style.boxShadow = '0 0 0 3px rgba(244, 67, 54, 0.1)';
-
-                            // Reset on next input
-                            field.addEventListener('input', function () {
-                                this.style.borderColor = '';
-                                this.style.boxShadow = '';
-                            }, { once: true });
-                        });
-
-                        showToast('Please fill in all required fields correctly', 'error');
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+                    <div>
+                        <h4 style="margin-bottom: 15px;">Order Notes</h4>
+                        <p style="color: #7f8c8d; font-style: italic;">${
+                          order.notes || "No notes available"
+                        }</p>
+                    </div>
+                    <div>
+                        <h4 style="margin-bottom: 15px;">Order Summary</h4>
+                        <div style="background: #f8f9fa; border-radius: 10px; padding: 20px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                                <span>Subtotal:</span>
+                                <span>$${order.subtotal.toFixed(2)}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                                <span>Tax (18%):</span>
+                                <span>$${order.tax.toFixed(2)}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                                <span>Shipping:</span>
+                                <span>$${order.shipping.toFixed(2)}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px; padding-top: 10px; border-top: 1px solid #ddd; font-weight: 600; font-size: 18px;">
+                                <span>Total:</span>
+                                <span>$${order.total.toFixed(2)}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="display: flex; justify-content: flex-end; gap: 15px; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+                    <button class="btn" onclick="closePurchaseDetailsModal()">Close</button>
+                    <button class="btn btn-primary" onclick="printPurchaseOrder('${
+                      order.id
+                    }')">
+                        <i class="fas fa-print"></i> Print PO
+                    </button>
+                    ${
+                      order.status === "pending" || order.status === "draft"
+                        ? `
+                        <button class="btn btn-success" onclick="submitPurchaseOrder('${order.id}')">
+                            <i class="fas fa-paper-plane"></i> Submit Order
+                        </button>
+                    `
+                        : ""
                     }
-                });
-            });
-        }
-
-        // Initialize modal
-        function initializeModal() {
-            // Close modal when clicking outside
-            const modals = document.querySelectorAll('.modal');
-            modals.forEach(modal => {
-                modal.addEventListener('click', function (e) {
-                    if (e.target === this) {
-                        this.classList.remove('show');
-                        document.body.style.overflow = 'auto';
+                    ${
+                      order.status === "ordered"
+                        ? `
+                        <button class="btn btn-success" onclick="markAsReceived('${order.id}')">
+                            <i class="fas fa-check"></i> Mark as Received
+                        </button>
+                    `
+                        : ""
                     }
-                });
-            });
+                </div>
+            `;
 
-            // Prevent modal body clicks from closing modal
-            document.querySelectorAll('.modal-content').forEach(content => {
-                content.addEventListener('click', function (e) {
-                    e.stopPropagation();
-                });
-            });
-        }
- 
+  document.getElementById("purchaseDetailsModal").classList.add("active");
+}
+
+// Close purchase details modal
+function closePurchaseDetailsModal() {
+  document.getElementById("purchaseDetailsModal").classList.remove("active");
+}
+
+// Edit purchase order
+function editPurchaseOrder(orderId) {
+  const order = purchaseData.orders.find((o) => o.id === orderId);
+  if (!order) return;
+
+  alert(`Editing purchase order: ${orderId}\nThis would open an order editor.`);
+}
+
+// Delete purchase order
+function deletePurchaseOrder(orderId) {
+  if (
+    !confirm(
+      `Are you sure you want to delete purchase order ${orderId}? This action cannot be undone.`
+    )
+  ) {
+    return;
+  }
+
+  // In a real app, you would send a delete request to the server
+  purchaseData.orders = purchaseData.orders.filter(
+    (order) => order.id !== orderId
+  );
+  loadPurchaseTable();
+  loadDraftTable();
+
+  showNotification(
+    `Purchase order ${orderId} deleted successfully!`,
+    "success"
+  );
+}
+
+// Submit purchase order
+function submitPurchaseOrder(orderId) {
+  const order = purchaseData.orders.find((o) => o.id === orderId);
+  if (!order) return;
+
+  if (order.status === "pending" || order.status === "draft") {
+    order.status = "ordered";
+
+    // Add timeline event
+    order.timeline.push({
+      date: new Date().toISOString().split("T")[0],
+      status: "Ordered",
+      description: "Purchase order submitted to supplier",
+    });
+
+    loadPurchaseTable();
+    loadDraftTable();
+    showNotification(
+      `Purchase order ${orderId} submitted successfully!`,
+      "success"
+    );
+  }
+}
+
+// Mark as received
+function markAsReceived(orderId) {
+  const order = purchaseData.orders.find((o) => o.id === orderId);
+  if (!order) return;
+
+  if (order.status === "ordered") {
+    order.status = "received";
+    order.actualDelivery = new Date().toISOString().split("T")[0];
+
+    // Add timeline event
+    order.timeline.push({
+      date: new Date().toISOString().split("T")[0],
+      status: "Received",
+      description: "Order delivered and verified",
+    });
+
+    loadPurchaseTable();
+    showNotification(
+      `Purchase order ${orderId} marked as received!`,
+      "success"
+    );
+  }
+}
+
+// Print purchase order
+function printPurchaseOrder(orderId) {
+  alert(`Printing purchase order: ${orderId}`);
+  // In a real app, this would open a print dialog with the purchase order
+}
+
+// Create reorder from suggestion
+function createReorder(productName) {
+  const suggestion = purchaseData.reorderSuggestions.find(
+    (s) => s.product === productName
+  );
+  if (!suggestion) return;
+
+  showNotification(`Creating reorder for ${productName}...`, "success");
+
+  // In a real app, this would open the new purchase order form with the product pre-selected
+  showNewPurchaseModal();
+}
+
+// Show new purchase order modal
+function showNewPurchaseModal() {
+  document.getElementById("newPurchaseModal").classList.add("active");
+  // Clear any existing items
+  document.getElementById("purchaseItems").innerHTML = "";
+  // Add one empty row
+  addPurchaseItemRow();
+  updatePurchaseSummary();
+}
+
+// Add purchase item row
+function addPurchaseItemRow() {
+  const purchaseItems = document.getElementById("purchaseItems");
+  const rowCount = purchaseItems.children.length;
+
+  const row = document.createElement("tr");
+  row.innerHTML = `
+                <td>
+                    <select class="form-control purchase-product-select" onchange="updatePurchaseProductPrice(this, ${rowCount})">
+                        <option value="">Select Product</option>
+                        ${purchaseData.products
+                          .map(
+                            (product) => `
+                            <option value="${product.id}" data-price="${product.price}">${product.name} (Current: ${product.stock})</option>
+                        `
+                          )
+                          .join("")}
+                    </select>
+                </td>
+                <td>
+                    <input type="number" class="form-control purchase-quantity-input" data-index="${rowCount}" value="1" min="1" onchange="updatePurchaseItemTotal(${rowCount})">
+                </td>
+                <td>
+                    <input type="number" class="form-control purchase-price-input" data-index="${rowCount}" value="0.00" min="0" step="0.01" onchange="updatePurchaseItemTotal(${rowCount})">
+                </td>
+                <td>
+                    <input type="text" class="form-control purchase-total-input" data-index="${rowCount}" value="0.00" readonly>
+                </td>
+                <td>
+                    <button type="button" class="btn btn-danger btn-sm" onclick="removePurchaseItemRow(this)">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            `;
+  purchaseItems.appendChild(row);
+}
+
+// Update purchase product price when selected
+function updatePurchaseProductPrice(selectElement, index) {
+  const selectedOption = selectElement.options[selectElement.selectedIndex];
+  const price = selectedOption.getAttribute("data-price") || "0";
+
+  const priceInput = document.querySelector(
+    `.purchase-price-input[data-index="${index}"]`
+  );
+  priceInput.value = parseFloat(price).toFixed(2);
+  updatePurchaseItemTotal(index);
+}
+
+// Update purchase item total
+function updatePurchaseItemTotal(index) {
+  const priceInput = document.querySelector(
+    `.purchase-price-input[data-index="${index}"]`
+  );
+  const quantityInput = document.querySelector(
+    `.purchase-quantity-input[data-index="${index}"]`
+  );
+  const totalInput = document.querySelector(
+    `.purchase-total-input[data-index="${index}"]`
+  );
+
+  const price = parseFloat(priceInput.value) || 0;
+  const quantity = parseInt(quantityInput.value) || 0;
+  const total = price * quantity;
+
+  totalInput.value = total.toFixed(2);
+  updatePurchaseSummary();
+}
+
+// Remove purchase item row
+function removePurchaseItemRow(button) {
+  const row = button.closest("tr");
+  row.remove();
+  updatePurchaseSummary();
+}
+
+// Update purchase summary
+function updatePurchaseSummary() {
+  let subtotal = 0;
+  const totalInputs = document.querySelectorAll(".purchase-total-input");
+
+  totalInputs.forEach((input) => {
+    subtotal += parseFloat(input.value) || 0;
+  });
+
+  const tax = subtotal * 0.18; // 18% tax
+  const shipping = subtotal > 0 ? 150 : 0; // Example shipping calculation
+  const total = subtotal + tax + shipping;
+
+  document.getElementById(
+    "purchaseSubtotal"
+  ).textContent = `$${subtotal.toFixed(2)}`;
+  document.getElementById("purchaseTax").textContent = `$${tax.toFixed(2)}`;
+  document.getElementById(
+    "purchaseShipping"
+  ).textContent = `$${shipping.toFixed(2)}`;
+  document.getElementById("purchaseTotal").textContent = `$${total.toFixed(2)}`;
+}
+
+// Process new purchase order
+function processNewPurchaseOrder() {
+  const supplier = document.getElementById("purchaseSupplier").value;
+  const purchaseDate = document.getElementById("purchaseDate").value;
+  const expectedDelivery = document.getElementById("expectedDelivery").value;
+  const paymentTerms = document.getElementById("paymentTerms").value;
+  const purchaseNotes = document.getElementById("purchaseNotes").value;
+
+  if (!supplier) {
+    alert("Please select a supplier!");
+    return;
+  }
+
+  // Get supplier name
+  const supplierName =
+    purchaseData.suppliers.find((s) => s.id === supplier)?.name ||
+    "Unknown Supplier";
+
+  // Collect purchase items
+  const items = [];
+  const productSelects = document.querySelectorAll(".purchase-product-select");
+  const quantityInputs = document.querySelectorAll(".purchase-quantity-input");
+
+  let hasItems = false;
+
+  for (let i = 0; i < productSelects.length; i++) {
+    const productSelect = productSelects[i];
+    const productId = productSelect.value;
+    const productName =
+      productSelect.options[productSelect.selectedIndex].text.split(" (")[0];
+    const price =
+      parseFloat(
+        document.querySelector(`.purchase-price-input[data-index="${i}"]`).value
+      ) || 0;
+    const quantity = parseInt(quantityInputs[i].value) || 0;
+
+    if (productId && quantity > 0 && price > 0) {
+      hasItems = true;
+      items.push({
+        name: productName,
+        quantity: quantity,
+        unitPrice: price,
+        total: price * quantity,
+      });
+    }
+  }
+
+  if (!hasItems) {
+    alert("Please add at least one product to the purchase order!");
+    return;
+  }
+
+  // Calculate totals
+  const subtotal = items.reduce((sum, item) => sum + item.total, 0);
+  const tax = subtotal * 0.18;
+  const shipping = subtotal > 0 ? 150 : 0;
+  const total = subtotal + tax + shipping;
+
+  // Generate new purchase order ID
+  const orderId =
+    "PO-" +
+    new Date().getFullYear() +
+    "-" +
+    (purchaseData.orders.length + 1).toString().padStart(3, "0");
+
+  // Create new purchase order
+  const newOrder = {
+    id: orderId,
+    date: purchaseDate,
+    supplier: supplierName,
+    supplierId: supplier,
+    items: items,
+    subtotal: subtotal,
+    tax: tax,
+    shipping: shipping,
+    total: total,
+    status: "pending",
+    expectedDelivery: expectedDelivery,
+    actualDelivery: null,
+    paymentTerms: paymentTerms,
+    notes: purchaseNotes,
+    timeline: [
+      {
+        date: new Date().toISOString().split("T")[0],
+        status: "Draft",
+        description: "Purchase order created",
+      },
+    ],
+  };
+
+  // Add to orders array
+  purchaseData.orders.unshift(newOrder);
+
+  // Close modal and reset form
+  document.getElementById("newPurchaseModal").classList.remove("active");
+  document.getElementById("purchaseForm").reset();
+
+  // Reload data
+  loadPurchaseTable();
+  loadDraftTable();
+
+  // Show success notification
+  showNotification(
+    `New purchase order ${orderId} created successfully!`,
+    "success"
+  );
+}
+
+// Save purchase order as draft
+function savePurchaseAsDraft() {
+  showNotification("Purchase order saved as draft!", "success");
+}
+
+// Show notification
+function showNotification(message, type) {
+  const notification = document.createElement("div");
+  notification.style.position = "fixed";
+  notification.style.top = "20px";
+  notification.style.right = "20px";
+  notification.style.padding = "15px 20px";
+  notification.style.borderRadius = "8px";
+  notification.style.color = "white";
+  notification.style.fontWeight = "600";
+  notification.style.zIndex = "10000";
+  notification.style.boxShadow = "0 5px 15px rgba(0,0,0,0.2)";
+  notification.style.display = "flex";
+  notification.style.alignItems = "center";
+  notification.style.gap = "10px";
+
+  if (type === "success") {
+    notification.style.backgroundColor = "var(--success-color)";
+    notification.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+  } else if (type === "error") {
+    notification.style.backgroundColor = "var(--accent-color)";
+    notification.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
+  } else {
+    notification.style.backgroundColor = "var(--secondary-color)";
+    notification.innerHTML = `<i class="fas fa-info-circle"></i> ${message}`;
+  }
+
+  document.body.appendChild(notification);
+
+  // Remove notification after 3 seconds
+  setTimeout(() => {
+    notification.remove();
+  }, 3000);
+}
+
+// Handle tab switching
+function switchTab(tabName) {
+  // Hide all tabs
+  document.getElementById("allTab").style.display = "none";
+  document.getElementById("draftTab").style.display = "none";
+
+  // Show selected tab
+  if (tabName === "all") {
+    document.getElementById("allTab").style.display = "block";
+  } else if (tabName === "draft") {
+    document.getElementById("draftTab").style.display = "block";
+    loadDraftTable();
+  }
+
+  // Update tab buttons
+  document.querySelectorAll(".tab").forEach((tab) => {
+    tab.classList.remove("active");
+  });
+  event.target.classList.add("active");
+}
+
+// Setup event listeners
+function setupEventListeners() {
+  // Sidebar toggle
+  document
+    .getElementById("sidebarToggle")
+    .addEventListener("click", function () {
+      document.getElementById("sidebar").classList.toggle("collapsed");
+    });
+
+  // Mobile menu toggle
+  document
+    .getElementById("mobileMenuToggle")
+    .addEventListener("click", function () {
+      document.getElementById("sidebar").classList.toggle("active");
+    });
+
+  // Logout buttons
+  document.getElementById("logoutBtn").addEventListener("click", logout);
+  document
+    .getElementById("logoutSidebar")
+    .addEventListener("click", function (e) {
+      e.preventDefault();
+      logout();
+    });
+
+  // Action buttons
+  document
+    .getElementById("newPurchaseBtn")
+    .addEventListener("click", showNewPurchaseModal);
+  document.getElementById("reorderBtn").addEventListener("click", function () {
+    alert(
+      "Auto Reorder feature would automatically create purchase orders for low-stock items."
+    );
+  });
+  document
+    .getElementById("importPurchasesBtn")
+    .addEventListener("click", function () {
+      alert(
+        "Import Purchases feature would allow importing purchase orders from CSV/Excel."
+      );
+    });
+
+  // Apply filters button
+  document
+    .getElementById("applyFiltersBtn")
+    .addEventListener("click", function () {
+      // In a real app, this would filter the purchase orders table
+      showNotification("Filters applied successfully!", "success");
+    });
+
+  // View all suppliers button
+  document
+    .getElementById("viewAllSuppliersBtn")
+    .addEventListener("click", function () {
+      alert("This would show all suppliers in a separate page/modal.");
+    });
+
+  // Generate reorder suggestions button
+  document
+    .getElementById("generateReorderBtn")
+    .addEventListener("click", function () {
+      showNotification(
+        "Reorder suggestions generated successfully!",
+        "success"
+      );
+    });
+
+  // Tab buttons
+  document.querySelectorAll(".tab").forEach((tab) => {
+    tab.addEventListener("click", function () {
+      const tabName = this.getAttribute("data-tab");
+      switchTab(tabName);
+    });
+  });
+
+  // Modal close buttons
+  document
+    .getElementById("closePurchaseModal")
+    .addEventListener("click", function () {
+      document.getElementById("newPurchaseModal").classList.remove("active");
+    });
+
+  document
+    .getElementById("closePurchaseDetailsModal")
+    .addEventListener("click", closePurchaseDetailsModal);
+
+  // Cancel purchase button
+  document
+    .getElementById("cancelPurchaseBtn")
+    .addEventListener("click", function () {
+      document.getElementById("newPurchaseModal").classList.remove("active");
+    });
+
+  // Add purchase item button
+  document
+    .getElementById("addPurchaseItemBtn")
+    .addEventListener("click", addPurchaseItemRow);
+
+  // Save draft button
+  document
+    .getElementById("saveDraftBtn")
+    .addEventListener("click", savePurchaseAsDraft);
+
+  // Submit purchase button
+  document
+    .getElementById("submitPurchaseBtn")
+    .addEventListener("click", processNewPurchaseOrder);
+
+  // Close modals when clicking outside
+  window.addEventListener("click", function (e) {
+    if (e.target.classList.contains("modal")) {
+      e.target.classList.remove("active");
+    }
+  });
+}
+
+// Logout function
+function logout() {
+  if (confirm("Are you sure you want to logout?")) {
+    // Clear authentication data
+    localStorage.removeItem("loggedIn");
+    localStorage.removeItem("userRole");
+    localStorage.removeItem("userName");
+
+    // Redirect to login page
+    window.location.href = "login.html";
+  }
+}

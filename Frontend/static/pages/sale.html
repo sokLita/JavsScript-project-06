@@ -1,261 +1,491 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sales Management</title>
-    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <title>InventoryPro | Sales Management</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="/Frontend/static/css/sale.css">
-
+     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="../css/sale.css">
+    
 </head>
-
 <body>
-    <div class="container">
-        <header>
-            <div>
-                <h1>Sales Management Dashboard</h1>
-                <div class="generated-date" id="generatedDate">Loading...</div>
-            </div>
-            <div class="action-buttons">
-                <button class="btn btn-primary" onclick="openNewSaleModal()">
-                    <i class='bx bx-plus'></i> New Sale
-                </button>
-                <button class="btn btn-secondary" onclick="exportSalesReport()">
-                    <i class='bx bx-download'></i> Export Report
-                </button>
-            </div>
-        </header>
-
-        <!-- Dashboard Controls -->
-        <div class="controls">
-            <div class="filters">
-                <div class="filter-group">
-                    <label for="timeRange">Time Period</label>
-                    <select id="timeRange" class="filter-select" onchange="updateSalesData()">
-                        <option value="7">Last 7 Days</option>
-                        <option value="30" selected>Last 30 Days</option>
-                        <option value="90">Last 90 Days</option>
-                        <option value="365">Last Year</option>
-                        <option value="custom">Custom Range</option>
-                    </select>
+    <!-- Authentication Check -->
+    <script>
+        // Check if user is logged in
+        if (!localStorage.getItem('loggedIn') || localStorage.getItem('loggedIn') !== 'true') {
+            // Redirect to login page if not logged in
+            window.location.href = 'login.html';
+        }
+    </script>
+    
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <div class="logo-icon">
+                    <i class="fas fa-boxes"></i>
                 </div>
+                <div class="logo-text">InventoryPro</div>
+            </div>
+            <button class="toggle-btn" id="sidebarToggle">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+        </div>
+        
+      <div class="sidebar-menu">
+            <a href="./dashboard.html" class="menu-item active">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>Dashboard</span>
+            </a>
+            
+            <a href="./update-category.html" class="menu-item">
+                <i class="fas fa-box-open"></i>
+                <span>Product Management</span>
+            </a>
+            
+            <a href="./stockmanagement.html" class="menu-item">
+                <i class="fas fa-warehouse"></i>
+                <span>Stock Management</span>
+            </a>
+            
+            <a href="./sale.html" class="menu-item">
+                <i class="fas fa-chart-line"></i>
+                <span>Sales Management</span>
+            </a>
+            
+            <a href="./category-management.html" class="menu-item">
+                <i class="fas fa-tags"></i>
+                <span>Category Management</span>
+            </a>
+            
+            <a href="./stockmanagement.html" class="menu-item">
+                <i class="fas fa-truck"></i>
+                <span>Supplier Management</span>
+            </a>
+            
+            <a href="./purchase.html" class="menu-item">
+                <i class="fas fa-shopping-cart"></i>
+                <span>Purchase Management</span>
+            </a>
+            
+            <a href="./detailed-analytics.html" class="menu-item">
+                <i class="fas fa-chart-bar"></i>
+                <span>Analytics & Forecasts</span>
+            </a>
+            
+            <a href="./back-up.html" class="menu-item">
+                <i class="fas fa-database"></i>
+                <span>Backup & Export</span>
+            </a>
+            
+            <a href="./barcode.html" class="menu-item">
+                <i class="fas fa-barcode"></i>
+                <span>Barcode Scanner</span>
+            </a>
+            
+            <a href="./tansition-history.html" class="menu-item">
+                <i class="fas fa-history"></i>
+                <span>Transaction History</span>
+            </a>
 
-                <div class="filter-group">
-                    <label for="statusFilter">Status</label>
-                    <select id="statusFilter" class="filter-select" onchange="filterSalesTable()">
-                        <option value="all">All Status</option>
-                        <option value="paid">Paid</option>
-                        <option value="pending">Pending</option>
-                        <option value="refunded">Refunded</option>
-                    </select>
-                </div>
-
-                <div class="filter-group">
-                    <label for="customerFilter">Customer</label>
-                    <select id="customerFilter" class="filter-select" onchange="filterSalesTable()">
-                        <option value="all">All Customers</option>
-                    </select>
+              <a href="./user-management.html" class="menu-item">
+                <i class="fas fa-chart-line"></i>
+                <span>User Management</span>
+            </a>
+            
+            <div class="sidebar-footer" style="padding: 20px; margin-top: auto;">
+                <div class="menu-item" id="logoutSidebar">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
                 </div>
             </div>
         </div>
-
-        <!-- Summary Cards -->
-        <section class="summary">
-            <div class="card total-sales">
-                <p class="card-label">Total Sales</p>
-                <p class="card-value" id="totalSales">0</p>
-                <div class="card-trend" id="salesTrend">Loading...</div>
-            </div>
-            <div class="card total-revenue">
-                <p class="card-label">Total Revenue</p>
-                <p class="card-value" id="totalRevenue">$0.00</p>
-                <div class="card-trend" id="revenueTrend">Loading...</div>
-            </div>
-            <div class="card items-sold">
-                <p class="card-label">Items Sold</p>
-                <p class="card-value" id="itemsSold">0</p>
-                <div class="card-trend" id="itemsTrend">Loading...</div>
-            </div>
-            <div class="card average-order">
-                <p class="card-label">Average Order Value</p>
-                <p class="card-value" id="averageOrder">$0.00</p>
-                <div class="card-trend" id="aovTrend">Loading...</div>
-            </div>
-        </section>
-
-        <!-- Charts Section -->
-        <section class="charts-section">
-            <div class="chart-card">
-                <div class="chart-header">
-                    <div class="chart-title">Sales Trend</div>
-                    <div class="chart-actions">
-                        <button class="chart-btn" onclick="toggleChartType('salesTrendChart')">
-                            <i class='bx bx-bar-chart'></i>
-                        </button>
-                        <button class="chart-btn" onclick="downloadChart('salesTrendChart')">
-                            <i class='bx bx-download'></i>
-                        </button>
-                    </div>
-                </div>
-                <div class="chart-wrapper">
-                    <canvas id="salesTrendChart"></canvas>
-                </div>
-            </div>
-
-            <div class="chart-card">
-                <div class="chart-header">
-                    <div class="chart-title">Revenue by Category</div>
-                    <div class="chart-actions">
-                        <button class="chart-btn" onclick="toggleChartType('categoryChart')">
-                            <i class='bx bx-pie-chart'></i>
-                        </button>
-                        <button class="chart-btn" onclick="downloadChart('categoryChart')">
-                            <i class='bx bx-download'></i>
-                        </button>
-                    </div>
-                </div>
-                <div class="chart-wrapper">
-                    <canvas id="categoryChart"></canvas>
-                </div>
-            </div>
-        </section>
-
-        <!-- Product Performance -->
-        <section>
-            <h2>Top Performing Products</h2>
-            <div class="product-performance" id="productPerformance">
-                <!-- Product performance cards will be inserted here -->
-            </div>
-        </section>
-
-        <!-- Recent Sales Table -->
-        <section>
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2>Recent Sales</h2>
-                <button class="btn btn-secondary" onclick="refreshSalesData()">
-                    <i class='bx bx-refresh'></i> Refresh
+    </div>
+    
+    <!-- Main Content -->
+    <div class="main-content" id="mainContent">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-left">
+                <button class="mobile-menu-toggle" id="mobileMenuToggle">
+                    <i class="fas fa-bars"></i>
                 </button>
+                <h1 id="pageTitle">Sales Management</h1>
             </div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Invoice No.</th>
-                        <th>Customer</th>
-                        <th>Date</th>
-                        <th>Items</th>
-                        <th>Total Amount</th>
-                        <th>Status</th>
-                        <th>Recorded By</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="salesTableBody">
-                    <!-- Sales data will be populated by JavaScript -->
-                </tbody>
-            </table>
-            <div style="text-align: center; margin-top: 20px;">
-                <button class="btn btn-secondary" onclick="loadMoreSales()">
-                    <i class='bx bx-show'></i> Load More
-                </button>
-            </div>
-        </section>
-
-        <!-- New Sale Modal -->
-        <div class="modal" id="newSaleModal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3><i class='bx bx-cart'></i> New Sale</h3>
-                    <button class="close-modal" onclick="closeNewSaleModal()">&times;</button>
-                </div>
-                <div class="modal-body">
-                    <form id="newSaleForm">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="customerName">Customer Name *</label>
-                                <input type="text" id="customerName" class="form-control" placeholder="Enter customer name" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="customerEmail">Customer Email</label>
-                                <input type="email" id="customerEmail" class="form-control" placeholder="customer@example.com">
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="saleItems">Sale Items *</label>
-                            <div style="margin-bottom: 10px;">
-                                <button type="button" class="btn btn-secondary" onclick="addSaleItem()">
-                                    <i class='bx bx-plus'></i> Add Item
-                                </button>
-                            </div>
-                            <div id="saleItemsContainer">
-                                <!-- Sale items will be added here -->
-                            </div>
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="paymentMethod">Payment Method *</label>
-                                <select id="paymentMethod" class="form-control" required>
-                                    <option value="">Select payment method</option>
-                                    <option value="cash">Cash</option>
-                                    <option value="credit_card">Credit Card</option>
-                                    <option value="bank_transfer">Bank Transfer</option>
-                                    <option value="digital_wallet">Digital Wallet</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="saleStatus">Status *</label>
-                                <select id="saleStatus" class="form-control" required>
-                                    <option value="paid">Paid</option>
-                                    <option value="pending">Pending</option>
-                                    <option value="refunded">Refunded</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="notes">Notes</label>
-                            <textarea id="notes" class="form-control" rows="3" placeholder="Additional notes..."></textarea>
-                        </div>
-
-                        <div class="form-group" style="background: #f8f9fa; padding: 15px; border-radius: 6px;">
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                                <span>Subtotal:</span>
-                                <span id="subtotalAmount">$0.00</span>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                                <span>Tax (10%):</span>
-                                <span id="taxAmount">$0.00</span>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; font-weight: 600; font-size: 18px;">
-                                <span>Total:</span>
-                                <span id="totalAmount">$0.00</span>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" onclick="closeNewSaleModal()">Cancel</button>
-                    <button class="btn btn-primary" onclick="processNewSale()">
-                        <i class='bx bx-check'></i> Complete Sale
+            
+            <div class="header-right">
+                <div class="user-profile">
+                    <div class="user-avatar" id="userAvatar">A</div>
+                    <button class="logout-btn" id="logoutBtn">
+                        <i class="fas fa-sign-out-alt"></i> Logout
                     </button>
                 </div>
             </div>
         </div>
-
-        <!-- Toast Notification -->
-        <div class="toast" id="notificationToast">
-            <div class="toast-icon">
-                <i class='bx bx-check-circle'></i>
+        
+        <!-- Content -->
+        <div class="content">
+            <!-- Page Header -->
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">Sales Management</h1>
+                    <p class="page-subtitle">Manage sales orders, track revenue, and handle customer transactions</p>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" id="newOrderBtn">
+                        <i class="fas fa-plus-circle"></i> New Sale
+                    </button>
+                    <button class="btn btn-success" id="quickInvoiceBtn">
+                        <i class="fas fa-file-invoice"></i> Quick Invoice
+                    </button>
+                    <button class="btn btn-outline" id="importOrdersBtn">
+                        <i class="fas fa-file-import"></i> Import
+                    </button>
+                </div>
             </div>
-            <div class="toast-message" id="toastMessage">Operation completed successfully!</div>
-            <button class="toast-close" onclick="hideToast()">&times;</button>
+            
+            <!-- Sales Overview -->
+            <div class="sales-overview">
+                <div class="overview-card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-rupee-sign"></i>
+                        </div>
+                        <div class="card-change change-positive">
+                            <i class="fas fa-arrow-up"></i> 18.5%
+                        </div>
+                    </div>
+                    <div class="card-value" id="todaySales">$84,520</div>
+                    <div class="card-title">Today's Sales</div>
+                    <div class="card-change change-positive">
+                        vs. Yesterday: +$12,850
+                    </div>
+                </div>
+                
+                <div class="overview-card success">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="card-change change-positive">
+                            <i class="fas fa-arrow-up"></i> 12.3%
+                        </div>
+                    </div>
+                    <div class="card-value" id="monthlySales">$1,245,680</div>
+                    <div class="card-title">Monthly Sales</div>
+                    <div class="card-change change-positive">
+                        vs. Last Month: +$136,420
+                    </div>
+                </div>
+                
+                <div class="overview-card warning">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-shopping-cart"></i>
+                        </div>
+                        <div class="card-change change-positive">
+                            <i class="fas fa-arrow-up"></i> 8.2%
+                        </div>
+                    </div>
+                    <div class="card-value" id="totalOrders">348</div>
+                    <div class="card-title">Total Orders</div>
+                    <div class="card-change change-positive">
+                        This Month: 12 pending
+                    </div>
+                </div>
+                
+                <div class="overview-card danger">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-exchange-alt"></i>
+                        </div>
+                        <div class="card-change change-negative">
+                            <i class="fas fa-arrow-down"></i> 2.1%
+                        </div>
+                    </div>
+                    <div class="card-value" id="returns">12</div>
+                    <div class="card-title">Returns & Refunds</div>
+                    <div class="card-change change-negative">
+                        This Month: $8,450
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quick Stats -->
+            <div class="quick-stats">
+                <div class="stat-card">
+                    <div class="stat-value" id="avgOrderValue">$2,430</div>
+                    <div class="stat-label">Average Order Value</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="conversionRate">3.8%</div>
+                    <div class="stat-label">Conversion Rate</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="newCustomers">42</div>
+                    <div class="stat-label">New Customers</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="repeatRate">68%</div>
+                    <div class="stat-label">Repeat Customer Rate</div>
+                </div>
+            </div>
+            
+            <!-- Charts Section -->
+            <div class="charts-section">
+                <div class="chart-container">
+                    <div class="section-header">
+                        <h3 class="section-title">
+                            <i class="fas fa-chart-line"></i> Sales Performance
+                        </h3>
+                        <select class="filter-select" id="salesPeriod">
+                            <option value="week">Last 7 Days</option>
+                            <option value="month" selected>Last 30 Days</option>
+                            <option value="quarter">Last 90 Days</option>
+                            <option value="year">Last 12 Months</option>
+                        </select>
+                    </div>
+                    <canvas id="salesChart" height="250"></canvas>
+                </div>
+                
+                <div class="chart-container">
+                    <div class="section-header">
+                        <h3 class="section-title">
+                            <i class="fas fa-chart-pie"></i> Sales by Category
+                        </h3>
+                    </div>
+                    <canvas id="categoryChart" height="250"></canvas>
+                </div>
+            </div>
+            
+            <!-- Filter Bar -->
+            <div class="filter-bar">
+                <div class="filter-group">
+                    <span class="filter-label">Date Range:</span>
+                    <input type="date" class="filter-date" id="startDate" value="2023-10-01">
+                    <span>to</span>
+                    <input type="date" class="filter-date" id="endDate" value="2023-10-31">
+                </div>
+                
+                <div class="filter-group">
+                    <span class="filter-label">Status:</span>
+                    <select class="filter-select" id="orderStatusFilter">
+                        <option value="">All Status</option>
+                        <option value="pending">Pending</option>
+                        <option value="processing">Processing</option>
+                        <option value="completed">Completed</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <span class="filter-label">Search:</span>
+                    <input type="text" class="filter-input" id="orderSearch" placeholder="Order ID, Customer, or Product">
+                </div>
+                
+                <button class="btn btn-primary" id="applyFiltersBtn">
+                    <i class="fas fa-filter"></i> Apply Filters
+                </button>
+            </div>
+            
+            <!-- Tabs -->
+            <div class="tabs">
+                <button class="tab active" data-tab="orders">
+                    <i class="fas fa-shopping-cart"></i> All Orders
+                </button>
+                <button class="tab" data-tab="pending">
+                    <i class="fas fa-clock"></i> Pending
+                </button>
+                <button class="tab" data-tab="processing">
+                    <i class="fas fa-cogs"></i> Processing
+                </button>
+                <button class="tab" data-tab="completed">
+                    <i class="fas fa-check-circle"></i> Completed
+                </button>
+                <button class="tab" data-tab="cancelled">
+                    <i class="fas fa-times-circle"></i> Cancelled
+                </button>
+                <button class="tab" data-tab="returns">
+                    <i class="fas fa-exchange-alt"></i> Returns
+                </button>
+            </div>
+            
+            <!-- Orders Table -->
+            <div class="table-container" id="ordersTab">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Date</th>
+                            <th>Customer</th>
+                            <th>Items</th>
+                            <th>Total Amount</th>
+                            <th>Payment Status</th>
+                            <th>Order Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ordersTable">
+                        <!-- Orders will be populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pending Orders Table (hidden by default) -->
+            <div class="table-container" id="pendingTab" style="display: none;">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Date</th>
+                            <th>Customer</th>
+                            <th>Items</th>
+                            <th>Total Amount</th>
+                            <th>Payment Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pendingTable">
+                        <!-- Pending orders will be populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Recent Customers -->
+            <div class="chart-container">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <i class="fas fa-users"></i> Recent Customers
+                    </h3>
+                    <button class="btn btn-outline" id="viewAllCustomersBtn">
+                        <i class="fas fa-eye"></i> View All
+                    </button>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Customer ID</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>Orders</th>
+                                <th>Total Spent</th>
+                                <th>Last Order</th>
+                            </tr>
+                        </thead>
+                        <tbody id="customersTable">
+                            <!-- Customers will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
-<script src="/Frontend/static/js/sale.js"></script>
+    
+    <!-- New Order Modal -->
+    <div class="modal" id="newOrderModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Create New Sale</h3>
+                <button class="modal-close" id="closeNewOrderModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="customer-info">
+                    <h4>Customer Information</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="customerName">Customer Name *</label>
+                            <input type="text" id="customerName" class="form-control" placeholder="Enter customer name">
+                        </div>
+                        <div class="form-group">
+                            <label for="customerPhone">Phone Number</label>
+                            <input type="text" id="customerPhone" class="form-control" placeholder="Enter phone number">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="customerEmail">Email Address</label>
+                        <input type="email" id="customerEmail" class="form-control" placeholder="Enter email address">
+                    </div>
+                    <div class="form-group">
+                        <label for="customerAddress">Shipping Address</label>
+                        <textarea id="customerAddress" class="form-control" rows="2" placeholder="Enter shipping address"></textarea>
+                    </div>
+                </div>
+                
+                <div class="sales-items">
+                    <h4>Order Items</h4>
+                    <table class="sales-items-table">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>Price</th>
+                                <th>Quantity</th>
+                                <th>Total</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="orderItems">
+                            <!-- Order items will be added here -->
+                        </tbody>
+                    </table>
+                    <button class="btn btn-outline" id="addItemBtn">
+                        <i class="fas fa-plus"></i> Add Product
+                    </button>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="orderNotes">Order Notes</label>
+                        <textarea id="orderNotes" class="form-control" rows="3" placeholder="Add any notes about this order..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <div class="order-summary">
+                            <h4>Order Summary</h4>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                                <span>Subtotal:</span>
+                                <span id="orderSubtotal">₹0.00</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                                <span>Tax (18%):</span>
+                                <span id="orderTax">₹0.00</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px; font-weight: 600;">
+                                <span>Total:</span>
+                                <span id="orderTotal">₹0.00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn" id="cancelOrderBtn">Cancel</button>
+                    <button type="button" class="btn btn-warning" id="saveDraftBtn">
+                        <i class="fas fa-save"></i> Save as Draft
+                    </button>
+                    <button type="button" class="btn btn-primary" id="processOrderBtn">
+                        <i class="fas fa-check"></i> Process Order
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Order Details Modal -->
+    <div class="modal" id="orderDetailsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="orderDetailsTitle">Order Details</h3>
+                <button class="modal-close" id="closeOrderDetailsModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="orderDetailsContent">
+                    <!-- Order details will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="../js/sale.js"></script>
 </body>
-
 </html>

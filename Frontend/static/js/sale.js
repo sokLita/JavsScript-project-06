@@ -1,1245 +1,1198 @@
-// Sales Management JavaScript
+// Check authentication on page load
 document.addEventListener("DOMContentLoaded", function () {
-  initializeSalesDashboard();
+  // Get user info from localStorage
+  const userRole = localStorage.getItem("userRole") || "admin";
+  const userName = localStorage.getItem("userName") || "Administrator";
+
+  // Update UI with user info
+  document.getElementById("userAvatar").textContent = userName
+    .charAt(0)
+    .toUpperCase();
+
+  // Initialize sales data
+  initializeCharts();
   loadSalesData();
-  setupCharts();
-  updateGeneratedDate();
-  populateCustomerFilter();
+  setupEventListeners();
+
+  // Check user permissions
+  if (userRole === "staff") {
+    document.getElementById("importOrdersBtn").style.display = "none";
+  }
 });
 
-// Global variables
-let salesData = [];
-let currentTimeRange = 30;
-let currentPage = 1;
-let itemsPerPage = 10;
-let charts = {};
-let saleItems = [];
+// Sample sales data
+let salesData = {
+  orders: [
+    {
+      id: "ORD-2023-001",
+      date: "2023-10-18 14:30",
+      customer: "John Smith",
+      customerEmail: "john@example.com",
+      customerPhone: "+91 9876543210",
+      items: [
+        {
+          name: "Wireless Bluetooth Headphones",
+          quantity: 2,
+          price: 89.99,
+          total: 179.98,
+        },
+        {
+          name: "Smart Fitness Watch",
+          quantity: 1,
+          price: 199.99,
+          total: 199.99,
+        },
+      ],
+      subtotal: 379.97,
+      tax: 68.39,
+      total: 448.36,
+      paymentStatus: "paid",
+      orderStatus: "completed",
+      shippingAddress: "123 Main St, Mumbai, India",
+      notes: "Gift wrapping requested",
+    },
+    {
+      id: "ORD-2023-002",
+      date: "2023-10-18 11:15",
+      customer: "Sarah Johnson",
+      customerEmail: "sarah@example.com",
+      customerPhone: "+91 9876543211",
+      items: [
+        {
+          name: "Ergonomic Office Chair",
+          quantity: 1,
+          price: 249.99,
+          total: 249.99,
+        },
+      ],
+      subtotal: 249.99,
+      tax: 45.0,
+      total: 294.99,
+      paymentStatus: "paid",
+      orderStatus: "processing",
+      shippingAddress: "456 Park Ave, Delhi, India",
+      notes: "Delivery after 5 PM",
+    },
+    {
+      id: "ORD-2023-003",
+      date: "2023-10-17 16:45",
+      customer: "Michael Chen",
+      customerEmail: "michael@example.com",
+      customerPhone: "+91 9876543212",
+      items: [
+        {
+          name: "Premium Notebook Set",
+          quantity: 3,
+          price: 24.99,
+          total: 74.97,
+        },
+        {
+          name: "Stainless Steel Water Bottle",
+          quantity: 2,
+          price: 29.99,
+          total: 59.98,
+        },
+      ],
+      subtotal: 134.95,
+      tax: 24.29,
+      total: 159.24,
+      paymentStatus: "pending",
+      orderStatus: "pending",
+      shippingAddress: "789 Oak St, Bangalore, India",
+      notes: "",
+    },
+    {
+      id: "ORD-2023-004",
+      date: "2023-10-17 10:20",
+      customer: "Emily Davis",
+      customerEmail: "emily@example.com",
+      customerPhone: "+91 9876543213",
+      items: [
+        {
+          name: "Bluetooth Portable Speaker",
+          quantity: 1,
+          price: 59.99,
+          total: 59.99,
+        },
+        {
+          name: "Wireless Gaming Mouse",
+          quantity: 1,
+          price: 79.99,
+          total: 79.99,
+        },
+      ],
+      subtotal: 139.98,
+      tax: 25.2,
+      total: 165.18,
+      paymentStatus: "paid",
+      orderStatus: "completed",
+      shippingAddress: "101 Pine Rd, Chennai, India",
+      notes: "Express shipping",
+    },
+    {
+      id: "ORD-2023-005",
+      date: "2023-10-16 09:30",
+      customer: "Robert Wilson",
+      customerEmail: "robert@example.com",
+      customerPhone: "+91 9876543214",
+      items: [
+        {
+          name: "Desk Lamp with Wireless Charger",
+          quantity: 1,
+          price: 49.99,
+          total: 49.99,
+        },
+      ],
+      subtotal: 49.99,
+      tax: 9.0,
+      total: 58.99,
+      paymentStatus: "cancelled",
+      orderStatus: "cancelled",
+      shippingAddress: "202 Elm St, Kolkata, India",
+      notes: "Customer requested cancellation",
+    },
+    {
+      id: "ORD-2023-006",
+      date: "2023-10-15 13:10",
+      customer: "Lisa Thompson",
+      customerEmail: "lisa@example.com",
+      customerPhone: "+91 9876543215",
+      items: [
+        {
+          name: "Wireless Bluetooth Headphones",
+          quantity: 1,
+          price: 89.99,
+          total: 89.99,
+        },
+        {
+          name: "Smart Fitness Watch",
+          quantity: 1,
+          price: 199.99,
+          total: 199.99,
+        },
+        {
+          name: "Premium Notebook Set",
+          quantity: 2,
+          price: 24.99,
+          total: 49.98,
+        },
+      ],
+      subtotal: 339.96,
+      tax: 61.19,
+      total: 401.15,
+      paymentStatus: "refunded",
+      orderStatus: "refunded",
+      shippingAddress: "303 Maple Ave, Hyderabad, India",
+      notes: "Product damaged during shipping",
+    },
+  ],
+  customers: [
+    {
+      id: "CUST-001",
+      name: "John Smith",
+      email: "john@example.com",
+      phone: "+91 9876543210",
+      orders: 12,
+      totalSpent: 5480.5,
+      lastOrder: "2023-10-18",
+    },
+    {
+      id: "CUST-002",
+      name: "Sarah Johnson",
+      email: "sarah@example.com",
+      phone: "+91 9876543211",
+      orders: 8,
+      totalSpent: 2950.25,
+      lastOrder: "2023-10-18",
+    },
+    {
+      id: "CUST-003",
+      name: "Michael Chen",
+      email: "michael@example.com",
+      phone: "+91 9876543212",
+      orders: 5,
+      totalSpent: 1250.75,
+      lastOrder: "2023-10-17",
+    },
+    {
+      id: "CUST-004",
+      name: "Emily Davis",
+      email: "emily@example.com",
+      phone: "+91 9876543213",
+      orders: 3,
+      totalSpent: 650.4,
+      lastOrder: "2023-10-17",
+    },
+    {
+      id: "CUST-005",
+      name: "Robert Wilson",
+      email: "robert@example.com",
+      phone: "+91 9876543214",
+      orders: 6,
+      totalSpent: 2100.8,
+      lastOrder: "2023-10-16",
+    },
+  ],
+  products: [
+    {
+      id: "P001",
+      name: "Wireless Bluetooth Headphones",
+      price: 89.99,
+      stock: 45,
+    },
+    { id: "P002", name: "Ergonomic Office Chair", price: 249.99, stock: 12 },
+    { id: "P003", name: "Smart Fitness Watch", price: 199.99, stock: 3 },
+    {
+      id: "P004",
+      name: "Desk Lamp with Wireless Charger",
+      price: 49.99,
+      stock: 0,
+    },
+    { id: "P005", name: "Premium Notebook Set", price: 24.99, stock: 120 },
+    { id: "P006", name: "Wireless Gaming Mouse", price: 79.99, stock: 5 },
+    {
+      id: "P007",
+      name: "Stainless Steel Water Bottle",
+      price: 29.99,
+      stock: 65,
+    },
+    { id: "P008", name: "Bluetooth Portable Speaker", price: 59.99, stock: 18 },
+  ],
+};
 
-// Sample product data
-const products = [
-  {
-    id: 1,
-    name: "Laptop Dell",
-    code: "DL-001",
-    price: 1200,
-    category: "Electronics",
-    stock: 85,
-  },
-  {
-    id: 2,
-    name: "Mouse Logitech",
-    code: "MS-002",
-    price: 25,
-    category: "Accessories",
-    stock: 58,
-  },
-  {
-    id: 3,
-    name: "Keyboard Mechanical",
-    code: "KB-003",
-    price: 80,
-    category: "Accessories",
-    stock: 72,
-  },
-  {
-    id: 4,
-    name: 'Monitor 27"',
-    code: "MN-004",
-    price: 300,
-    category: "Electronics",
-    stock: 42,
-  },
-  {
-    id: 5,
-    name: "Webcam HD",
-    code: "WC-005",
-    price: 50,
-    category: "Electronics",
-    stock: 95,
-  },
-  {
-    id: 6,
-    name: "Desk Chair",
-    code: "DC-006",
-    price: 150,
-    category: "Furniture",
-    stock: 38,
-  },
-  {
-    id: 7,
-    name: "Office Desk",
-    code: "OD-007",
-    price: 250,
-    category: "Furniture",
-    stock: 25,
-  },
-  {
-    id: 8,
-    name: "Printer",
-    code: "PR-008",
-    price: 180,
-    category: "Electronics",
-    stock: 65,
-  },
-];
-
-// Sample customers
-const customers = [
-  { id: 1, name: "John Smith", email: "john@example.com" },
-  { id: 2, name: "Sarah Johnson", email: "sarah@example.com" },
-  { id: 3, name: "Mike Wilson", email: "mike@example.com" },
-  { id: 4, name: "Emily Davis", email: "emily@example.com" },
-  { id: 5, name: "Robert Brown", email: "robert@example.com" },
-  { id: 6, name: "Tech Solutions Inc.", email: "tech@example.com" },
-  { id: 7, name: "Office Supplies Co.", email: "office@example.com" },
-];
-
-// Initialize dashboard
-function initializeSalesDashboard() {
-  console.log("Initializing Sales Dashboard...");
-  // Load any saved settings from localStorage
-  const savedTimeRange = localStorage.getItem("salesTimeRange");
-  if (savedTimeRange) {
-    currentTimeRange = parseInt(savedTimeRange);
-    document.getElementById("timeRange").value = savedTimeRange;
-  }
-}
-
-// Load sales data
-function loadSalesData() {
-  // Generate sample sales data
-  generateSampleSalesData();
-
-  // Update summary cards
-  updateSummaryCards();
-
-  // Render sales table
-  renderSalesTable();
-
-  // Update product performance
-  updateProductPerformance();
-
-  showToast("Sales data loaded successfully", "success");
-}
-
-// Generate sample sales data
-function generateSampleSalesData() {
-  salesData = [];
-  const statuses = ["paid", "pending", "refunded"];
-  const recordedBy = ["Admin", "Manager", "Sales Agent", "System"];
-
-  // Generate 30 days of sales data
-  for (let i = 0; i < 30; i++) {
-    const date = new Date();
-    date.setDate(date.getDate() - i);
-
-    const customer = customers[Math.floor(Math.random() * customers.length)];
-    const itemCount = Math.floor(Math.random() * 5) + 1;
-    const totalAmount = Math.floor(Math.random() * 5000) + 100;
-    const status = statuses[Math.floor(Math.random() * statuses.length)];
-    const recorded = recordedBy[Math.floor(Math.random() * recordedBy.length)];
-
-    salesData.push({
-      id: i + 1,
-      invoiceNo: `INV-${1000 + i}`,
-      customer: customer.name,
-      date: date.toISOString().split("T")[0],
-      items: itemCount,
-      totalAmount: totalAmount,
-      status: status,
-      recordedBy: recorded,
-      customerEmail: customer.email,
-      itemsDetails: generateRandomItems(itemCount),
-    });
-  }
-}
-
-// Generate random items for a sale
-function generateRandomItems(count) {
-  const items = [];
-  for (let i = 0; i < count; i++) {
-    const product = products[Math.floor(Math.random() * products.length)];
-    const quantity = Math.floor(Math.random() * 3) + 1;
-    items.push({
-      productId: product.id,
-      productName: product.name,
-      quantity: quantity,
-      price: product.price,
-      total: product.price * quantity,
-    });
-  }
-  return items;
-}
-
-// Update summary cards
-function updateSummaryCards() {
-  const filteredData = filterDataByTimeRange(salesData, currentTimeRange);
-
-  // Calculate totals
-  const totalSales = filteredData.length;
-  const totalRevenue = filteredData.reduce(
-    (sum, sale) => sum + sale.totalAmount,
-    0
-  );
-  const itemsSold = filteredData.reduce((sum, sale) => sum + sale.items, 0);
-  const averageOrder = totalSales > 0 ? totalRevenue / totalSales : 0;
-
-  // Update DOM elements
-  document.getElementById("totalSales").textContent = totalSales;
-  document.getElementById(
-    "totalRevenue"
-  ).textContent = `$${totalRevenue.toFixed(2)}`;
-  document.getElementById("itemsSold").textContent = itemsSold;
-  document.getElementById(
-    "averageOrder"
-  ).textContent = `$${averageOrder.toFixed(2)}`;
-
-  // Calculate trends (compared to previous period)
-  updateTrends();
-}
-
-// Update trends
-function updateTrends() {
-  const currentPeriod = filterDataByTimeRange(salesData, currentTimeRange);
-  const previousPeriod = filterDataByTimeRange(
-    salesData,
-    currentTimeRange,
-    true
-  );
-
-  // Sales trend
-  const salesChange = calculatePercentageChange(
-    currentPeriod.length,
-    previousPeriod.length
-  );
-  document.getElementById("salesTrend").innerHTML = getTrendHTML(
-    salesChange,
-    "sales"
-  );
-
-  // Revenue trend
-  const currentRevenue = currentPeriod.reduce(
-    (sum, sale) => sum + sale.totalAmount,
-    0
-  );
-  const previousRevenue = previousPeriod.reduce(
-    (sum, sale) => sum + sale.totalAmount,
-    0
-  );
-  const revenueChange = calculatePercentageChange(
-    currentRevenue,
-    previousRevenue
-  );
-  document.getElementById("revenueTrend").innerHTML = getTrendHTML(
-    revenueChange,
-    "revenue"
-  );
-
-  // Items trend
-  const currentItems = currentPeriod.reduce((sum, sale) => sum + sale.items, 0);
-  const previousItems = previousPeriod.reduce(
-    (sum, sale) => sum + sale.items,
-    0
-  );
-  const itemsChange = calculatePercentageChange(currentItems, previousItems);
-  document.getElementById("itemsTrend").innerHTML = getTrendHTML(
-    itemsChange,
-    "items"
-  );
-
-  // AOV trend
-  const currentAOV =
-    currentPeriod.length > 0 ? currentRevenue / currentPeriod.length : 0;
-  const previousAOV =
-    previousPeriod.length > 0 ? previousRevenue / previousPeriod.length : 0;
-  const aovChange = calculatePercentageChange(currentAOV, previousAOV);
-  document.getElementById("aovTrend").innerHTML = getTrendHTML(
-    aovChange,
-    "AOV"
-  );
-}
-
-// Filter data by time range
-function filterDataByTimeRange(data, days, previous = false) {
-  const endDate = new Date();
-  let startDate = new Date();
-
-  if (previous) {
-    startDate.setDate(startDate.getDate() - days * 2);
-    endDate.setDate(endDate.getDate() - days);
-  } else {
-    startDate.setDate(startDate.getDate() - days);
-  }
-
-  return data.filter((sale) => {
-    const saleDate = new Date(sale.date);
-    return saleDate >= startDate && saleDate <= endDate;
-  });
-}
-
-// Calculate percentage change
-function calculatePercentageChange(current, previous) {
-  if (previous === 0) return current > 0 ? 100 : 0;
-  return ((current - previous) / previous) * 100;
-}
-
-// Get trend HTML
-function getTrendHTML(change, type) {
-  const absChange = Math.abs(change).toFixed(1);
-  const icon = change >= 0 ? "bx-up-arrow-alt" : "bx-down-arrow-alt";
-  const color = change >= 0 ? "#2ecc71" : "#e74c3c";
-  const text = change >= 0 ? "increase" : "decrease";
-
-  return `
-                <span style="color: ${color}; font-size: 14px;">
-                    <i class='bx ${icon}'></i> ${absChange}% ${text} vs previous period
-                </span>
-            `;
-}
-
-// Setup charts
-function setupCharts() {
-  // Sales Trend Chart
-  const salesCtx = document.getElementById("salesTrendChart").getContext("2d");
-  charts.salesTrendChart = new Chart(salesCtx, {
+// Initialize charts
+function initializeCharts() {
+  // Sales Performance Chart
+  const salesCtx = document.getElementById("salesChart").getContext("2d");
+  const salesChart = new Chart(salesCtx, {
     type: "line",
-    data: generateSalesTrendData(),
+    data: {
+      labels: [
+        "Oct 1",
+        "Oct 5",
+        "Oct 10",
+        "Oct 15",
+        "Oct 20",
+        "Oct 25",
+        "Oct 30",
+      ],
+      datasets: [
+        {
+          label: "Sales ($)",
+          data: [45000, 52000, 61000, 58000, 72000, 68000, 84520],
+          borderColor: "#3498db",
+          backgroundColor: "rgba(52, 152, 219, 0.1)",
+          borderWidth: 2,
+          fill: true,
+          tension: 0.4,
+        },
+      ],
+    },
     options: {
       responsive: true,
-      maintainAspectRatio: false,
-      scales: {
-        x: {
-          grid: {
-            display: false,
-          },
+      plugins: {
+        legend: {
+          position: "top",
         },
+      },
+      scales: {
         y: {
           beginAtZero: true,
-          title: {
-            display: true,
-            text: "Sales Revenue ($)",
+          ticks: {
+            callback: function (value) {
+              return "$" + value.toLocaleString();
+            },
           },
-          grid: {
-            color: "rgba(0, 0, 0, 0.05)",
-          },
-        },
-      },
-      plugins: {
-        legend: {
-          display: false,
         },
       },
     },
   });
 
-  // Category Chart
+  // Category Sales Chart
   const categoryCtx = document.getElementById("categoryChart").getContext("2d");
-  charts.categoryChart = new Chart(categoryCtx, {
+  const categoryChart = new Chart(categoryCtx, {
     type: "doughnut",
-    data: generateCategoryData(),
+    data: {
+      labels: ["Electronics", "Furniture", "Home", "Stationery", "Sports"],
+      datasets: [
+        {
+          data: [65, 15, 5, 10, 5],
+          backgroundColor: [
+            "#3498db",
+            "#9b59b6",
+            "#e74c3c",
+            "#f39c12",
+            "#1abc9c",
+          ],
+          borderWidth: 1,
+        },
+      ],
+    },
     options: {
       responsive: true,
-      maintainAspectRatio: false,
-      cutout: "70%",
       plugins: {
         legend: {
-          position: "right",
+          position: "bottom",
         },
       },
     },
   });
-}
 
-// Generate sales trend data
-function generateSalesTrendData() {
-  const filteredData = filterDataByTimeRange(salesData, currentTimeRange);
-
-  // Group by date
-  const dailyData = {};
-  filteredData.forEach((sale) => {
-    if (!dailyData[sale.date]) {
-      dailyData[sale.date] = 0;
-    }
-    dailyData[sale.date] += sale.totalAmount;
-  });
-
-  const dates = Object.keys(dailyData).sort();
-  const amounts = dates.map((date) => dailyData[date]);
-
-  return {
-    labels: dates.map((date) => formatDate(date)),
-    datasets: [
-      {
-        label: "Daily Revenue",
-        data: amounts,
-        borderColor: "#3498db",
-        backgroundColor: "rgba(52, 152, 219, 0.1)",
-        borderWidth: 2,
-        fill: true,
-        tension: 0.4,
-      },
-    ],
-  };
-}
-
-// Generate category data
-function generateCategoryData() {
-  const categoryRevenue = {};
-
-  salesData.forEach((sale) => {
-    sale.itemsDetails.forEach((item) => {
-      const product = products.find((p) => p.id === item.productId);
-      if (product) {
-        if (!categoryRevenue[product.category]) {
-          categoryRevenue[product.category] = 0;
-        }
-        categoryRevenue[product.category] += item.total;
-      }
+  // Update chart on period change
+  document
+    .getElementById("salesPeriod")
+    .addEventListener("change", function () {
+      // In a real app, you would fetch new data based on the selected period
+      salesChart.update();
+      categoryChart.update();
     });
-  });
-
-  const categories = Object.keys(categoryRevenue);
-  const revenues = categories.map((cat) => categoryRevenue[cat]);
-
-  const colors = [
-    "#3498db",
-    "#2ecc71",
-    "#e74c3c",
-    "#f39c12",
-    "#9b59b6",
-    "#1abc9c",
-  ];
-
-  return {
-    labels: categories,
-    datasets: [
-      {
-        data: revenues,
-        backgroundColor: colors.slice(0, categories.length),
-        borderWidth: 1,
-        borderColor: "#fff",
-      },
-    ],
-  };
 }
 
-// Render sales table
-function renderSalesTable() {
-  const tableBody = document.getElementById("salesTableBody");
-  const filteredData = filterDataByTimeRange(salesData, currentTimeRange);
-  const statusFilter = document.getElementById("statusFilter").value;
+// Load sales data into tables
+function loadSalesData() {
+  loadOrdersTable();
+  loadPendingTable();
+  loadCustomersTable();
+}
 
-  let dataToDisplay = filteredData;
+// Load orders table
+function loadOrdersTable() {
+  const ordersTable = document.getElementById("ordersTable");
+  ordersTable.innerHTML = "";
 
-  // Apply status filter
-  if (statusFilter !== "all") {
-    dataToDisplay = dataToDisplay.filter(
-      (sale) => sale.status === statusFilter
+  salesData.orders.forEach((order) => {
+    const row = document.createElement("tr");
+
+    // Calculate total items
+    const totalItems = order.items.reduce(
+      (sum, item) => sum + item.quantity,
+      0
     );
-  }
 
-  // Apply customer filter
-  const customerFilter = document.getElementById("customerFilter").value;
-  if (customerFilter !== "all") {
-    dataToDisplay = dataToDisplay.filter(
-      (sale) => sale.customer === customerFilter
-    );
-  }
+    // Determine order status badge
+    let statusClass = "";
+    let statusText = "";
+    switch (order.orderStatus) {
+      case "pending":
+        statusClass = "status-pending";
+        statusText = "Pending";
+        break;
+      case "processing":
+        statusClass = "status-processing";
+        statusText = "Processing";
+        break;
+      case "completed":
+        statusClass = "status-completed";
+        statusText = "Completed";
+        break;
+      case "cancelled":
+        statusClass = "status-cancelled";
+        statusText = "Cancelled";
+        break;
+      case "refunded":
+        statusClass = "status-refunded";
+        statusText = "Refunded";
+        break;
+    }
 
-  // Pagination
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const pageData = dataToDisplay.slice(startIndex, endIndex);
+    // Determine payment status
+    let paymentStatus = "";
+    if (order.paymentStatus === "paid") {
+      paymentStatus =
+        '<span style="color: var(--success-color); font-weight: 600;">Paid</span>';
+    } else if (order.paymentStatus === "pending") {
+      paymentStatus =
+        '<span style="color: var(--warning-color); font-weight: 600;">Pending</span>';
+    } else {
+      paymentStatus =
+        '<span style="color: var(--accent-color); font-weight: 600;">' +
+        order.paymentStatus.charAt(0).toUpperCase() +
+        order.paymentStatus.slice(1) +
+        "</span>";
+    }
 
-  if (pageData.length === 0) {
-    tableBody.innerHTML = `
-                    <tr>
-                        <td colspan="8" style="text-align: center; padding: 40px; color: #7f8c8d;">
-                            <i class='bx bx-package' style="font-size: 48px; margin-bottom: 10px; display: block;"></i>
-                            No sales found for the selected filters
-                        </td>
-                    </tr>
-                `;
-    return;
-  }
-
-  tableBody.innerHTML = pageData
-    .map(
-      (sale) => `
-                <tr>
+    row.innerHTML = `
+                    <td><strong>${order.id}</strong></td>
+                    <td>${order.date}</td>
+                    <td>${order.customer}<br><small>${
+      order.customerEmail
+    }</small></td>
+                    <td>${totalItems} items</td>
+                    <td><strong>$${order.total.toFixed(2)}</strong></td>
+                    <td>${paymentStatus}</td>
+                    <td><span class="status-badge ${statusClass}">${statusText}</span></td>
                     <td>
-                        <strong>${sale.invoiceNo}</strong>
-                        <div style="font-size: 12px; color: #7f8c8d;">#${
-                          sale.id
-                        }</div>
-                    </td>
-                    <td>
-                        <div>${sale.customer}</div>
-                        <div style="font-size: 12px; color: #7f8c8d;">${
-                          sale.customerEmail
-                        }</div>
-                    </td>
-                    <td>${formatDate(sale.date)}</td>
-                    <td>
-                        <div>${sale.items} items</div>
-                        <button onclick="viewSaleItems(${
-                          sale.id
-                        })" style="font-size: 12px; color: #3498db; background: none; border: none; cursor: pointer; padding: 0;">
-                            View Details
+                        <button class="btn btn-sm btn-primary" onclick="viewOrderDetails('${
+                          order.id
+                        }')">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="btn btn-sm btn-warning" onclick="editOrder('${
+                          order.id
+                        }')">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteOrder('${
+                          order.id
+                        }')">
+                            <i class="fas fa-trash"></i>
                         </button>
                     </td>
-                    <td><strong>$${sale.totalAmount.toFixed(2)}</strong></td>
-                    <td>
-                        <span class="status ${sale.status}">
-                            ${
-                              sale.status.charAt(0).toUpperCase() +
-                              sale.status.slice(1)
-                            }
-                        </span>
-                    </td>
-                    <td>${sale.recordedBy}</td>
-                    <td>
-                        <div style="display: flex; gap: 8px;">
-                            <button onclick="editSale(${
-                              sale.id
-                            })" class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">
-                                <i class='bx bx-edit'></i>
-                            </button>
-                            <button onclick="deleteSale(${
-                              sale.id
-                            })" class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;">
-                                <i class='bx bx-trash'></i>
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-            `
-    )
-    .join("");
-}
-
-// Update product performance
-function updateProductPerformance() {
-  const performanceContainer = document.getElementById("productPerformance");
-  const productSales = {};
-
-  // Calculate sales for each product
-  salesData.forEach((sale) => {
-    sale.itemsDetails.forEach((item) => {
-      if (!productSales[item.productId]) {
-        productSales[item.productId] = {
-          quantity: 0,
-          revenue: 0,
-        };
-      }
-      productSales[item.productId].quantity += item.quantity;
-      productSales[item.productId].revenue += item.total;
-    });
-  });
-
-  // Convert to array and sort by revenue
-  const topProducts = Object.keys(productSales)
-    .map((productId) => {
-      const product = products.find((p) => p.id === parseInt(productId));
-      if (!product) return null;
-
-      return {
-        ...product,
-        sales: productSales[productId].quantity,
-        revenue: productSales[productId].revenue,
-      };
-    })
-    .filter((p) => p !== null)
-    .sort((a, b) => b.revenue - a.revenue)
-    .slice(0, 4);
-
-  const colors = ["#3498db", "#2ecc71", "#e74c3c", "#f39c12"];
-
-  performanceContainer.innerHTML = topProducts
-    .map(
-      (product, index) => `
-                <div class="performance-item">
-                    <div class="product-icon" style="background: ${
-                      colors[index % colors.length]
-                    }">
-                        <i class='bx bx-${
-                          product.category === "Electronics"
-                            ? "desktop"
-                            : product.category === "Accessories"
-                            ? "mouse"
-                            : product.category === "Furniture"
-                            ? "chair"
-                            : "cube"
-                        }'></i>
-                    </div>
-                    <div class="product-info">
-                        <div class="product-name">${product.name}</div>
-                        <div class="product-stats">
-                            <span>${product.sales} sold</span>
-                            <span class="product-revenue">$${product.revenue.toFixed(
-                              2
-                            )}</span>
-                        </div>
-                        <div style="font-size: 12px; color: #7f8c8d; margin-top: 5px;">
-                            ${product.category} • ${product.stock} in stock
-                        </div>
-                    </div>
-                </div>
-            `
-    )
-    .join("");
-}
-
-// Filter sales table
-function filterSalesTable() {
-  currentPage = 1;
-  renderSalesTable();
-}
-
-// Update sales data
-function updateSalesData() {
-  currentTimeRange = parseInt(document.getElementById("timeRange").value);
-  localStorage.setItem("salesTimeRange", currentTimeRange);
-
-  // Update summary
-  updateSummaryCards();
-
-  // Update charts
-  if (charts.salesTrendChart) {
-    charts.salesTrendChart.data = generateSalesTrendData();
-    charts.salesTrendChart.update();
-  }
-
-  if (charts.categoryChart) {
-    charts.categoryChart.data = generateCategoryData();
-    charts.categoryChart.update();
-  }
-
-  // Update table
-  renderSalesTable();
-
-  // Update product performance
-  updateProductPerformance();
-
-  showToast("Sales data updated", "success");
-}
-
-// Format date
-function formatDate(dateString) {
-  const date = new Date(dateString);
-  return date.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
+                `;
+    ordersTable.appendChild(row);
   });
 }
 
-// Update generated date
-function updateGeneratedDate() {
-  const now = new Date();
-  const formattedDate = now.toLocaleDateString("en-US", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-  document.getElementById(
-    "generatedDate"
-  ).textContent = `Generated on ${formattedDate}`;
-}
+// Load pending orders table
+function loadPendingTable() {
+  const pendingTable = document.getElementById("pendingTable");
+  pendingTable.innerHTML = "";
 
-// Populate customer filter
-function populateCustomerFilter() {
-  const customerFilter = document.getElementById("customerFilter");
-
-  // Clear existing options (keeping "All Customers")
-  while (customerFilter.options.length > 1) {
-    customerFilter.remove(1);
-  }
-
-  // Add customer options
-  customers.forEach((customer) => {
-    const option = document.createElement("option");
-    option.value = customer.name;
-    option.textContent = customer.name;
-    customerFilter.appendChild(option);
-  });
-}
-
-// Load more sales
-function loadMoreSales() {
-  currentPage++;
-  renderSalesTable();
-  showToast(`Loaded page ${currentPage}`, "info");
-}
-
-// Refresh sales data
-function refreshSalesData() {
-  // In a real app, this would fetch from API
-  // For demo, just regenerate sample data
-  generateSampleSalesData();
-  updateSummaryCards();
-  renderSalesTable();
-  updateProductPerformance();
-  showToast("Sales data refreshed", "success");
-}
-
-// Export sales report
-function exportSalesReport() {
-  const dataStr = JSON.stringify(salesData, null, 2);
-  const dataBlob = new Blob([dataStr], { type: "application/json" });
-  const url = URL.createObjectURL(dataBlob);
-  const a = document.createElement("a");
-
-  a.href = url;
-  a.download = `sales_report_${new Date().toISOString().split("T")[0]}.json`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-
-  showToast("Sales report exported successfully", "success");
-}
-
-// New Sale Modal Functions
-function openNewSaleModal() {
-  document.getElementById("newSaleModal").style.display = "flex";
-  saleItems = [];
-  updateSaleTotal();
-}
-
-function closeNewSaleModal() {
-  document.getElementById("newSaleModal").style.display = "none";
-  document.getElementById("newSaleForm").reset();
-  saleItems = [];
-}
-
-function addSaleItem() {
-  const container = document.getElementById("saleItemsContainer");
-  const index = saleItems.length;
-
-  const itemHtml = `
-                <div class="sale-item" style="background: #f8f9fa; padding: 15px; border-radius: 6px; margin-bottom: 10px;">
-                    <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap: 10px; align-items: end;">
-                        <div>
-                            <label style="font-size: 13px;">Product *</label>
-                            <select class="form-control product-select" data-index="${index}" onchange="updateSaleItem(${index}, 'product', this.value)" required>
-                                <option value="">Select product</option>
-                                ${products
-                                  .map(
-                                    (p) =>
-                                      `<option value="${p.id}">${p.name} - $${p.price}</option>`
-                                  )
-                                  .join("")}
-                            </select>
-                        </div>
-                        <div>
-                            <label style="font-size: 13px;">Quantity *</label>
-                            <input type="number" class="form-control quantity-input" data-index="${index}" 
-                                   min="1" value="1" onchange="updateSaleItem(${index}, 'quantity', this.value)" required>
-                        </div>
-                        <div>
-                            <label style="font-size: 13px;">Price</label>
-                            <input type="number" class="form-control price-input" data-index="${index}" 
-                                   step="0.01" onchange="updateSaleItem(${index}, 'price', this.value)" readonly>
-                        </div>
-                        <div>
-                            <label style="font-size: 13px;">Total</label>
-                            <input type="text" class="form-control total-input" data-index="${index}" readonly>
-                        </div>
-                        <div>
-                            <button type="button" class="btn btn-secondary" onclick="removeSaleItem(${index})" style="padding: 10px;">
-                                <i class='bx bx-trash'></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-
-  container.insertAdjacentHTML("beforeend", itemHtml);
-  saleItems.push({
-    productId: "",
-    quantity: 1,
-    price: 0,
-    total: 0,
-  });
-}
-
-function updateSaleItem(index, field, value) {
-  if (!saleItems[index]) return;
-
-  if (field === "product") {
-    const product = products.find((p) => p.id === parseInt(value));
-    if (product) {
-      saleItems[index].productId = product.id;
-      saleItems[index].price = product.price;
-
-      // Update price input
-      const priceInput = document.querySelector(
-        `.price-input[data-index="${index}"]`
-      );
-      if (priceInput) priceInput.value = product.price;
-
-      // Update total
-      updateItemTotal(index);
-    }
-  } else if (field === "quantity") {
-    saleItems[index].quantity = parseInt(value) || 1;
-    updateItemTotal(index);
-  } else if (field === "price") {
-    saleItems[index].price = parseFloat(value) || 0;
-    updateItemTotal(index);
-  }
-
-  updateSaleTotal();
-}
-
-function updateItemTotal(index) {
-  const item = saleItems[index];
-  item.total = item.quantity * item.price;
-
-  const totalInput = document.querySelector(
-    `.total-input[data-index="${index}"]`
-  );
-  if (totalInput) totalInput.value = `$${item.total.toFixed(2)}`;
-}
-
-function removeSaleItem(index) {
-  saleItems.splice(index, 1);
-
-  // Re-render items
-  const container = document.getElementById("saleItemsContainer");
-  container.innerHTML = "";
-
-  saleItems.forEach((item, idx) => {
-    // Recreate HTML for each item
-    const product = products.find((p) => p.id === item.productId);
-    container.insertAdjacentHTML(
-      "beforeend",
-      `
-                    <div class="sale-item" style="background: #f8f9fa; padding: 15px; border-radius: 6px; margin-bottom: 10px;">
-                        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap: 10px; align-items: end;">
-                            <div>
-                                <label style="font-size: 13px;">Product *</label>
-                                <select class="form-control product-select" data-index="${idx}" onchange="updateSaleItem(${idx}, 'product', this.value)" required>
-                                    <option value="">Select product</option>
-                                    ${products
-                                      .map(
-                                        (p) =>
-                                          `<option value="${p.id}" ${
-                                            p.id === item.productId
-                                              ? "selected"
-                                              : ""
-                                          }>${p.name} - $${p.price}</option>`
-                                      )
-                                      .join("")}
-                                </select>
-                            </div>
-                            <div>
-                                <label style="font-size: 13px;">Quantity *</label>
-                                <input type="number" class="form-control quantity-input" data-index="${idx}" 
-                                       min="1" value="${
-                                         item.quantity
-                                       }" onchange="updateSaleItem(${idx}, 'quantity', this.value)" required>
-                            </div>
-                            <div>
-                                <label style="font-size: 13px;">Price</label>
-                                <input type="number" class="form-control price-input" data-index="${idx}" 
-                                       step="0.01" value="${
-                                         item.price
-                                       }" onchange="updateSaleItem(${idx}, 'price', this.value)" readonly>
-                            </div>
-                            <div>
-                                <label style="font-size: 13px;">Total</label>
-                                <input type="text" class="form-control total-input" data-index="${idx}" value="$${item.total.toFixed(
-        2
-      )}" readonly>
-                            </div>
-                            <div>
-                                <button type="button" class="btn btn-secondary" onclick="removeSaleItem(${idx})" style="padding: 10px;">
-                                    <i class='bx bx-trash'></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `
-    );
-  });
-
-  updateSaleTotal();
-}
-
-function updateSaleTotal() {
-  const subtotal = saleItems.reduce((sum, item) => sum + item.total, 0);
-  const tax = subtotal * 0.1; // 10% tax
-  const total = subtotal + tax;
-
-  document.getElementById("subtotalAmount").textContent = `$${subtotal.toFixed(
-    2
-  )}`;
-  document.getElementById("taxAmount").textContent = `$${tax.toFixed(2)}`;
-  document.getElementById("totalAmount").textContent = `$${total.toFixed(2)}`;
-}
-
-function processNewSale() {
-  const customerName = document.getElementById("customerName").value;
-  const customerEmail = document.getElementById("customerEmail").value;
-  const paymentMethod = document.getElementById("paymentMethod").value;
-  const status = document.getElementById("saleStatus").value;
-  const notes = document.getElementById("notes").value;
-
-  // Validation
-  if (!customerName) {
-    showToast("Please enter customer name", "error");
-    return;
-  }
-
-  if (saleItems.length === 0) {
-    showToast("Please add at least one item to the sale", "error");
-    return;
-  }
-
-  // Calculate totals
-  const subtotal = saleItems.reduce((sum, item) => sum + item.total, 0);
-  const tax = subtotal * 0.1;
-  const total = subtotal + tax;
-
-  // Create new sale
-  const newSale = {
-    id: salesData.length + 1,
-    invoiceNo: `INV-${1000 + salesData.length}`,
-    customer: customerName,
-    date: new Date().toISOString().split("T")[0],
-    items: saleItems.length,
-    totalAmount: total,
-    status: status,
-    recordedBy: "Admin",
-    customerEmail: customerEmail,
-    itemsDetails: saleItems.map((item) => ({
-      productId: item.productId,
-      productName:
-        products.find((p) => p.id === item.productId)?.name || "Unknown",
-      quantity: item.quantity,
-      price: item.price,
-      total: item.total,
-    })),
-    paymentMethod: paymentMethod,
-    notes: notes,
-    subtotal: subtotal,
-    tax: tax,
-  };
-
-  // Add to sales data
-  salesData.unshift(newSale);
-
-  // Update UI
-  updateSummaryCards();
-  renderSalesTable();
-  updateProductPerformance();
-
-  // Close modal
-  closeNewSaleModal();
-
-  // Show success message
-  showToast(
-    `Sale completed successfully! Invoice: ${newSale.invoiceNo}`,
-    "success"
+  const pendingOrders = salesData.orders.filter(
+    (order) => order.orderStatus === "pending"
   );
 
-  // In a real app, you might want to print the invoice
-  console.log("New sale created:", newSale);
-}
-
-// View sale items
-function viewSaleItems(saleId) {
-  const sale = salesData.find((s) => s.id === saleId);
-  if (!sale) return;
-
-  let itemsHtml = `<h3 style="margin-bottom: 15px;">Invoice ${sale.invoiceNo}</h3>`;
-  itemsHtml += `<table style="width: 100%; border-collapse: collapse;">`;
-  itemsHtml += `
-                <thead>
+  if (pendingOrders.length === 0) {
+    pendingTable.innerHTML = `
                     <tr>
-                        <th style="padding: 10px; border-bottom: 1px solid #ddd; text-align: left;">Product</th>
-                        <th style="padding: 10px; border-bottom: 1px solid #ddd; text-align: right;">Qty</th>
-                        <th style="padding: 10px; border-bottom: 1px solid #ddd; text-align: right;">Price</th>
-                        <th style="padding: 10px; border-bottom: 1px solid #ddd; text-align: right;">Total</th>
+                        <td colspan="7" style="text-align: center; padding: 40px; color: #7f8c8d;">
+                            <i class="fas fa-clock" style="font-size: 40px; margin-bottom: 15px;"></i>
+                            <div>No pending orders found</div>
+                        </td>
                     </tr>
-                </thead>
-                <tbody>
-            `;
+                `;
+    return;
+  }
 
-  sale.itemsDetails.forEach((item) => {
+  pendingOrders.forEach((order) => {
+    const row = document.createElement("tr");
+
+    // Calculate total items
+    const totalItems = order.items.reduce(
+      (sum, item) => sum + item.quantity,
+      0
+    );
+
+    // Determine payment status
+    let paymentStatus = "";
+    if (order.paymentStatus === "paid") {
+      paymentStatus =
+        '<span style="color: var(--success-color); font-weight: 600;">Paid</span>';
+    } else {
+      paymentStatus =
+        '<span style="color: var(--warning-color); font-weight: 600;">Pending</span>';
+    }
+
+    row.innerHTML = `
+                    <td><strong>${order.id}</strong></td>
+                    <td>${order.date}</td>
+                    <td>${order.customer}</td>
+                    <td>${totalItems} items</td>
+                    <td><strong>$${order.total.toFixed(2)}</strong></td>
+                    <td>${paymentStatus}</td>
+                    <td>
+                        <button class="btn btn-sm btn-success" onclick="processOrder('${
+                          order.id
+                        }')">
+                            <i class="fas fa-check"></i> Process
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="cancelOrder('${
+                          order.id
+                        }')">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                    </td>
+                `;
+    pendingTable.appendChild(row);
+  });
+}
+
+// Load customers table
+function loadCustomersTable() {
+  const customersTable = document.getElementById("customersTable");
+  customersTable.innerHTML = "";
+
+  salesData.customers.forEach((customer) => {
+    const row = document.createElement("tr");
+
+    row.innerHTML = `
+                    <td>${customer.id}</td>
+                    <td><strong>${customer.name}</strong></td>
+                    <td>${customer.email}</td>
+                    <td>${customer.phone}</td>
+                    <td>${customer.orders}</td>
+                    <td><strong>$${customer.totalSpent.toLocaleString()}</strong></td>
+                    <td>${customer.lastOrder}</td>
+                `;
+    customersTable.appendChild(row);
+  });
+}
+
+// View order details
+function viewOrderDetails(orderId) {
+  const order = salesData.orders.find((o) => o.id === orderId);
+  if (!order) return;
+
+  document.getElementById(
+    "orderDetailsTitle"
+  ).textContent = `Order Details: ${order.id}`;
+
+  // Determine status badge
+  let statusClass = "";
+  let statusText = "";
+  switch (order.orderStatus) {
+    case "pending":
+      statusClass = "status-pending";
+      statusText = "Pending";
+      break;
+    case "processing":
+      statusClass = "status-processing";
+      statusText = "Processing";
+      break;
+    case "completed":
+      statusClass = "status-completed";
+      statusText = "Completed";
+      break;
+    case "cancelled":
+      statusClass = "status-cancelled";
+      statusText = "Cancelled";
+      break;
+    case "refunded":
+      statusClass = "status-refunded";
+      statusText = "Refunded";
+      break;
+  }
+
+  // Generate items list HTML
+  let itemsHtml = "";
+  order.items.forEach((item, index) => {
     itemsHtml += `
                     <tr>
-                        <td style="padding: 10px; border-bottom: 1px solid #eee;">${
-                          item.productName
-                        }</td>
-                        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">${
-                          item.quantity
-                        }</td>
-                        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$${item.price.toFixed(
-                          2
-                        )}</td>
-                        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">$${item.total.toFixed(
-                          2
-                        )}</td>
+                        <td>${index + 1}</td>
+                        <td>${item.name}</td>
+                        <td>$${item.price.toFixed(2)}</td>
+                        <td>${item.quantity}</td>
+                        <td>₹${item.total.toFixed(2)}</td>
                     </tr>
                 `;
   });
 
-  itemsHtml += `
-                </tbody>
-                <tfoot>
-                    <tr>
-                        <td colspan="3" style="padding: 10px; text-align: right; font-weight: bold;">Subtotal:</td>
-                        <td style="padding: 10px; text-align: right;">$${sale.totalAmount.toFixed(
-                          2
-                        )}</td>
-                    </tr>
-                    <tr>
-                        <td colspan="3" style="padding: 10px; text-align: right; font-weight: bold;">Status:</td>
-                        <td style="padding: 10px; text-align: right;">
-                            <span class="status ${sale.status}">${
-    sale.status
-  }</span>
-                        </td>
-                    </tr>
-                </tfoot>
-            </table>`;
+  // Determine payment status color
+  let paymentStatusColor = "";
+  if (order.paymentStatus === "paid") {
+    paymentStatusColor = "var(--success-color)";
+  } else if (order.paymentStatus === "pending") {
+    paymentStatusColor = "var(--warning-color)";
+  } else {
+    paymentStatusColor = "var(--accent-color)";
+  }
 
-  alertDialog("Sale Items", itemsHtml);
-}
-
-// Edit sale
-function editSale(saleId) {
-  const sale = salesData.find((s) => s.id === saleId);
-  if (!sale) return;
-
-  openNewSaleModal();
-
-  // Pre-fill form with sale data
-  document.getElementById("customerName").value = sale.customer;
-  document.getElementById("customerEmail").value = sale.customerEmail || "";
-  document.getElementById("paymentMethod").value = sale.paymentMethod || "cash";
-  document.getElementById("saleStatus").value = sale.status;
-  document.getElementById("notes").value = sale.notes || "";
-
-  // Clear existing items and add sale items
-  saleItems = sale.itemsDetails.map((item) => ({
-    productId: item.productId,
-    quantity: item.quantity,
-    price: item.price,
-    total: item.total,
-  }));
-
-  // Re-render items
-  const container = document.getElementById("saleItemsContainer");
-  container.innerHTML = "";
-
-  saleItems.forEach((item, index) => {
-    const product = products.find((p) => p.id === item.productId);
-    container.insertAdjacentHTML(
-      "beforeend",
-      `
-                    <div class="sale-item" style="background: #f8f9fa; padding: 15px; border-radius: 6px; margin-bottom: 10px;">
-                        <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr auto; gap: 10px; align-items: end;">
-                            <div>
-                                <label style="font-size: 13px;">Product *</label>
-                                <select class="form-control product-select" data-index="${index}" onchange="updateSaleItem(${index}, 'product', this.value)" required>
-                                    <option value="">Select product</option>
-                                    ${products
-                                      .map(
-                                        (p) =>
-                                          `<option value="${p.id}" ${
-                                            p.id === item.productId
-                                              ? "selected"
-                                              : ""
-                                          }>${p.name} - $${p.price}</option>`
-                                      )
-                                      .join("")}
-                                </select>
+  const detailsContent = document.getElementById("orderDetailsContent");
+  detailsContent.innerHTML = `
+                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 30px; margin-bottom: 30px;">
+                    <div>
+                        <h4 style="margin-bottom: 15px;">Order Information</h4>
+                        <table style="width: 100%;">
+                            <tr>
+                                <td style="padding: 8px 0; color: #7f8c8d;">Order ID:</td>
+                                <td style="padding: 8px 0; font-weight: 600;">${
+                                  order.id
+                                }</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px 0; color: #7f8c8d;">Order Date:</td>
+                                <td style="padding: 8px 0; font-weight: 600;">${
+                                  order.date
+                                }</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px 0; color: #7f8c8d;">Order Status:</td>
+                                <td style="padding: 8px 0;"><span class="status-badge ${statusClass}">${statusText}</span></td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px 0; color: #7f8c8d;">Payment Status:</td>
+                                <td style="padding: 8px 0; font-weight: 600; color: ${paymentStatusColor}">
+                                    ${
+                                      order.paymentStatus
+                                        .charAt(0)
+                                        .toUpperCase() +
+                                      order.paymentStatus.slice(1)
+                                    }
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div>
+                        <h4 style="margin-bottom: 15px;">Customer Information</h4>
+                        <table style="width: 100%;">
+                            <tr>
+                                <td style="padding: 8px 0; color: #7f8c8d;">Name:</td>
+                                <td style="padding: 8px 0; font-weight: 600;">${
+                                  order.customer
+                                }</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px 0; color: #7f8c8d;">Email:</td>
+                                <td style="padding: 8px 0;">${
+                                  order.customerEmail
+                                }</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 8px 0; color: #7f8c8d;">Phone:</td>
+                                <td style="padding: 8px 0;">${
+                                  order.customerPhone
+                                }</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 30px;">
+                    <h4 style="margin-bottom: 15px;">Shipping Address</h4>
+                    <p>${order.shippingAddress}</p>
+                </div>
+                
+                <div style="margin-bottom: 30px;">
+                    <h4 style="margin-bottom: 15px;">Order Items</h4>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Product</th>
+                                    <th>Price</th>
+                                    <th>Quantity</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${itemsHtml}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+                    <div>
+                        <h4 style="margin-bottom: 15px;">Order Notes</h4>
+                        <p style="color: #7f8c8d; font-style: italic;">${
+                          order.notes || "No notes available"
+                        }</p>
+                    </div>
+                    <div>
+                        <h4 style="margin-bottom: 15px;">Order Summary</h4>
+                        <div style="background: #f8f9fa; border-radius: 10px; padding: 20px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                                <span>Subtotal:</span>
+                                <span>$${order.subtotal.toFixed(2)}</span>
                             </div>
-                            <div>
-                                <label style="font-size: 13px;">Quantity *</label>
-                                <input type="number" class="form-control quantity-input" data-index="${index}" 
-                                       min="1" value="${
-                                         item.quantity
-                                       }" onchange="updateSaleItem(${index}, 'quantity', this.value)" required>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                                <span>Tax (18%):</span>
+                                <span>$${order.tax.toFixed(2)}</span>
                             </div>
-                            <div>
-                                <label style="font-size: 13px;">Price</label>
-                                <input type="number" class="form-control price-input" data-index="${index}" 
-                                       step="0.01" value="${
-                                         item.price
-                                       }" onchange="updateSaleItem(${index}, 'price', this.value)" readonly>
-                            </div>
-                            <div>
-                                <label style="font-size: 13px;">Total</label>
-                                <input type="text" class="form-control total-input" data-index="${index}" value="$${item.total.toFixed(
-        2
-      )}" readonly>
-                            </div>
-                            <div>
-                                <button type="button" class="btn btn-secondary" onclick="removeSaleItem(${index})" style="padding: 10px;">
-                                    <i class='bx bx-trash'></i>
-                                </button>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px; padding-top: 10px; border-top: 1px solid #ddd; font-weight: 600; font-size: 18px;">
+                                <span>Total:</span>
+                                <span>$${order.total.toFixed(2)}</span>
                             </div>
                         </div>
                     </div>
-                `
-    );
-  });
+                </div>
+                
+                <div style="display: flex; justify-content: flex-end; gap: 15px; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+                    <button class="btn" onclick="closeOrderDetailsModal()">Close</button>
+                    <button class="btn btn-primary" onclick="printOrder('${
+                      order.id
+                    }')">
+                        <i class="fas fa-print"></i> Print Invoice
+                    </button>
+                    ${
+                      order.orderStatus === "pending"
+                        ? `
+                        <button class="btn btn-success" onclick="processOrder('${order.id}')">
+                            <i class="fas fa-check"></i> Process Order
+                        </button>
+                    `
+                        : ""
+                    }
+                </div>
+            `;
 
-  updateSaleTotal();
-  showToast(`Editing sale ${sale.invoiceNo}`, "info");
+  document.getElementById("orderDetailsModal").classList.add("active");
 }
 
-// Delete sale
-function deleteSale(saleId) {
+// Close order details modal
+function closeOrderDetailsModal() {
+  document.getElementById("orderDetailsModal").classList.remove("active");
+}
+
+// Edit order
+function editOrder(orderId) {
+  alert(`Editing order: ${orderId}\nThis would open an order editor.`);
+}
+
+// Delete order
+function deleteOrder(orderId) {
   if (
     !confirm(
-      "Are you sure you want to delete this sale? This action cannot be undone."
+      `Are you sure you want to delete order ${orderId}? This action cannot be undone.`
     )
   ) {
     return;
   }
 
-  const saleIndex = salesData.findIndex((s) => s.id === saleId);
-  if (saleIndex !== -1) {
-    const deletedSale = salesData[saleIndex];
-    salesData.splice(saleIndex, 1);
+  // In a real app, you would send a delete request to the server
+  salesData.orders = salesData.orders.filter((order) => order.id !== orderId);
+  loadOrdersTable();
+  loadPendingTable();
 
-    // Update UI
-    updateSummaryCards();
-    renderSalesTable();
-    updateProductPerformance();
+  showNotification(`Order ${orderId} deleted successfully!`, "success");
+}
 
-    showToast(`Sale ${deletedSale.invoiceNo} deleted successfully`, "success");
+// Process order
+function processOrder(orderId) {
+  const order = salesData.orders.find((o) => o.id === orderId);
+  if (!order) return;
+
+  if (order.orderStatus === "pending") {
+    order.orderStatus = "processing";
+    loadOrdersTable();
+    loadPendingTable();
+    showNotification(`Order ${orderId} marked as processing!`, "success");
+  } else if (order.orderStatus === "processing") {
+    order.orderStatus = "completed";
+    loadOrdersTable();
+    showNotification(`Order ${orderId} marked as completed!`, "success");
   }
 }
 
-// Toggle chart type
-function toggleChartType(chartId) {
-  const chart = charts[chartId];
-  if (!chart) return;
+// Cancel order
+function cancelOrder(orderId) {
+  const order = salesData.orders.find((o) => o.id === orderId);
+  if (!order) return;
 
-  const currentType = chart.config.type;
-  const newType =
-    currentType === "line"
-      ? "bar"
-      : currentType === "bar"
-      ? "pie"
-      : currentType === "pie"
-      ? "doughnut"
-      : "line";
-
-  chart.config.type = newType;
-  chart.update();
-
-  showToast(`Chart changed to ${newType}`, "info");
+  if (confirm(`Are you sure you want to cancel order ${orderId}?`)) {
+    order.orderStatus = "cancelled";
+    loadOrdersTable();
+    loadPendingTable();
+    showNotification(`Order ${orderId} cancelled!`, "success");
+  }
 }
 
-// Download chart
-function downloadChart(chartId) {
-  const chart = charts[chartId];
-  if (!chart) return;
-
-  const link = document.createElement("a");
-  link.download = `${chartId}_${new Date().toISOString().split("T")[0]}.png`;
-  link.href = chart.toBase64Image();
-  link.click();
-
-  showToast("Chart downloaded", "success");
+// Print order invoice
+function printOrder(orderId) {
+  alert(`Printing invoice for order: ${orderId}`);
+  // In a real app, this would open a print dialog with the invoice
 }
 
-// Show toast notification
-function showToast(message, type = "success") {
-  const toast = document.getElementById("notificationToast");
-  const toastMessage = document.getElementById("toastMessage");
-
-  // Set message and type
-  toastMessage.textContent = message;
-  toast.className = `toast ${
-    type === "success"
-      ? "toast-success"
-      : type === "error"
-      ? "toast-error"
-      : "toast-warning"
-  } show`;
-
-  // Update icon
-  const icon = toast.querySelector(".toast-icon i");
-  icon.className =
-    type === "success"
-      ? "bx bx-check-circle"
-      : type === "error"
-      ? "bx bx-x-circle"
-      : "bx bx-error-circle";
-
-  // Auto hide after 3 seconds
-  setTimeout(hideToast, 3000);
+// Show new order modal
+function showNewOrderModal() {
+  document.getElementById("newOrderModal").classList.add("active");
+  // Clear any existing items
+  document.getElementById("orderItems").innerHTML = "";
+  // Add one empty row
+  addOrderItemRow();
+  updateOrderSummary();
 }
 
-function hideToast() {
-  document.getElementById("notificationToast").classList.remove("show");
-}
+// Add order item row
+function addOrderItemRow() {
+  const orderItems = document.getElementById("orderItems");
+  const rowCount = orderItems.children.length;
 
-// Alert dialog (simple replacement for modal)
-function alertDialog(title, content) {
-  const dialog = document.createElement("div");
-  dialog.style.cssText = `
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: rgba(0,0,0,0.5);
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                z-index: 10000;
+  const row = document.createElement("tr");
+  row.innerHTML = `
+                <td>
+                    <select class="form-control product-select" onchange="updateProductPrice(this, ${rowCount})">
+                        <option value="">Select Product</option>
+                        ${salesData.products
+                          .map(
+                            (product) => `
+                            <option value="${product.id}" data-price="${product.price}">${product.name} (Stock: ${product.stock})</option>
+                        `
+                          )
+                          .join("")}
+                    </select>
+                </td>
+                <td>
+                    <input type="number" class="form-control price-input" data-index="${rowCount}" value="0.00" min="0" step="0.01" readonly>
+                </td>
+                <td>
+                    <input type="number" class="form-control quantity-input" data-index="${rowCount}" value="1" min="1" onchange="updateItemTotal(${rowCount})">
+                </td>
+                <td>
+                    <input type="text" class="form-control total-input" data-index="${rowCount}" value="0.00" readonly>
+                </td>
+                <td>
+                    <button type="button" class="btn btn-danger btn-sm" onclick="removeOrderItemRow(this)">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
             `;
-
-  dialog.innerHTML = `
-                <div style="background: white; padding: 25px; border-radius: 12px; max-width: 600px; max-height: 80vh; overflow-y: auto;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                        <h3 style="margin: 0;">${title}</h3>
-                        <button onclick="this.parentElement.parentElement.parentElement.remove()" 
-                                style="background: none; border: none; font-size: 24px; cursor: pointer; color: #7f8c8d;">
-                            &times;
-                        </button>
-                    </div>
-                    <div>${content}</div>
-                    <div style="text-align: right; margin-top: 20px;">
-                        <button onclick="this.parentElement.parentElement.parentElement.remove()" 
-                                style="padding: 10px 20px; background: #3498db; color: white; border: none; border-radius: 6px; cursor: pointer;">
-                            Close
-                        </button>
-                    </div>
-                </div>
-            `;
-
-  document.body.appendChild(dialog);
+  orderItems.appendChild(row);
 }
 
-// Make functions available globally
-window.openNewSaleModal = openNewSaleModal;
-window.closeNewSaleModal = closeNewSaleModal;
-window.addSaleItem = addSaleItem;
-window.updateSaleItem = updateSaleItem;
-window.removeSaleItem = removeSaleItem;
-window.processNewSale = processNewSale;
-window.viewSaleItems = viewSaleItems;
-window.editSale = editSale;
-window.deleteSale = deleteSale;
-window.exportSalesReport = exportSalesReport;
-window.refreshSalesData = refreshSalesData;
-window.loadMoreSales = loadMoreSales;
-window.updateSalesData = updateSalesData;
-window.filterSalesTable = filterSalesTable;
-window.toggleChartType = toggleChartType;
-window.downloadChart = downloadChart;
-window.hideToast = hideToast;
+// Update product price when selected
+function updateProductPrice(selectElement, index) {
+  const selectedOption = selectElement.options[selectElement.selectedIndex];
+  const price = selectedOption.getAttribute("data-price") || "0";
+
+  const priceInput = document.querySelector(
+    `.price-input[data-index="${index}"]`
+  );
+  const quantityInput = document.querySelector(
+    `.quantity-input[data-index="${index}"]`
+  );
+
+  priceInput.value = parseFloat(price).toFixed(2);
+  updateItemTotal(index);
+}
+
+// Update item total
+function updateItemTotal(index) {
+  const priceInput = document.querySelector(
+    `.price-input[data-index="${index}"]`
+  );
+  const quantityInput = document.querySelector(
+    `.quantity-input[data-index="${index}"]`
+  );
+  const totalInput = document.querySelector(
+    `.total-input[data-index="${index}"]`
+  );
+
+  const price = parseFloat(priceInput.value) || 0;
+  const quantity = parseInt(quantityInput.value) || 0;
+  const total = price * quantity;
+
+  totalInput.value = total.toFixed(2);
+  updateOrderSummary();
+}
+
+// Remove order item row
+function removeOrderItemRow(button) {
+  const row = button.closest("tr");
+  row.remove();
+  updateOrderSummary();
+}
+
+// Update order summary
+function updateOrderSummary() {
+  let subtotal = 0;
+  const totalInputs = document.querySelectorAll(".total-input");
+
+  totalInputs.forEach((input) => {
+    subtotal += parseFloat(input.value) || 0;
+  });
+
+  const tax = subtotal * 0.18; // 18% tax
+  const total = subtotal + tax;
+
+  document.getElementById("orderSubtotal").textContent = `$${subtotal.toFixed(
+    2
+  )}`;
+  document.getElementById("orderTax").textContent = `$${tax.toFixed(2)}`;
+  document.getElementById("orderTotal").textContent = `$${total.toFixed(2)}`;
+}
+
+// Process new order
+function processNewOrder() {
+  const customerName = document.getElementById("customerName").value;
+  const customerPhone = document.getElementById("customerPhone").value;
+  const customerEmail = document.getElementById("customerEmail").value;
+  const customerAddress = document.getElementById("customerAddress").value;
+  const orderNotes = document.getElementById("orderNotes").value;
+
+  if (!customerName) {
+    alert("Please enter customer name!");
+    return;
+  }
+
+  // Collect order items
+  const items = [];
+  const productSelects = document.querySelectorAll(".product-select");
+  const quantityInputs = document.querySelectorAll(".quantity-input");
+
+  let hasItems = false;
+
+  for (let i = 0; i < productSelects.length; i++) {
+    const productSelect = productSelects[i];
+    const productId = productSelect.value;
+    const productName =
+      productSelect.options[productSelect.selectedIndex].text.split(" (")[0];
+    const price =
+      parseFloat(
+        document.querySelector(`.price-input[data-index="${i}"]`).value
+      ) || 0;
+    const quantity = parseInt(quantityInputs[i].value) || 0;
+
+    if (productId && quantity > 0) {
+      hasItems = true;
+      items.push({
+        name: productName,
+        quantity: quantity,
+        price: price,
+        total: price * quantity,
+      });
+    }
+  }
+
+  if (!hasItems) {
+    alert("Please add at least one product to the order!");
+    return;
+  }
+
+  // Calculate totals
+  const subtotal = items.reduce((sum, item) => sum + item.total, 0);
+  const tax = subtotal * 0.18;
+  const total = subtotal + tax;
+
+  // Generate new order ID
+  const orderId =
+    "ORD-" +
+    new Date().getFullYear() +
+    "-" +
+    (salesData.orders.length + 1).toString().padStart(3, "0");
+
+  // Create new order
+  const newOrder = {
+    id: orderId,
+    date: new Date().toLocaleString("en-US", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    }),
+    customer: customerName,
+    customerEmail: customerEmail,
+    customerPhone: customerPhone,
+    items: items,
+    subtotal: subtotal,
+    tax: tax,
+    total: total,
+    paymentStatus: "pending",
+    orderStatus: "pending",
+    shippingAddress: customerAddress,
+    notes: orderNotes,
+  };
+
+  // Add to orders array
+  salesData.orders.unshift(newOrder);
+
+  // Add to customers if new
+  const existingCustomer = salesData.customers.find(
+    (c) => c.email === customerEmail
+  );
+  if (!existingCustomer && customerEmail) {
+    const newCustomer = {
+      id:
+        "CUST-" + (salesData.customers.length + 1).toString().padStart(3, "0"),
+      name: customerName,
+      email: customerEmail,
+      phone: customerPhone,
+      orders: 1,
+      totalSpent: total,
+      lastOrder: new Date().toISOString().split("T")[0],
+    };
+    salesData.customers.push(newCustomer);
+  } else if (existingCustomer) {
+    existingCustomer.orders += 1;
+    existingCustomer.totalSpent += total;
+    existingCustomer.lastOrder = new Date().toISOString().split("T")[0];
+  }
+
+  // Close modal and reset form
+  document.getElementById("newOrderModal").classList.remove("active");
+  document.getElementById("customerName").value = "";
+  document.getElementById("customerPhone").value = "";
+  document.getElementById("customerEmail").value = "";
+  document.getElementById("customerAddress").value = "";
+  document.getElementById("orderNotes").value = "";
+
+  // Reload data
+  loadOrdersTable();
+  loadPendingTable();
+  loadCustomersTable();
+
+  // Show success notification
+  showNotification(`New order ${orderId} created successfully!`, "success");
+}
+
+// Save order as draft
+function saveOrderAsDraft() {
+  showNotification("Order saved as draft!", "success");
+}
+
+// Show notification
+function showNotification(message, type) {
+  const notification = document.createElement("div");
+  notification.style.position = "fixed";
+  notification.style.top = "20px";
+  notification.style.right = "20px";
+  notification.style.padding = "15px 20px";
+  notification.style.borderRadius = "8px";
+  notification.style.color = "white";
+  notification.style.fontWeight = "600";
+  notification.style.zIndex = "10000";
+  notification.style.boxShadow = "0 5px 15px rgba(0,0,0,0.2)";
+  notification.style.display = "flex";
+  notification.style.alignItems = "center";
+  notification.style.gap = "10px";
+
+  if (type === "success") {
+    notification.style.backgroundColor = "var(--success-color)";
+    notification.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
+  } else if (type === "error") {
+    notification.style.backgroundColor = "var(--accent-color)";
+    notification.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
+  } else {
+    notification.style.backgroundColor = "var(--secondary-color)";
+    notification.innerHTML = `<i class="fas fa-info-circle"></i> ${message}`;
+  }
+
+  document.body.appendChild(notification);
+
+  // Remove notification after 3 seconds
+  setTimeout(() => {
+    notification.remove();
+  }, 3000);
+}
+
+// Handle tab switching
+function switchTab(tabName) {
+  // Hide all tabs
+  document.getElementById("ordersTab").style.display = "none";
+  document.getElementById("pendingTab").style.display = "none";
+
+  // Show selected tab
+  if (tabName === "orders") {
+    document.getElementById("ordersTab").style.display = "block";
+  } else if (tabName === "pending") {
+    document.getElementById("pendingTab").style.display = "block";
+    loadPendingTable();
+  }
+
+  // Update tab buttons
+  document.querySelectorAll(".tab").forEach((tab) => {
+    tab.classList.remove("active");
+  });
+  event.target.classList.add("active");
+}
+
+// Setup event listeners
+function setupEventListeners() {
+  // Sidebar toggle
+  document
+    .getElementById("sidebarToggle")
+    .addEventListener("click", function () {
+      document.getElementById("sidebar").classList.toggle("collapsed");
+    });
+
+  // Mobile menu toggle
+  document
+    .getElementById("mobileMenuToggle")
+    .addEventListener("click", function () {
+      document.getElementById("sidebar").classList.toggle("active");
+    });
+
+  // Logout buttons
+  document.getElementById("logoutBtn").addEventListener("click", logout);
+  document
+    .getElementById("logoutSidebar")
+    .addEventListener("click", function (e) {
+      e.preventDefault();
+      logout();
+    });
+
+  // Action buttons
+  document
+    .getElementById("newOrderBtn")
+    .addEventListener("click", showNewOrderModal);
+  document
+    .getElementById("quickInvoiceBtn")
+    .addEventListener("click", function () {
+      alert("Quick Invoice feature would generate an instant invoice.");
+    });
+  document
+    .getElementById("importOrdersBtn")
+    .addEventListener("click", function () {
+      alert(
+        "Import Orders feature would allow importing orders from CSV/Excel."
+      );
+    });
+
+  // Apply filters button
+  document
+    .getElementById("applyFiltersBtn")
+    .addEventListener("click", function () {
+      // In a real app, this would filter the orders table
+      showNotification("Filters applied successfully!", "success");
+    });
+
+  // View all customers button
+  document
+    .getElementById("viewAllCustomersBtn")
+    .addEventListener("click", function () {
+      alert("This would show all customers in a separate page/modal.");
+    });
+
+  // Tab buttons
+  document.querySelectorAll(".tab").forEach((tab) => {
+    tab.addEventListener("click", function () {
+      const tabName = this.getAttribute("data-tab");
+      switchTab(tabName);
+    });
+  });
+
+  // Modal close buttons
+  document
+    .getElementById("closeNewOrderModal")
+    .addEventListener("click", function () {
+      document.getElementById("newOrderModal").classList.remove("active");
+    });
+
+  document
+    .getElementById("closeOrderDetailsModal")
+    .addEventListener("click", closeOrderDetailsModal);
+
+  // Cancel order button
+  document
+    .getElementById("cancelOrderBtn")
+    .addEventListener("click", function () {
+      document.getElementById("newOrderModal").classList.remove("active");
+    });
+
+  // Add item button
+  document
+    .getElementById("addItemBtn")
+    .addEventListener("click", addOrderItemRow);
+
+  // Save draft button
+  document
+    .getElementById("saveDraftBtn")
+    .addEventListener("click", saveOrderAsDraft);
+
+  // Process order button
+  document
+    .getElementById("processOrderBtn")
+    .addEventListener("click", processNewOrder);
+
+  // Close modals when clicking outside
+  window.addEventListener("click", function (e) {
+    if (e.target.classList.contains("modal")) {
+      e.target.classList.remove("active");
+    }
+  });
+}
+
+// Logout function
+function logout() {
+  if (confirm("Are you sure you want to logout?")) {
+    // Clear authentication data
+    localStorage.removeItem("loggedIn");
+    localStorage.removeItem("userRole");
+    localStorage.removeItem("userName");
+
+    // Redirect to login page
+    window.location.href = "login.html";
+  }
+}

@@ -1,418 +1,563 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>InventoryPro - Stock Management</title>
-    <link rel="stylesheet" href="/Frontend/static/css/stockmanagement.css">
-    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-</head>
-<body>
-    <header class="topbar">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>InventoryPro | Stock Management</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="../css/stockmanagement.css">nk
+  </head>
+  <body>
+    <!-- Authentication Check -->
+    <script>
+      // Check if user is logged in
+      if (
+        !localStorage.getItem("loggedIn") ||
+        localStorage.getItem("loggedIn") !== "true"
+      ) {
+        // Redirect to login page if not logged in
+        window.location.href = "login.html";
+      }
+    </script>
+
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-header">
         <div class="logo">
-            <i class="bx bx-cube"></i>
-            <span>InventoryPro</span>
+          <div class="logo-icon">
+            <i class="fas fa-boxes"></i>
+          </div>
+          <div class="logo-text">InventoryPro</div>
+        </div>
+        <button class="toggle-btn" id="sidebarToggle">
+          <i class="fas fa-chevron-left"></i>
+        </button>
+      </div>
+
+      <div class="sidebar-menu">
+        <a href="./dashboard.html" class="menu-item active">
+          <i class="fas fa-tachometer-alt"></i>
+          <span>Dashboard</span>
+        </a>
+
+        <a href="./update-category.html" class="menu-item">
+          <i class="fas fa-box-open"></i>
+          <span>Product Management</span>
+        </a>
+
+        <a href="./stockmanagement.html" class="menu-item">
+          <i class="fas fa-warehouse"></i>
+          <span>Stock Management</span>
+        </a>
+
+        <a href="./sale.html" class="menu-item">
+          <i class="fas fa-chart-line"></i>
+          <span>Sales Management</span>
+        </a>
+
+        <a href="./category-management.html" class="menu-item">
+          <i class="fas fa-tags"></i>
+          <span>Category Management</span>
+        </a>
+
+        <a href="./supplier.html" class="menu-item">
+          <i class="fas fa-truck"></i>
+          <span>Supplier Management</span>
+        </a>
+
+        <a href="./purchase.html" class="menu-item">
+          <i class="fas fa-shopping-cart"></i>
+          <span>Purchase Management</span>
+        </a>
+
+        <a href="./detailed-analytics.html" class="menu-item">
+          <i class="fas fa-chart-bar"></i>
+          <span>Analytics & Forecasts</span>
+        </a>
+
+        <a href="./back-up.html" class="menu-item">
+          <i class="fas fa-database"></i>
+          <span>Backup & Export</span>
+        </a>
+
+        <a href="./barcode.html" class="menu-item">
+          <i class="fas fa-barcode"></i>
+          <span>Barcode Scanner</span>
+        </a>
+
+        <a href="./tansition-history.html" class="menu-item">
+          <i class="fas fa-history"></i>
+          <span>Transaction History</span>
+        </a>
+
+        <a href="./user-management.html" class="menu-item">
+          <i class="fas fa-chart-line"></i>
+          <span>User Management</span>
+        </a>
+
+        <div class="sidebar-footer" style="padding: 20px; margin-top: auto">
+          <div class="menu-item" id="logoutSidebar">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Logout</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content" id="mainContent">
+      <!-- Header -->
+      <div class="header">
+        <div class="header-left">
+          <button class="mobile-menu-toggle" id="mobileMenuToggle">
+            <i class="fas fa-bars"></i>
+          </button>
+          <h1 id="pageTitle">Stock Management</h1>
         </div>
 
-        <div class="user-info">
-            <div class="avatar">A</div>
-            <span>Admin User</span>
-            <i class="bx bx-chevron-down"></i>
+        <div class="header-right">
+          <div class="user-profile">
+            <div class="user-avatar" id="userAvatar">A</div>
+            <button class="logout-btn" id="logoutBtn">
+              <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+          </div>
         </div>
-    </header>
+      </div>
 
-    <div class="app">
-        <!-- SIDEBAR -->
-        <aside class="sidebar">
-            <ul>
-                <li><i class="bx bx-user"></i> User Management</li>
-                <li><i class="bx bx-box"></i> Product Management</li>
-                <li class="active"><i class="bx bx-layer"></i> Stock Management</li>
-                <li><i class="bx bx-category"></i> Category Management</li>
-                <li><i class="bx bx-truck"></i> Supplier Management</li>
-                <li><i class="bx bx-cart"></i> Purchase Management</li>
-                <li><i class="bx bx-money"></i> Sales Management</li>
-                <li><i class="bx bx-bar-chart"></i> Reports</li>
-                <li><i class="bx bx-history"></i> Transaction History</li>
-                <li><i class="bx bx-download"></i> Backup & Export</li>
-            </ul>
-        </aside>
+      <!-- Content -->
+      <div class="content">
+        <!-- Page Header -->
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Stock Management</h1>
+            <p class="page-subtitle">
+              Track inventory levels, manage stock adjustments, and monitor
+              stock alerts
+            </p>
+          </div>
+          <div class="action-buttons">
+            <button class="btn btn-primary" id="stockInBtn">
+              <i class="fas fa-plus-circle"></i> Stock In
+            </button>
+            <button class="btn btn-warning" id="stockOutBtn">
+              <i class="fas fa-minus-circle"></i> Stock Out
+            </button>
+            <button class="btn btn-outline" id="stockAdjustBtn">
+              <i class="fas fa-exchange-alt"></i> Adjust Stock
+            </button>
+            <button class="btn btn-success" id="stockTransferBtn">
+              <i class="fas fa-truck-moving"></i> Transfer Stock
+            </button>
+          </div>
+        </div>
 
-        <main class="content">
-            <div class="stock-management">
-                <div class="page-header">
-                    <h1><i class='bx bx-layer'></i> Stock Management</h1>
-                    <div class="header-actions">
-                        <button class="btn btn-stock-in" id="stockInBtn">
-                            <i class="bx bx-plus"></i> Stock In
-                        </button>
-                        <button class="btn btn-stock-out" id="stockOutBtn">
-                            <i class="bx bx-minus"></i> Stock Out
-                        </button>
-                        <button class="btn btn-refresh" id="refreshBtn">
-                            <i class="bx bx-refresh"></i> Refresh
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Stock Stats -->
-                <div class="stock-stats">
-                    <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class='bx bx-package'></i>
-                        </div>
-                        <div class="stat-info">
-                            <h3 id="totalItems">0</h3>
-                            <p>Total Items</p>
-                        </div>
-                    </div>
-                    
-                    <div class="stat-card">
-                        <div class="stat-icon icon-warning">
-                            <i class='bx bx-low-vision'></i>
-                        </div>
-                        <div class="stat-info">
-                            <h3 id="lowStockItems">0</h3>
-                            <p>Low Stock Items</p>
-                        </div>
-                    </div>
-                    
-                    <div class="stat-card">
-                        <div class="stat-icon icon-danger">
-                            <i class='bx bx-x-circle'></i>
-                        </div>
-                        <div class="stat-info">
-                            <h3 id="outOfStockItems">0</h3>
-                            <p>Out of Stock</p>
-                        </div>
-                    </div>
-                    
-                    <div class="stat-card">
-                        <div class="stat-icon icon-success">
-                            <i class='bx bx-trending-up'></i>
-                        </div>
-                        <div class="stat-info">
-                            <h3 id="totalValue">$0</h3>
-                            <p>Total Stock Value</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Filter and Search -->
-                <div class="filter-controls">
-                    <div class="search-box">
-                        <i class="bx bx-search"></i>
-                        <input type="text" id="searchInput" placeholder="Search products...">
-                    </div>
-                    
-                    <div class="filter-group">
-                        <select id="categoryFilter" class="filter-select">
-                            <option value="all">All Categories</option>
-                            <option value="electronics">Electronics</option>
-                            <option value="accessories">Accessories</option>
-                            <option value="office">Office Supplies</option>
-                            <option value="furniture">Furniture</option>
-                        </select>
-                    </div>
-                    
-                    <div class="filter-group">
-                        <select id="statusFilter" class="filter-select">
-                            <option value="all">All Status</option>
-                            <option value="in_stock">In Stock</option>
-                            <option value="low_stock">Low Stock</option>
-                            <option value="out_of_stock">Out of Stock</option>
-                        </select>
-                    </div>
-                    
-                    <button class="btn btn-apply" id="applyFiltersBtn">
-                        <i class="bx bx-filter-alt"></i> Apply Filters
-                    </button>
-                </div>
-
-                <!-- Navigation Tabs -->
-                <nav class="stock-tabs">
-                    <ul>
-                        <li class="active" data-tab="all"><a href="#">All Stock</a></li>
-                        <li data-tab="low"><a href="#">Low Stock</a></li>
-                        <li data-tab="out"><a href="#">Out of Stock</a></li>
-                        <li data-tab="history"><a href="#">Stock History</a></li>
-                    </ul>
-                </nav>
-
-                <!-- Stock Table -->
-                <div class="stock-table-container">
-                    <table class="stock-table">
-                        <thead>
-                            <tr>
-                                <th>
-                                    <input type="checkbox" id="selectAll">
-                                </th>
-                                <th>Product Name</th>
-                                <th>Code</th>
-                                <th>Category</th>
-                                <th>Current Stock</th>
-                                <th>Price</th>
-                                <th>Total Value</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="stockTableBody">
-                            <!-- Products will be populated by JavaScript -->
-                        </tbody>
-                    </table>
-                    
-                    <div class="table-footer">
-                        <div class="selected-count">
-                            <span id="selectedItemsCount">0</span> items selected
-                        </div>
-                        <div class="bulk-actions">
-                            <button class="btn btn-bulk" id="bulkStockInBtn">
-                                <i class="bx bx-plus"></i> Bulk Stock In
-                            </button>
-                            <button class="btn btn-bulk" id="bulkStockOutBtn">
-                                <i class="bx bx-minus"></i> Bulk Stock Out
-                            </button>
-                        </div>
-                    </div>
-                </div>
+        <!-- Stock Overview -->
+        <div class="stock-overview">
+          <div class="overview-card">
+            <div class="card-header">
+              <div class="card-icon">
+                <i class="fas fa-boxes"></i>
+              </div>
+              <div class="card-change change-positive">
+                <i class="fas fa-arrow-up"></i> 8.5%
+              </div>
             </div>
-        </main>
+            <div class="card-value" id="totalStockValue">$245,680</div>
+            <div class="card-title">Total Stock Value</div>
+            <div class="stock-level">
+              <div class="stock-bar">
+                <div class="stock-fill good" style="width: 85%"></div>
+              </div>
+              <span style="font-size: 14px; font-weight: 600">85%</span>
+            </div>
+          </div>
+
+          <div class="overview-card success">
+            <div class="card-header">
+              <div class="card-icon">
+                <i class="fas fa-check-circle"></i>
+              </div>
+              <div class="card-change change-positive">
+                <i class="fas fa-arrow-up"></i> 5.2%
+              </div>
+            </div>
+            <div class="card-value" id="inStockItems">1,098</div>
+            <div class="card-title">In Stock Items</div>
+            <div class="stock-level">
+              <div class="stock-bar">
+                <div class="stock-fill good" style="width: 88%"></div>
+              </div>
+              <span style="font-size: 14px; font-weight: 600">88%</span>
+            </div>
+          </div>
+
+          <div class="overview-card warning">
+            <div class="card-header">
+              <div class="card-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+              </div>
+              <div class="card-change change-negative">
+                <i class="fas fa-arrow-down"></i> 3.1%
+              </div>
+            </div>
+            <div class="card-value" id="lowStockItems">47</div>
+            <div class="card-title">Low Stock Items</div>
+            <div class="stock-level">
+              <div class="stock-bar">
+                <div class="stock-fill warning" style="width: 35%"></div>
+              </div>
+              <span style="font-size: 14px; font-weight: 600">35%</span>
+            </div>
+          </div>
+
+          <div class="overview-card critical">
+            <div class="card-header">
+              <div class="card-icon">
+                <i class="fas fa-times-circle"></i>
+              </div>
+              <div class="card-change change-positive">
+                <i class="fas fa-arrow-down"></i> 12.5%
+              </div>
+            </div>
+            <div class="card-value" id="outOfStockItems">8</div>
+            <div class="card-title">Out of Stock Items</div>
+            <div class="stock-level">
+              <div class="stock-bar">
+                <div class="stock-fill critical" style="width: 15%"></div>
+              </div>
+              <span style="font-size: 14px; font-weight: 600">15%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stock Alerts -->
+        <div class="stock-alerts">
+          <div class="section-header">
+            <h3 class="section-title">
+              <i class="fas fa-bell"></i> Stock Alerts
+            </h3>
+            <button class="btn btn-outline" id="viewAllAlertsBtn">
+              <i class="fas fa-eye"></i> View All
+            </button>
+          </div>
+          <div class="alerts-list" id="alertsList">
+            <!-- Alerts will be populated by JavaScript -->
+          </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="charts-section">
+          <div class="chart-container">
+            <div class="chart-header">
+              <h3 class="chart-title">Stock Movement Trend</h3>
+              <select class="filter-select" id="movementPeriod">
+                <option value="week">Last 7 Days</option>
+                <option value="month">Last 30 Days</option>
+                <option value="quarter">Last 90 Days</option>
+              </select>
+            </div>
+            <canvas id="movementChart" height="250"></canvas>
+          </div>
+
+          <div class="chart-container">
+            <div class="chart-header">
+              <h3 class="chart-title">Stock Category Distribution</h3>
+            </div>
+            <canvas id="categoryChart" height="250"></canvas>
+          </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="filter-bar">
+          <div class="filter-group">
+            <span class="filter-label">Product:</span>
+            <input
+              type="text"
+              class="filter-input"
+              id="productFilter"
+              placeholder="Search by product name or SKU"
+            />
+          </div>
+
+          <div class="filter-group">
+            <span class="filter-label">Category:</span>
+            <select class="filter-select" id="categoryFilter">
+              <option value="">All Categories</option>
+              <option value="electronics">Electronics</option>
+              <option value="furniture">Furniture</option>
+              <option value="clothing">Clothing</option>
+              <option value="home">Home & Kitchen</option>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <span class="filter-label">Status:</span>
+            <select class="filter-select" id="statusFilter">
+              <option value="">All Status</option>
+              <option value="in-stock">In Stock</option>
+              <option value="low-stock">Low Stock</option>
+              <option value="out-of-stock">Out of Stock</option>
+            </select>
+          </div>
+
+          <button class="btn btn-primary" id="applyFiltersBtn">
+            <i class="fas fa-filter"></i> Apply Filters
+          </button>
+        </div>
+
+        <!-- Stock Movements Table -->
+        <div class="stock-movements">
+          <div class="section-header">
+            <h3 class="section-title">
+              <i class="fas fa-history"></i> Recent Stock Movements
+            </h3>
+            <button class="btn btn-outline" id="exportMovementsBtn">
+              <i class="fas fa-file-export"></i> Export
+            </button>
+          </div>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Date & Time</th>
+                  <th>Product</th>
+                  <th>Type</th>
+                  <th>Quantity</th>
+                  <th>Previous Stock</th>
+                  <th>New Stock</th>
+                  <th>Reference</th>
+                  <th>User</th>
+                </tr>
+              </thead>
+              <tbody id="movementsTable">
+                <!-- Stock movements will be populated by JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Inventory Table -->
+        <div class="stock-movements">
+          <div class="section-header">
+            <h3 class="section-title">
+              <i class="fas fa-clipboard-list"></i> Current Inventory
+            </h3>
+            <div class="action-buttons">
+              <button class="btn btn-outline" id="printInventoryBtn">
+                <i class="fas fa-print"></i> Print
+              </button>
+              <button class="btn btn-outline" id="exportInventoryBtn">
+                <i class="fas fa-download"></i> Export
+              </button>
+            </div>
+          </div>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Product Code</th>
+                  <th>Product Name</th>
+                  <th>Category</th>
+                  <th>Current Stock</th>
+                  <th>Min Stock</th>
+                  <th>Max Stock</th>
+                  <th>Stock Value</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="inventoryTable">
+                <!-- Inventory items will be populated by JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stock In Modal -->
+    <div class="modal" id="stockInModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title">Stock In - Add Inventory</h3>
+          <button class="modal-close" id="closeStockInModal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <form id="stockInForm">
+            <div class="form-group">
+              <label for="stockInProduct">Select Product *</label>
+              <select id="stockInProduct" class="form-control" required>
+                <option value="">Choose a product</option>
+                <!-- Products will be populated by JavaScript -->
+              </select>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="stockInQuantity">Quantity *</label>
+                <input
+                  type="number"
+                  id="stockInQuantity"
+                  class="form-control"
+                  min="1"
+                  required
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="stockInUnitPrice">Unit Price (₹)</label>
+                <input
+                  type="number"
+                  id="stockInUnitPrice"
+                  class="form-control"
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="stockInSupplier">Supplier</label>
+              <select id="stockInSupplier" class="form-control">
+                <option value="">Select Supplier</option>
+                <option value="supplier1">Supplier ABC</option>
+                <option value="supplier2">Supplier XYZ</option>
+                <option value="supplier3">Global Supplies Inc.</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="stockInReference">Reference Number</label>
+              <input
+                type="text"
+                id="stockInReference"
+                class="form-control"
+                placeholder="e.g., PO-2023-001"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="stockInNotes">Notes</label>
+              <textarea
+                id="stockInNotes"
+                class="form-control"
+                rows="3"
+                placeholder="Add any notes about this stock in..."
+              ></textarea>
+            </div>
+
+            <div class="form-actions">
+              <button type="button" class="btn" id="cancelStockInBtn">
+                Cancel
+              </button>
+              <button type="submit" class="btn btn-primary">
+                <i class="fas fa-check"></i> Process Stock In
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
     </div>
 
     <!-- Stock Adjustment Modal -->
-    <div class="modal-overlay" id="stockModal">
-        <div class="modal">
-            <div class="modal-header">
-                <span id="modalTitle">Stock In (Add Items)</span>
-                <button class="close-btn" id="closeModalBtn">&times;</button>
-            </div>
-
-            <div class="modal-body">
-                <form id="stockAdjustmentForm">
-                    <div class="form-group">
-                        <label for="productSelect">Product <span class="required">*</span></label>
-                        <select id="productSelect" required>
-                            <option value="">Select a product</option>
-                            <!-- Products will be populated by JavaScript -->
-                        </select>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="currentQuantity">Current Quantity</label>
-                            <input type="text" id="currentQuantity" readonly>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="minStock">Min. Stock Level</label>
-                            <input type="text" id="minStock" readonly>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="adjustmentQuantity">Adjustment Quantity <span class="required">*</span></label>
-                        <input type="number" id="adjustmentQuantity" placeholder="Enter quantity" min="1" required>
-                        <div class="help-text" id="adjustmentHelpText">Enter quantity to add to stock</div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="reason">Reason <span class="required">*</span></label>
-                        <select id="reason" required>
-                            <option value="">Select reason</option>
-                            <option value="purchase">Purchase Order</option>
-                            <option value="return">Customer Return</option>
-                            <option value="transfer">Warehouse Transfer</option>
-                            <option value="correction">Stock Correction</option>
-                            <option value="other">Other</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="notes">Notes</label>
-                        <textarea id="notes" rows="3" placeholder="Additional notes..."></textarea>
-                    </div>
-                </form>
-            </div>
-
-            <div class="modal-footer">
-                <button class="btn btn-cancel" id="cancelModalBtn">Cancel</button>
-                <button class="btn btn-save" id="saveAdjustmentBtn">Save Adjustment</button>
-            </div>
+    <div class="modal" id="stockAdjustModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title">Stock Adjustment</h3>
+          <button class="modal-close" id="closeStockAdjustModal">
+            &times;
+          </button>
         </div>
+        <div class="modal-body">
+          <form id="stockAdjustForm">
+            <div class="form-group">
+              <label for="adjustProduct">Select Product *</label>
+              <select id="adjustProduct" class="form-control" required>
+                <option value="">Choose a product</option>
+                <!-- Products will be populated by JavaScript -->
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label
+                >Current Stock:
+                <span id="currentStockDisplay">0</span> units</label
+              >
+            </div>
+
+            <div class="form-group">
+              <label for="adjustType">Adjustment Type *</label>
+              <select id="adjustType" class="form-control" required>
+                <option value="">Select type</option>
+                <option value="add">Add Stock</option>
+                <option value="remove">Remove Stock</option>
+                <option value="set">Set Stock to Specific Value</option>
+              </select>
+            </div>
+
+            <div class="form-group" id="adjustQuantityGroup">
+              <label for="adjustQuantity">Quantity *</label>
+              <input
+                type="number"
+                id="adjustQuantity"
+                class="form-control"
+                min="1"
+                required
+              />
+            </div>
+
+            <div class="form-group" id="adjustSetGroup" style="display: none">
+              <label for="adjustSetValue">Set Stock To *</label>
+              <input
+                type="number"
+                id="adjustSetValue"
+                class="form-control"
+                min="0"
+                required
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="adjustReason">Reason for Adjustment *</label>
+              <select id="adjustReason" class="form-control" required>
+                <option value="">Select reason</option>
+                <option value="damaged">Damaged Goods</option>
+                <option value="expired">Expired Products</option>
+                <option value="found">Found Items</option>
+                <option value="theft">Theft/Loss</option>
+                <option value="count_error">Counting Error</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="adjustNotes">Notes</label>
+              <textarea
+                id="adjustNotes"
+                class="form-control"
+                rows="3"
+                placeholder="Add details about this adjustment..."
+              ></textarea>
+            </div>
+
+            <div class="form-actions">
+              <button type="button" class="btn" id="cancelAdjustBtn">
+                Cancel
+              </button>
+              <button type="submit" class="btn btn-primary">
+                <i class="fas fa-check"></i> Apply Adjustment
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
     </div>
 
-    <!-- Bulk Stock Modal -->
-    <div class="modal-overlay" id="bulkStockModal">
-        <div class="modal modal-wide">
-            <div class="modal-header">
-                <span id="bulkModalTitle">Bulk Stock Adjustment</span>
-                <button class="close-btn" id="closeBulkModalBtn">&times;</button>
-            </div>
-
-            <div class="modal-body">
-                <div class="bulk-info">
-                    <p><i class="bx bx-info-circle"></i> Adjusting stock for <span id="bulkItemsCount">0</span> selected items</p>
-                </div>
-                
-                <div class="form-group">
-                    <label for="bulkAdjustmentType">Adjustment Type <span class="required">*</span></label>
-                    <select id="bulkAdjustmentType" required>
-                        <option value="">Select type</option>
-                        <option value="add">Add Stock</option>
-                        <option value="remove">Remove Stock</option>
-                        <option value="set">Set Stock to Specific Value</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="bulkAdjustmentValue">Adjustment Value <span class="required">*</span></label>
-                    <input type="number" id="bulkAdjustmentValue" placeholder="Enter value" min="1" required>
-                    <div class="help-text" id="bulkHelpText">Enter the adjustment value</div>
-                </div>
-
-                <div class="form-group">
-                    <label for="bulkReason">Reason <span class="required">*</span></label>
-                    <select id="bulkReason" required>
-                        <option value="">Select reason</option>
-                        <option value="purchase">Purchase Order</option>
-                        <option value="sale">Sales</option>
-                        <option value="return">Returns</option>
-                        <option value="transfer">Transfer</option>
-                        <option value="correction">Stock Correction</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="bulkNotes">Notes</label>
-                    <textarea id="bulkNotes" rows="3" placeholder="Notes for all adjustments..."></textarea>
-                </div>
-
-                <div class="selected-items-preview">
-                    <h4>Selected Items:</h4>
-                    <div id="selectedItemsList">
-                        <!-- Selected items will appear here -->
-                    </div>
-                </div>
-            </div>
-
-            <div class="modal-footer">
-                <button class="btn btn-cancel" id="cancelBulkModalBtn">Cancel</button>
-                <button class="btn btn-save" id="saveBulkAdjustmentBtn">Apply to All Selected</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Stock History Modal -->
-    <div class="modal-overlay" id="historyModal">
-        <div class="modal modal-wide">
-            <div class="modal-header">
-                <span>Stock History</span>
-                <button class="close-btn" id="closeHistoryModalBtn">&times;</button>
-            </div>
-
-            <div class="modal-body">
-                <div class="product-info">
-                    <h4 id="historyProductName">Product Name</h4>
-                    <div class="product-details">
-                        <span id="historyProductCode">Code: </span>
-                        <span id="historyProductCategory">Category: </span>
-                    </div>
-                </div>
-                
-                <div class="history-filters">
-                    <div class="filter-group">
-                        <label for="historyTypeFilter">Transaction Type</label>
-                        <select id="historyTypeFilter">
-                            <option value="all">All Types</option>
-                            <option value="stock_in">Stock In</option>
-                            <option value="stock_out">Stock Out</option>
-                            <option value="adjustment">Adjustment</option>
-                        </select>
-                    </div>
-                    
-                    <div class="filter-group">
-                        <label for="historyDateFrom">Date From</label>
-                        <input type="date" id="historyDateFrom">
-                    </div>
-                    
-                    <div class="filter-group">
-                        <label for="historyDateTo">Date To</label>
-                        <input type="date" id="historyDateTo">
-                    </div>
-                    
-                    <button class="btn btn-apply" id="applyHistoryFilterBtn">Filter</button>
-                </div>
-
-                <div class="history-table-container">
-                    <table class="history-table">
-                        <thead>
-                            <tr>
-                                <th>Date & Time</th>
-                                <th>Type</th>
-                                <th>Quantity</th>
-                                <th>Previous Stock</th>
-                                <th>New Stock</th>
-                                <th>User</th>
-                                <th>Reason</th>
-                                <th>Notes</th>
-                            </tr>
-                        </thead>
-                        <tbody id="historyTableBody">
-                            <!-- History records will be populated here -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div class="modal-footer">
-                <button class="btn btn-cancel" id="closeHistoryBtn">Close</button>
-                <button class="btn btn-export" id="exportHistoryBtn">
-                    <i class="bx bx-download"></i> Export History
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Notification Toast -->
-    <div class="toast" id="notificationToast">
-        <div class="toast-content">
-            <i class="bx bx-check-circle"></i>
-            <span id="toastMessage">Stock updated successfully!</span>
-        </div>
-    </div>
-
-    <footer class="footer">
-        <div class="footer-container">
-            <div class="footer-section">
-                <h3>InventoryPro Stock Management</h3>
-                <p>Manage your inventory efficiently with real-time stock tracking.</p>
-            </div>
-
-            <div class="footer-section">
-                <h4>Quick Links</h4>
-                <ul>
-                    <li><a href="#">Dashboard</a></li>
-                    <li><a href="#">Products</a></li>
-                    <li><a href="#">Stock Alerts</a></li>
-                    <li><a href="#">Reports</a></li>
-                </ul>
-            </div>
-
-            <div class="footer-section">
-                <h4>Contact</h4>
-                <p>Email: stock@inventorypro.com</p>
-                <p>Phone: +855 12 345 678</p>
-                <p>Support: Available 24/7</p>
-            </div>
-        </div>
-
-        <div class="footer-bottom">
-            © 2025 InventoryPro Stock Management System. All rights reserved.
-        </div>
-    </footer>
-
-
-</body>
+    <script src="../js/stockmanagement.js"></script>
+  </body>
 </html>

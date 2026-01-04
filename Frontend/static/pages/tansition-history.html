@@ -1,221 +1,487 @@
 <!DOCTYPE html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>InventoryPro | Transaction History</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="../css/transition-history.css">
+  </head>
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>InventoryPro - Transaction History</title>
-    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="/Frontend/static/css/transition-history.css">
-</head>
+  <body>
+    <!-- Authentication Check -->
+    <script>
+      // Check if user is logged in
+      if (
+        !localStorage.getItem("loggedIn") ||
+        localStorage.getItem("loggedIn") !== "true"
+      ) {
+        // Redirect to login page if not logged in
+        window.location.href = "login.html";
+      }
+    </script>
 
-<body>
-    <header class="topbar">
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-header">
         <div class="logo">
-            <i class="bx bx-cube"></i>
-            <span>InventoryPro</span>
+          <div class="logo-icon">
+            <i class="fas fa-boxes"></i>
+          </div>
+          <div class="logo-text">InventoryPro</div>
         </div>
+        <button class="toggle-btn" id="sidebarToggle">
+          <i class="fas fa-chevron-left"></i>
+        </button>
+      </div>
 
-        <div class="user-info">
-            <div class="avatar">A</div>
-            <span>Admin User</span>
-            <i class="bx bx-chevron-down"></i>
+      <div class="sidebar-menu">
+         <a href="./dashboard.html" class="menu-item active">
+          <i class="fas fa-tachometer-alt"></i>
+          <span>Dashboard</span>
+        </a>
+
+        <a href="./update-category.html" class="menu-item">
+          <i class="fas fa-box-open"></i>
+          <span>Product Management</span>
+        </a>
+
+        <a href="./stockmanagement.html" class="menu-item">
+          <i class="fas fa-warehouse"></i>
+          <span>Stock Management</span>
+        </a>
+
+        <a href="./sale.html" class="menu-item">
+          <i class="fas fa-chart-line"></i>
+          <span>Sales Management</span>
+        </a>
+
+        <a href="./category-management.html" class="menu-item">
+          <i class="fas fa-tags"></i>
+          <span>Category Management</span>
+        </a>
+
+        <a href="./supplier.html" class="menu-item">
+          <i class="fas fa-truck"></i>
+          <span>Supplier Management</span>
+        </a>
+
+        <a href="./purchase.html" class="menu-item">
+          <i class="fas fa-shopping-cart"></i>
+          <span>Purchase Management</span>
+        </a>
+
+        <a href="./detailed-analytics.html" class="menu-item">
+          <i class="fas fa-chart-bar"></i>
+          <span>Analytics & Forecasts</span>
+        </a>
+
+        <a href="./back-up.html" class="menu-item">
+          <i class="fas fa-database"></i>
+          <span>Backup & Export</span>
+        </a>
+
+        <a href="./barcode.html" class="menu-item">
+          <i class="fas fa-barcode"></i>
+          <span>Barcode Scanner</span>
+        </a>
+
+        <a href="./tansition-history.html" class="menu-item">
+          <i class="fas fa-history"></i>
+          <span>Transaction History</span>
+        </a>
+
+        <a href="./user-management.html" class="menu-item">
+          <i class="fas fa-chart-line"></i>
+          <span>User Management</span>
+        </a>
+        
+        <div class="sidebar-footer" style="padding: 20px; margin-top: auto">
+          <div class="menu-item" id="logoutSidebar">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Logout</span>
+          </div>
         </div>
-    </header>
-
-    <div class="app">
-        <!-- SIDEBAR -->
-        <aside class="sidebar">
-            <ul>
-                <li><i class="bx bx-user"></i> User Management</li>
-                <li><i class="bx bx-box"></i> Product Management</li>
-                <li><i class="bx bx-layer"></i> Stock Management</li>
-                <li><i class="bx bx-category"></i> Category Management</li>
-                <li><i class="bx bx-truck"></i> Supplier Management</li>
-                <li><i class="bx bx-cart"></i> Purchase Management</li>
-                <li><i class="bx bx-money"></i> Sales Management</li>
-                <li><i class="bx bx-bar-chart"></i> Reports</li>
-                <li><i class="bx bx-download"></i> Backup & Export</li>
-                <li class="active">
-                    <i class="bx bx-history"></i> Transaction History
-                </li>
-            </ul>
-        </aside>
-
-        <!-- MAIN CONTENT -->
-        <main class="content">
-            <div class="page-header">
-                <div class="page-title">
-                    <i class='bx bx-history'></i>
-                    Transaction History
-                </div>
-                <button class="btn-apply" onclick="exportTransactionHistory()">
-                    <i class="bx bx-download"></i> Export History
-                </button>
-            </div>
-
-            <!-- Filter Controls -->
-            <div class="filter-controls">
-                <div class="filter-group">
-                    <label for="transactionType">Transaction Type</label>
-                    <select id="transactionType" class="filter-select">
-                        <option value="all">All Types</option>
-                        <option value="restock">Restock</option>
-                        <option value="sale">Sale</option>
-                        <option value="return">Return</option>
-                        <option value="adjustment">Adjustment</option>
-                    </select>
-                </div>
-
-                <div class="filter-group">
-                    <label for="itemFilter">Item Name</label>
-                    <input type="text" id="itemFilter" class="filter-input" placeholder="Search by item name...">
-                </div>
-
-                <div class="filter-group">
-                    <label for="dateFrom">Date From</label>
-                    <input type="date" id="dateFrom" class="filter-input">
-                </div>
-
-                <div class="filter-group">
-                    <label for="dateTo">Date To</label>
-                    <input type="date" id="dateTo" class="filter-input">
-                </div>
-
-                <button class="btn-apply" onclick="applyFilters()">
-                    <i class="bx bx-filter-alt"></i> Apply Filters
-                </button>
-            </div>
-
-            <!-- Stats Cards -->
-            <div class="stats-cards">
-                <div class="stat-card">
-                    <div class="stat-icon restock">
-                        <i class="bx bx-box"></i>
-                    </div>
-                    <div class="stat-info">
-                        <h3>127</h3>
-                        <p>Restocks This Month</p>
-                    </div>
-                </div>
-
-                <div class="stat-card">
-                    <div class="stat-icon sale">
-                        <i class="bx bx-cart"></i>
-                    </div>
-                    <div class="stat-info">
-                        <h3>342</h3>
-                        <p>Sales This Month</p>
-                    </div>
-                </div>
-
-                <div class="stat-card">
-                    <div class="stat-icon return">
-                        <i class="bx bx-refresh"></i>
-                    </div>
-                    <div class="stat-info">
-                        <h3>23</h3>
-                        <p>Returns This Month</p>
-                    </div>
-                </div>
-
-                <div class="stat-card">
-                    <div class="stat-icon adjustment">
-                        <i class="bx bx-edit"></i>
-                    </div>
-                    <div class="stat-info">
-                        <h3>15</h3>
-                        <p>Adjustments This Month</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Transaction Table -->
-            <div class="transaction-table-container">
-                <div class="table-header">
-                    <h3>Recent Transactions</h3>
-                    <div>
-                        <span id="totalTransactions">45 transactions found</span>
-                    </div>
-                </div>
-
-                <table class="transaction-table">
-                    <thead>
-                        <tr>
-                            <th>Date & Time</th>
-                            <th>Transaction ID</th>
-                            <th>Type</th>
-                            <th>Item</th>
-                            <th>Quantity</th>
-                            <th>Unit Price</th>
-                            <th>Total Value</th>
-                            <th>User</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="transactionTableBody">
-                        <!-- Transactions will be populated here by JavaScript -->
-                    </tbody>
-                </table>
-
-                <div class="pagination">
-                    <button class="pagination-btn" onclick="changePage(1)">1</button>
-                    <button class="pagination-btn active" onclick="changePage(2)">2</button>
-                    <button class="pagination-btn" onclick="changePage(3)">3</button>
-                    <button class="pagination-btn" onclick="changePage(4)">4</button>
-                    <button class="pagination-btn" onclick="changePage(5)">5</button>
-                </div>
-            </div>
-        </main>
+      </div>
     </div>
 
-    <!-- Transaction Detail Modal -->
-    <div class="modal" id="transactionModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="modalTitle">Transaction Details</h3>
-                <button class="close-modal" onclick="closeModal()">&times;</button>
-            </div>
-            <div class="modal-body" id="modalBody">
-                <!-- Modal content will be populated by JavaScript -->
-            </div>
-            <div class="modal-footer">
-                <button class="btn-secondary" onclick="closeModal()">Close</button>
-                <button class="btn-apply" onclick="printTransaction()">Print</button>
-            </div>
+    <!-- Main Content -->
+    <div class="main-content" id="mainContent">
+      <!-- Header -->
+      <div class="header">
+        <div class="header-left">
+          <button class="mobile-menu-toggle" id="mobileMenuToggle">
+            <i class="fas fa-bars"></i>
+          </button>
+          <h1 id="pageTitle">Transaction History</h1>
         </div>
+
+        <div class="header-right">
+          <div class="user-profile">
+            <div class="user-avatar" id="userAvatar">A</div>
+            <button class="logout-btn" id="logoutBtn">
+              <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Content -->
+      <div class="content">
+        <!-- Page Header -->
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Transaction History</h1>
+            <p class="page-subtitle">
+              Track all inventory movements, sales, purchases, and system
+              activities
+            </p>
+          </div>
+          <div class="action-buttons">
+            <button class="btn btn-primary" id="exportAllBtn">
+              <i class="fas fa-file-export"></i> Export All
+            </button>
+            <button class="btn btn-success" id="generateReportBtn">
+              <i class="fas fa-chart-pie"></i> Generate Report
+            </button>
+            <button class="btn btn-outline" id="clearFiltersBtn">
+              <i class="fas fa-filter"></i> Clear Filters
+            </button>
+          </div>
+        </div>
+
+        <!-- Transaction Overview -->
+        <div class="transaction-overview">
+          <div class="overview-card">
+            <div class="card-header">
+              <div class="card-icon">
+                <i class="fas fa-exchange-alt"></i>
+              </div>
+              <div class="card-change change-positive">
+                <i class="fas fa-arrow-up"></i> 15.3%
+              </div>
+            </div>
+            <div class="card-value" id="totalTransactions">1,248</div>
+            <div class="card-title">Total Transactions</div>
+            <div class="card-change change-positive">
+              Last 30 Days: 348 transactions
+            </div>
+          </div>
+
+          <div class="overview-card success">
+            <div class="card-header">
+              <div class="card-icon">
+                <i class="fas fa-shopping-cart"></i>
+              </div>
+              <div class="card-change change-positive">
+                <i class="fas fa-arrow-up"></i> 22.5%
+              </div>
+            </div>
+            <div class="card-value" id="salesTransactions">648</div>
+            <div class="card-title">Sales Transactions</div>
+            <div class="card-change change-positive">Revenue: $1,245,680</div>
+          </div>
+
+          <div class="overview-card warning">
+            <div class="card-header">
+              <div class="card-icon">
+                <i class="fas fa-truck"></i>
+              </div>
+              <div class="card-change change-positive">
+                <i class="fas fa-arrow-up"></i> 8.7%
+              </div>
+            </div>
+            <div class="card-value" id="purchaseTransactions">324</div>
+            <div class="card-title">Purchase Transactions</div>
+            <div class="card-change change-positive">Cost: $845,200</div>
+          </div>
+
+          <div class="overview-card purple">
+            <div class="card-header">
+              <div class="card-icon">
+                <i class="fas fa-warehouse"></i>
+              </div>
+              <div class="card-change change-positive">
+                <i class="fas fa-arrow-up"></i> 12.1%
+              </div>
+            </div>
+            <div class="card-value" id="stockTransactions">276</div>
+            <div class="card-title">Stock Movements</div>
+            <div class="card-change change-positive">Adjustments: 48</div>
+          </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="charts-section">
+          <div class="chart-container">
+            <div class="section-header">
+              <h3 class="section-title">
+                <i class="fas fa-chart-line"></i> Transaction Trends
+              </h3>
+              <select class="filter-select" id="trendPeriod">
+                <option value="week">Last 7 Days</option>
+                <option value="month" selected>Last 30 Days</option>
+                <option value="quarter">Last 90 Days</option>
+              </select>
+            </div>
+            <canvas id="transactionTrendChart" height="250"></canvas>
+          </div>
+
+          <div class="chart-container">
+            <div class="section-header">
+              <h3 class="section-title">
+                <i class="fas fa-chart-pie"></i> Transaction Types
+              </h3>
+            </div>
+            <canvas id="transactionTypeChart" height="250"></canvas>
+          </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="filter-bar">
+          <div class="filter-group">
+            <span class="filter-label">Date Range:</span>
+            <input
+              type="date"
+              class="filter-date"
+              id="startDate"
+              value="2023-10-01"
+            />
+            <span>to</span>
+            <input
+              type="date"
+              class="filter-date"
+              id="endDate"
+              value="2023-10-31"
+            />
+          </div>
+
+          <div class="filter-group">
+            <span class="filter-label">Type:</span>
+            <select class="filter-select" id="transactionTypeFilter">
+              <option value="">All Types</option>
+              <option value="sale">Sales</option>
+              <option value="purchase">Purchases</option>
+              <option value="stock-in">Stock In</option>
+              <option value="stock-out">Stock Out</option>
+              <option value="adjustment">Adjustments</option>
+              <option value="transfer">Transfers</option>
+              <option value="return">Returns</option>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <span class="filter-label">User:</span>
+            <select class="filter-select" id="userFilter">
+              <option value="">All Users</option>
+              <option value="admin">Administrator</option>
+              <option value="manager">Manager</option>
+              <option value="staff">Staff</option>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <span class="filter-label">Search:</span>
+            <input
+              type="text"
+              class="filter-input"
+              id="transactionSearch"
+              placeholder="Transaction ID, Product, or Reference"
+            />
+          </div>
+
+          <button class="btn btn-primary" id="applyFiltersBtn">
+            <i class="fas fa-filter"></i> Apply Filters
+          </button>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+          <button class="tab active" data-tab="all">
+            <i class="fas fa-list"></i> All Transactions
+          </button>
+          <button class="tab" data-tab="sales">
+            <i class="fas fa-shopping-cart"></i> Sales
+          </button>
+          <button class="tab" data-tab="purchases">
+            <i class="fas fa-truck"></i> Purchases
+          </button>
+          <button class="tab" data-tab="stock">
+            <i class="fas fa-warehouse"></i> Stock Movements
+          </button>
+          <button class="tab" data-tab="adjustments">
+            <i class="fas fa-exchange-alt"></i> Adjustments
+          </button>
+        </div>
+
+        <!-- Transaction Details Panel (Initially Hidden) -->
+        <div class="transaction-details" id="transactionDetails">
+          <div class="details-header">
+            <h3 class="details-title" id="detailsTitle">Transaction Details</h3>
+            <button class="details-close" id="closeDetailsBtn">&times;</button>
+          </div>
+          <div id="transactionDetailsContent">
+            <!-- Transaction details will be populated by JavaScript -->
+          </div>
+        </div>
+
+        <!-- All Transactions Table -->
+        <div class="table-container" id="allTab">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Transaction ID</th>
+                <th>Date & Time</th>
+                <th>Type</th>
+                <th>Product/Item</th>
+                <th>Quantity</th>
+                <th>Amount</th>
+                <th>User</th>
+                <th>Reference</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="allTransactionsTable">
+              <!-- Transactions will be populated by JavaScript -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Sales Transactions Table (Hidden by default) -->
+        <div class="table-container" id="salesTab" style="display: none">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Transaction ID</th>
+                <th>Date & Time</th>
+                <th>Customer</th>
+                <th>Items</th>
+                <th>Total Amount</th>
+                <th>Payment Status</th>
+                <th>User</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="salesTransactionsTable">
+              <!-- Sales transactions will be populated by JavaScript -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="pagination" id="pagination">
+          <!-- Pagination will be generated by JavaScript -->
+        </div>
+
+        <!-- Activity Log -->
+        <div class="chart-container">
+          <div class="section-header">
+            <h3 class="section-title">
+              <i class="fas fa-clipboard-list"></i> Recent System Activities
+            </h3>
+            <button class="btn btn-outline" id="viewAllActivitiesBtn">
+              <i class="fas fa-eye"></i> View All
+            </button>
+          </div>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>Activity</th>
+                  <th>User</th>
+                  <th>IP Address</th>
+                  <th>Details</th>
+                </tr>
+              </thead>
+              <tbody id="activitiesTable">
+                <!-- Activities will be populated by JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <footer class="footer">
-        <div class="footer-container">
-            <div class="footer-section">
-                <h3>InventoryPro</h3>
-                <p>Track all inventory transactions easily and efficiently.</p>
-            </div>
-
-            <div class="footer-section">
-                <h4>Quick Links</h4>
-                <ul>
-                    <li><a href="#">Dashboard</a></li>
-                    <li><a href="#">Products</a></li>
-                    <li><a href="#">Reports</a></li>
-                    <li><a href="#">Transaction History</a></li>
-                </ul>
-            </div>
-
-            <div class="footer-section">
-                <h4>Contact</h4>
-                <p>Email: support@inventorypro.com</p>
-                <p>Phone: +855 12 345 678</p>
-            </div>
+    <!-- Export Modal -->
+    <div class="modal" id="exportModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title">Export Transaction History</h3>
+          <button class="modal-close" id="closeExportModal">&times;</button>
         </div>
+        <div class="modal-body">
+          <form id="exportForm">
+            <div class="form-group">
+              <label for="exportFormat">Export Format</label>
+              <select id="exportFormat" class="form-control">
+                <option value="csv">CSV (Comma Separated Values)</option>
+                <option value="excel">Excel (XLSX)</option>
+                <option value="pdf">PDF Document</option>
+                <option value="json">JSON</option>
+              </select>
+            </div>
 
-        <div class="footer-bottom">
-            © 2025 InventoryPro System. All rights reserved.
+            <div class="form-group">
+              <label for="exportDateRange">Date Range</label>
+              <select id="exportDateRange" class="form-control">
+                <option value="all">All Dates</option>
+                <option value="today">Today</option>
+                <option value="yesterday">Yesterday</option>
+                <option value="this-week">This Week</option>
+                <option value="last-week">Last Week</option>
+                <option value="this-month" selected>This Month</option>
+                <option value="last-month">Last Month</option>
+                <option value="custom">Custom Range</option>
+              </select>
+            </div>
+
+            <div class="form-row" id="customDateRange" style="display: none">
+              <div class="form-group">
+                <label for="exportStartDate">Start Date</label>
+                <input type="date" id="exportStartDate" class="form-control" />
+              </div>
+              <div class="form-group">
+                <label for="exportEndDate">End Date</label>
+                <input type="date" id="exportEndDate" class="form-control" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="exportTransactionType">Transaction Type</label>
+              <select id="exportTransactionType" class="form-control">
+                <option value="all">All Types</option>
+                <option value="sale">Sales</option>
+                <option value="purchase">Purchases</option>
+                <option value="stock-in">Stock In</option>
+                <option value="stock-out">Stock Out</option>
+                <option value="adjustment">Adjustments</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>
+                <input type="checkbox" id="includeAllFields" checked />
+                Include all fields
+              </label>
+            </div>
+
+            <div class="form-actions">
+              <button type="button" class="btn" id="cancelExportBtn">
+                Cancel
+              </button>
+              <button type="submit" class="btn btn-primary">
+                <i class="fas fa-download"></i> Export Data
+              </button>
+            </div>
+          </form>
         </div>
-    </footer>
-
-</body>
-<script src="/Frontend/static/js/transition-history.js"></script>
+      </div>
+    </div>
+    <script src="../js/transition-history.js"></script>
+  </body>
 </html>
