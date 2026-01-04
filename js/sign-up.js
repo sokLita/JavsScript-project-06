@@ -156,7 +156,7 @@ loginForm.addEventListener("submit", function (e) {
     loginBtn.disabled = true;
 
     setTimeout(() => {
-      window.location.href = "dashboard.html";
+      window.location.href = "pages/dashboard.html";
     }, 1500);
   } else {
     document.getElementById("passwordError").textContent =
