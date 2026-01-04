@@ -1,567 +1,321 @@
-// Check authentication on page load
+// Initialize on page load
 document.addEventListener("DOMContentLoaded", function () {
-  // Get user info from localStorage
-  const userRole = localStorage.getItem("userRole") || "admin";
-  const userName = localStorage.getItem("userName") || "Administrator";
+  // Set user info
+  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+  if (currentUser) {
+    document.getElementById("userAvatar").textContent = currentUser.name
+      .charAt(0)
+      .toUpperCase();
+  }
 
-  // Update UI with user info
-  document.getElementById("userAvatar").textContent = userName
-    .charAt(0)
-    .toUpperCase();
-
-  // Initialize backup data
-  loadExportData();
+  // Load backup data
+  loadBackupData();
   loadBackupHistory();
   setupEventListeners();
 
-  // Check user permissions - only admin can access backup
-  if (userRole !== "admin") {
-    alert("Access denied. This section requires administrator privileges.");
-    window.location.href = "dashboard.html";
-  }
+  // Set default backup name with date
+  const now = new Date();
+  const dateStr = now.toISOString().split("T")[0].replace(/-/g, "");
+  document.getElementById("backupName").value = `Backup-${dateStr}`;
 });
 
-// Sample backup data
+// Backup data structure
 let backupData = {
-  exportOptions: [
-    {
-      id: "products",
-      name: "Products",
-      records: 1245,
-      lastUpdated: "2023-10-18",
-      size: "4.2 MB",
-      selected: true,
-    },
-    {
-      id: "customers",
-      name: "Customers",
-      records: 856,
-      lastUpdated: "2023-10-18",
-      size: "1.8 MB",
-      selected: true,
-    },
-    {
-      id: "orders",
-      name: "Sales Orders",
-      records: 348,
-      lastUpdated: "2023-10-18",
-      size: "2.1 MB",
-      selected: true,
-    },
-    {
-      id: "suppliers",
-      name: "Suppliers",
-      records: 42,
-      lastUpdated: "2023-10-17",
-      size: "0.3 MB",
-      selected: false,
-    },
-    {
-      id: "categories",
-      name: "Categories",
-      records: 18,
-      lastUpdated: "2023-10-16",
-      size: "0.1 MB",
-      selected: false,
-    },
-    {
-      id: "inventory",
-      name: "Inventory",
-      records: 1245,
-      lastUpdated: "2023-10-18",
-      size: "3.5 MB",
-      selected: true,
-    },
-    {
-      id: "transactions",
-      name: "Transactions",
-      records: 2150,
-      lastUpdated: "2023-10-18",
-      size: "5.7 MB",
-      selected: false,
-    },
-    {
-      id: "users",
-      name: "Users",
-      records: 12,
-      lastUpdated: "2023-10-15",
-      size: "0.2 MB",
-      selected: false,
-    },
-  ],
-  backupHistory: [
-    {
-      id: "backup_001",
-      name: "Full Backup Oct 18",
-      date: "2023-10-18 02:00",
-      type: "Full",
-      size: "245 MB",
-      status: "success",
-    },
-    {
-      id: "backup_002",
-      name: "Incremental Oct 17",
-      date: "2023-10-17 02:00",
-      type: "Incremental",
-      size: "45 MB",
-      status: "success",
-    },
-    {
-      id: "backup_003",
-      name: "Full Backup Oct 10",
-      date: "2023-10-10 02:00",
-      type: "Full",
-      size: "230 MB",
-      status: "success",
-    },
-    {
-      id: "backup_004",
-      name: "Incremental Oct 09",
-      date: "2023-10-09 02:00",
-      type: "Incremental",
-      size: "38 MB",
-      status: "success",
-    },
-    {
-      id: "backup_005",
-      name: "Manual Backup Oct 05",
-      date: "2023-10-05 14:30",
-      type: "Full",
-      size: "225 MB",
-      status: "success",
-    },
-    {
-      id: "backup_006",
-      name: "Failed Backup Oct 03",
-      date: "2023-10-03 02:00",
-      type: "Full",
-      size: "0 MB",
-      status: "failed",
-    },
-    {
-      id: "backup_007",
-      name: "Incremental Oct 02",
-      date: "2023-10-02 02:00",
-      type: "Incremental",
-      size: "42 MB",
-      status: "success",
-    },
-    {
-      id: "backup_008",
-      name: "Full Backup Sep 25",
-      date: "2023-09-25 02:00",
-      type: "Full",
-      size: "210 MB",
-      status: "success",
-    },
-  ],
-  backupFiles: [
-    {
-      id: "backup_001",
-      name: "Full Backup Oct 18",
-      date: "2023-10-18",
-      size: "245 MB",
-    },
-    {
-      id: "backup_002",
-      name: "Incremental Oct 17",
-      date: "2023-10-17",
-      size: "45 MB",
-    },
-    {
-      id: "backup_003",
-      name: "Full Backup Oct 10",
-      date: "2023-10-10",
-      size: "230 MB",
-    },
-    {
-      id: "backup_005",
-      name: "Manual Backup Oct 05",
-      date: "2023-10-05",
-      size: "225 MB",
-    },
-  ],
+  backups: [],
+  settings: {
+    autoBackup: false,
+    autoBackupFrequency: "disabled",
+    lastAutoBackup: null,
+    maxBackups: 10,
+    backupRetentionDays: 30,
+  },
 };
 
-// Current export format
-let currentExportFormat = "excel";
+// Load backup data from localStorage
+function loadBackupData() {
+  const savedBackupData = localStorage.getItem("inventoryBackupData");
+  if (savedBackupData) {
+    backupData = JSON.parse(savedBackupData);
+  }
 
-// Load export data table
-function loadExportData() {
-  const exportDataTable = document.getElementById("exportDataTable");
-  exportDataTable.innerHTML = "";
-
-  backupData.exportOptions.forEach((item) => {
-    const row = document.createElement("tr");
-
-    row.innerHTML = `
-                    <td><strong>${item.name}</strong></td>
-                    <td>${item.records.toLocaleString()} records</td>
-                    <td>${item.lastUpdated}</td>
-                    <td>${item.size}</td>
-                    <td>
-                        <input type="checkbox" class="data-checkbox" data-id="${
-                          item.id
-                        }" ${item.selected ? "checked" : ""}>
-                    </td>
-                `;
-    exportDataTable.appendChild(row);
-  });
-
-  // Update select all checkbox
-  updateSelectAllCheckbox();
+  // Update UI with backup data
+  updateBackupUI();
 }
 
-// Load backup history
+// Save backup data to localStorage
+function saveBackupData() {
+  localStorage.setItem("inventoryBackupData", JSON.stringify(backupData));
+}
+
+// Update backup UI
+function updateBackupUI() {
+  const settings = backupData.settings;
+
+  // Update auto backup settings
+  document.getElementById("autoBackupFrequency").value =
+    settings.autoBackupFrequency;
+
+  // Update auto backup button
+  const autoBackupBtn = document.getElementById("toggleAutoBackupBtn");
+  if (settings.autoBackup) {
+    autoBackupBtn.innerHTML =
+      '<i class="fas fa-power-off"></i> Disable Auto Backup';
+    autoBackupBtn.className = "btn btn-danger";
+  } else {
+    autoBackupBtn.innerHTML =
+      '<i class="fas fa-power-off"></i> Enable Auto Backup';
+    autoBackupBtn.className = "btn btn-success";
+  }
+
+  // Update last backup time
+  if (backupData.backups.length > 0) {
+    const latestBackup = backupData.backups[backupData.backups.length - 1];
+    const backupDate = new Date(latestBackup.timestamp);
+    document.getElementById("lastBackupTime").textContent =
+      formatDate(backupDate);
+
+    // Calculate backup size
+    const backupSize = calculateBackupSize(latestBackup);
+    document.getElementById("backupSize").textContent = backupSize;
+  }
+
+  // Update storage indicator
+  updateStorageIndicator();
+}
+
+// Calculate backup size
+function calculateBackupSize(backup) {
+  const jsonStr = JSON.stringify(backup);
+  const bytes = new Blob([jsonStr]).size;
+  const mb = bytes / (1024 * 1024);
+  return mb.toFixed(2) + " MB";
+}
+
+// Format date
+function formatDate(date) {
+  const options = {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  };
+  return date.toLocaleDateString("en-US", options);
+}
+
+// Update storage indicator
+function updateStorageIndicator() {
+  // Calculate total storage used
+  let totalSize = 0;
+  backupData.backups.forEach((backup) => {
+    const jsonStr = JSON.stringify(backup);
+    totalSize += new Blob([jsonStr]).size;
+  });
+
+  const totalMB = totalSize / (1024 * 1024);
+  const maxStorage = 10; // 10 MB max storage
+  const percentUsed = (totalMB / maxStorage) * 100;
+
+  document.getElementById("storageFill").style.width =
+    Math.min(percentUsed, 100) + "%";
+  document.getElementById("storageText").textContent =
+    totalMB.toFixed(2) + " MB used";
+}
+
+// Load backup history table
 function loadBackupHistory() {
-  const backupHistoryTable = document.getElementById("backupHistoryTable");
-  backupHistoryTable.innerHTML = "";
+  const tableBody = document.getElementById("backupTableBody");
+  tableBody.innerHTML = "";
 
-  backupData.backupHistory.forEach((backup) => {
+  if (backupData.backups.length === 0) {
+    tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 40px; color: #7f8c8d;">
+                            <i class="fas fa-database" style="font-size: 40px; margin-bottom: 15px; display: block;"></i>
+                            <h4>No backups found</h4>
+                            <p>Create your first backup to get started</p>
+                        </td>
+                    </tr>
+                `;
+    return;
+  }
+
+  // Sort backups by date (newest first)
+  const sortedBackups = [...backupData.backups].sort(
+    (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
+  );
+
+  sortedBackups.forEach((backup) => {
     const row = document.createElement("tr");
+    const backupDate = new Date(backup.timestamp);
+    const backupSize = calculateBackupSize(backup);
 
-    // Determine status badge
-    let statusClass = "";
-    let statusText = "";
-    if (backup.status === "success") {
-      statusClass = "status-success";
-      statusText = "Completed";
-    } else {
-      statusClass = "status-danger";
-      statusText = "Failed";
+    // Determine status
+    let statusClass = "status-success";
+    let statusText = "Complete";
+
+    // Check if backup is old (30+ days)
+    const today = new Date();
+    const daysDiff = Math.floor((today - backupDate) / (1000 * 60 * 60 * 24));
+    if (daysDiff > 30) {
+      statusClass = "status-warning";
+      statusText = "Old";
     }
 
     row.innerHTML = `
-                    <td><strong>${backup.name}</strong></td>
-                    <td>${backup.date}</td>
-                    <td>${backup.type}</td>
-                    <td>${backup.size}</td>
+                    <td>
+                        <strong>${backup.name}</strong><br>
+                        <small style="color: #7f8c8d;">${
+                          backup.description || "No description"
+                        }</small>
+                    </td>
+                    <td>${formatDate(backupDate)}</td>
+                    <td>${backupSize}</td>
+                    <td>${backup.type || "Manual"}</td>
                     <td><span class="status-badge ${statusClass}">${statusText}</span></td>
                     <td>
-                        <button class="btn btn-sm btn-primary" onclick="downloadBackup('${backup.id}')">
+                        <button class="btn btn-sm btn-primary" onclick="downloadBackup('${
+                          backup.id
+                        }')" style="margin-right: 5px;">
                             <i class="fas fa-download"></i>
                         </button>
-                        <button class="btn btn-sm btn-success" onclick="restoreBackup('${backup.id}')">
-                            <i class="fas fa-redo"></i>
+                        <button class="btn btn-sm btn-warning" onclick="restoreBackupPrompt('${
+                          backup.id
+                        }')" style="margin-right: 5px;">
+                            <i class="fas fa-history"></i>
                         </button>
-                        <button class="btn btn-sm btn-danger" onclick="deleteBackup('${backup.id}')">
+                        <button class="btn btn-sm btn-danger" onclick="deleteBackup('${
+                          backup.id
+                        }')">
                             <i class="fas fa-trash"></i>
                         </button>
                     </td>
                 `;
-    backupHistoryTable.appendChild(row);
+    tableBody.appendChild(row);
   });
 
-  // Populate restore backup dropdown
-  populateRestoreBackupDropdown();
+  // Populate restore backup select
+  populateRestoreSelect();
 }
 
-// Populate restore backup dropdown
-function populateRestoreBackupDropdown() {
-  const selectBackupFile = document.getElementById("selectBackupFile");
-  // Clear existing options except the first one
-  while (selectBackupFile.options.length > 1) selectBackupFile.remove(1);
+// Populate restore backup select
+function populateRestoreSelect() {
+  const select = document.getElementById("restoreBackupSelect");
+  select.innerHTML = '<option value="">Select a backup</option>';
 
-  backupData.backupFiles.forEach((backup) => {
+  // Sort backups by date (newest first)
+  const sortedBackups = [...backupData.backups].sort(
+    (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
+  );
+
+  sortedBackups.forEach((backup) => {
     const option = document.createElement("option");
     option.value = backup.id;
-    option.textContent = `${backup.name} (${backup.date}, ${backup.size})`;
-    selectBackupFile.appendChild(option);
+    option.textContent = `${backup.name} (${formatDate(
+      new Date(backup.timestamp)
+    )})`;
+    select.appendChild(option);
   });
 }
 
-// Update select all checkbox
-function updateSelectAllCheckbox() {
-  const checkboxes = document.querySelectorAll(".data-checkbox");
-  const selectAllCheckbox = document.getElementById("selectAllData");
+// Create a new backup
+function createBackup() {
+  const backupName =
+    document.getElementById("backupName").value.trim() ||
+    `Backup-${new Date().toISOString().split("T")[0]}`;
+  const backupDescription = document.getElementById("backupDescription").value;
 
-  const allChecked = Array.from(checkboxes).every((cb) => cb.checked);
-  const someChecked = Array.from(checkboxes).some((cb) => cb.checked);
+  // Get included data options
+  const includeProducts = document.getElementById("includeProducts").checked;
+  const includeSales = document.getElementById("includeSales").checked;
+  const includePurchases = document.getElementById("includePurchases").checked;
+  const includeUsers = document.getElementById("includeUsers").checked;
+  const encryptBackup = document.getElementById("encryptBackup").checked;
 
-  selectAllCheckbox.checked = allChecked;
-  selectAllCheckbox.indeterminate = someChecked && !allChecked;
-}
-
-// Select all data for export
-function selectAllData() {
-  const checkboxes = document.querySelectorAll(".data-checkbox");
-  const selectAllCheckbox = document.getElementById("selectAllData");
-
-  checkboxes.forEach((cb) => {
-    cb.checked = selectAllCheckbox.checked;
-  });
-
-  // Update the backupData
-  backupData.exportOptions.forEach((item) => {
-    item.selected = selectAllCheckbox.checked;
-  });
-}
-
-// Handle export type selection
-function selectExportType(format) {
-  currentExportFormat = format;
-
-  // Update UI
-  document.querySelectorAll(".export-type").forEach((type) => {
-    type.classList.remove("selected");
-  });
-  document
-    .querySelector(`.export-type[data-format="${format}"]`)
-    .classList.add("selected");
-}
-
-// Create full backup
-function createFullBackup() {
-  document.getElementById("backupModalTitle").textContent =
-    "Creating Full Backup";
-  document.getElementById("backupStatusMessage").textContent =
-    "Starting full database backup...";
-  document.getElementById("backupDetails").style.display = "block";
-
-  // Show modal
-  document.getElementById("backupProgressModal").classList.add("active");
-
-  // Start backup simulation
-  simulateBackupProcess("full");
-}
-
-// Create quick backup
-function createQuickBackup() {
-  document.getElementById("backupModalTitle").textContent =
-    "Creating Quick Backup";
-  document.getElementById("backupStatusMessage").textContent =
-    "Starting quick backup...";
-  document.getElementById("backupDetails").style.display = "none";
-
-  // Show modal
-  document.getElementById("backupProgressModal").classList.add("active");
-
-  // Start backup simulation
-  simulateBackupProcess("quick");
-}
-
-// Simulate backup process
-function simulateBackupProcess(type) {
-  const progressFill = document.getElementById("progressFill");
-  const progressPercentage = document.getElementById("progressPercentage");
-  const currentTable = document.getElementById("currentTable");
-  const recordsProcessed = document.getElementById("recordsProcessed");
-  const estimatedTime = document.getElementById("estimatedTime");
-
-  let progress = 0;
-  const totalSteps = type === "full" ? 8 : 4;
-  const tables = [
-    "Products",
-    "Customers",
-    "Orders",
-    "Suppliers",
-    "Categories",
-    "Inventory",
-    "Transactions",
-    "Users",
-  ];
-
-  let currentStep = 0;
-  let totalRecords = 0;
-
-  const interval = setInterval(
-    () => {
-      if (type === "full" || currentStep < 4) {
-        progress += 100 / totalSteps;
-        currentStep++;
-
-        // Update progress bar
-        progressFill.style.width = `${progress}%`;
-        progressPercentage.textContent = `${Math.round(progress)}%`;
-
-        // Update details
-        if (type === "full") {
-          const tableName = tables[currentStep - 1];
-          const tableRecords =
-            backupData.exportOptions.find((item) =>
-              item.name.toLowerCase().includes(tableName.toLowerCase())
-            )?.records || 100;
-
-          currentTable.textContent = tableName;
-          totalRecords += tableRecords;
-          recordsProcessed.textContent = totalRecords.toLocaleString();
-
-          // Update estimated time
-          const remainingTime = Math.round((100 - progress) / 2);
-          estimatedTime.textContent = `${remainingTime} seconds`;
-        }
-
-        // Complete the process
-        if (progress >= 100) {
-          clearInterval(interval);
-
-          // Update UI to show completion
-          document.getElementById("backupStatusMessage").textContent =
-            "Backup completed successfully!";
-          document.getElementById("backupStatusMessage").style.color =
-            "var(--success-color)";
-
-          // Add to backup history
-          const backupId =
-            "backup_" +
-            (backupData.backupHistory.length + 1).toString().padStart(3, "0");
-          const backupName =
-            type === "full"
-              ? "Full Backup " +
-                new Date().toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                })
-              : "Quick Backup " +
-                new Date().toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                });
-          const backupSize = type === "full" ? "245 MB" : "120 MB";
-
-          const newBackup = {
-            id: backupId,
-            name: backupName,
-            date: new Date().toLocaleString("en-US", {
-              year: "numeric",
-              month: "2-digit",
-              day: "2-digit",
-              hour: "2-digit",
-              minute: "2-digit",
-            }),
-            type: type === "full" ? "Full" : "Quick",
-            size: backupSize,
-            status: "success",
-          };
-
-          backupData.backupHistory.unshift(newBackup);
-
-          // Also add to backup files if successful
-          if (type === "full") {
-            backupData.backupFiles.unshift({
-              id: backupId,
-              name: backupName,
-              date: new Date().toISOString().split("T")[0],
-              size: backupSize,
-            });
-          }
-
-          // Reload backup history
-          loadBackupHistory();
-
-          // Close modal after 2 seconds
-          setTimeout(() => {
-            document
-              .getElementById("backupProgressModal")
-              .classList.remove("active");
-
-            // Reset modal
-            progressFill.style.width = "0%";
-            progressPercentage.textContent = "0%";
-            document.getElementById("backupStatusMessage").textContent =
-              "Preparing backup process...";
-            document.getElementById("backupStatusMessage").style.color = "";
-
-            // Show success notification
-            showNotification(
-              `${
-                type === "full" ? "Full" : "Quick"
-              } backup created successfully!`,
-              "success"
-            );
-          }, 2000);
-        }
-      }
-    },
-    type === "full" ? 500 : 300
-  );
-}
-
-// Start export process
-function startExport() {
-  // Get selected data
-  const selectedData = backupData.exportOptions.filter((item) => item.selected);
-
-  if (selectedData.length === 0) {
-    alert("Please select at least one data type to export.");
+  // Get system data
+  const systemData = JSON.parse(localStorage.getItem("inventorySystemData"));
+  if (!systemData) {
+    showNotification("No data found to backup!", "error");
     return;
   }
 
-  // Get format
-  const format = currentExportFormat;
+  // Create backup object
+  const backup = {
+    id: "backup_" + Date.now(),
+    name: backupName,
+    description: backupDescription,
+    timestamp: new Date().toISOString(),
+    type: "manual",
+    encrypted: encryptBackup,
+    data: {
+      // Only include selected data
+      products: includeProducts ? systemData.products : [],
+      categories: includeProducts ? systemData.categories : [],
+      suppliers: includePurchases ? systemData.suppliers : [],
+      sales: includeSales ? systemData.sales : [],
+      purchases: includePurchases ? systemData.purchases : [],
+      stockMovements: includeProducts ? systemData.stockMovements : [],
+      users: includeUsers ? systemData.users : [],
+      settings: includeUsers ? systemData.settings : {},
+    },
+    metadata: {
+      productCount: includeProducts ? systemData.products.length : 0,
+      saleCount: includeSales ? systemData.sales.length : 0,
+      purchaseCount: includePurchases ? systemData.purchases.length : 0,
+      userCount: includeUsers ? systemData.users.length : 0,
+    },
+  };
 
-  // Show backup modal for export
-  document.getElementById(
-    "backupModalTitle"
-  ).textContent = `Exporting Data (${format.toUpperCase()})`;
-  document.getElementById(
-    "backupStatusMessage"
-  ).textContent = `Preparing ${format.toUpperCase()} export...`;
-  document.getElementById("backupDetails").style.display = "none";
+  // Encrypt if selected (simplified - in real app would use proper encryption)
+  if (encryptBackup) {
+    backup.data = btoa(JSON.stringify(backup.data)); // Simple base64 encoding
+  }
 
-  // Show modal
-  document.getElementById("backupProgressModal").classList.add("active");
+  // Add to backups
+  backupData.backups.push(backup);
 
-  // Simulate export process
+  // Limit number of backups
+  if (backupData.backups.length > backupData.settings.maxBackups) {
+    backupData.backups.shift(); // Remove oldest backup
+  }
+
+  // Save backup data
+  saveBackupData();
+
+  // Update UI
+  updateBackupUI();
+  loadBackupHistory();
+
+  // Close modal
+  document.getElementById("backupModal").classList.remove("active");
+
+  // Show success notification
+  showNotification(`Backup "${backupName}" created successfully!`, "success");
+
+  // Simulate backup progress
+  simulateBackupProgress();
+}
+
+// Simulate backup progress
+function simulateBackupProgress() {
+  const progressContainer = document.getElementById("progressContainer");
   const progressFill = document.getElementById("progressFill");
-  const progressPercentage = document.getElementById("progressPercentage");
+  const progressPercent = document.getElementById("progressPercent");
+
+  progressContainer.style.display = "block";
 
   let progress = 0;
   const interval = setInterval(() => {
     progress += 10;
-    progressFill.style.width = `${progress}%`;
-    progressPercentage.textContent = `${progress}%`;
+    progressFill.style.width = progress + "%";
+    progressPercent.textContent = progress + "%";
 
     if (progress >= 100) {
       clearInterval(interval);
-
-      // Update UI to show completion
-      document.getElementById(
-        "backupStatusMessage"
-      ).textContent = `Export completed! Downloading ${format.toUpperCase()} file...`;
-      document.getElementById("backupStatusMessage").style.color =
-        "var(--success-color)";
-
-      // Simulate file download
       setTimeout(() => {
-        // Create download link
-        const dataStr =
-          "data:text/json;charset=utf-8," +
-          encodeURIComponent(
-            JSON.stringify({
-              exportedData: selectedData,
-              format: format,
-              timestamp: new Date().toISOString(),
-            })
-          );
-
-        const downloadAnchor = document.createElement("a");
-        downloadAnchor.setAttribute("href", dataStr);
-        downloadAnchor.setAttribute(
-          "download",
-          `inventory_export_${new Date().toISOString().split("T")[0]}.${format}`
-        );
-        document.body.appendChild(downloadAnchor);
-        downloadAnchor.click();
-        downloadAnchor.remove();
-
-        // Close modal
-        document
-          .getElementById("backupProgressModal")
-          .classList.remove("active");
-
-        // Reset modal
+        progressContainer.style.display = "none";
         progressFill.style.width = "0%";
-        progressPercentage.textContent = "0%";
-        document.getElementById("backupStatusMessage").textContent =
-          "Preparing backup process...";
-        document.getElementById("backupStatusMessage").style.color = "";
-
-        // Show success notification
-        showNotification(
-          `Data exported successfully as ${format.toUpperCase()}!`,
-          "success"
-        );
+        progressPercent.textContent = "0%";
       }, 1000);
     }
   }, 100);
@@ -569,47 +323,132 @@ function startExport() {
 
 // Download backup
 function downloadBackup(backupId) {
-  const backup = backupData.backupHistory.find((b) => b.id === backupId);
+  const backup = backupData.backups.find((b) => b.id === backupId);
+  if (!backup) {
+    showNotification("Backup not found!", "error");
+    return;
+  }
+
+  // Prepare data for download
+  let downloadData;
+  if (backup.encrypted) {
+    // Decrypt data (simplified)
+    try {
+      const decrypted = atob(backup.data);
+      downloadData = JSON.parse(decrypted);
+    } catch (error) {
+      showNotification("Failed to decrypt backup!", "error");
+      return;
+    }
+  } else {
+    downloadData = backup.data;
+  }
+
+  // Create downloadable JSON
+  const jsonStr = JSON.stringify(
+    {
+      ...backup,
+      data: downloadData,
+    },
+    null,
+    2
+  );
+
+  // Create download link
+  const blob = new Blob([jsonStr], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${backup.name.replace(/\s+/g, "-")}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  showNotification(`Backup "${backup.name}" downloaded!`, "success");
+}
+
+// Restore backup prompt
+function restoreBackupPrompt(backupId) {
+  const backup = backupData.backups.find((b) => b.id === backupId);
   if (!backup) return;
 
-  // Simulate download
-  showNotification(`Downloading backup: ${backup.name}`, "success");
+  // Set backup details
+  const backupDate = new Date(backup.timestamp);
+  const backupSize = calculateBackupSize(backup);
 
-  // In a real app, this would initiate a file download
-  setTimeout(() => {
-    showNotification(
-      `Backup ${backup.name} downloaded successfully!`,
-      "success"
-    );
-  }, 1500);
+  const details = document.getElementById("backupDetails");
+  details.innerHTML = `
+                <strong>${backup.name}</strong><br>
+                <small>Created: ${formatDate(backupDate)}</small><br>
+                <small>Size: ${backupSize}</small><br>
+                <small>Type: ${backup.type || "Manual"}</small><br>
+                <small>Products: ${
+                  backup.metadata?.productCount || 0
+                }</small><br>
+                <small>Sales: ${backup.metadata?.saleCount || 0}</small>
+            `;
+
+  // Set select value
+  document.getElementById("restoreBackupSelect").value = backupId;
+
+  // Show modal
+  document.getElementById("restoreModal").classList.add("active");
 }
 
 // Restore backup
-function restoreBackup(backupId) {
-  // Find backup
-  const backup = backupData.backupFiles.find((b) => b.id === backupId);
+function restoreBackup() {
+  const backupId = document.getElementById("restoreBackupSelect").value;
+  const backup = backupData.backups.find((b) => b.id === backupId);
+
   if (!backup) {
-    // Try to find in history
-    const historyBackup = backupData.backupHistory.find(
-      (b) => b.id === backupId
-    );
-    if (!historyBackup) {
-      alert("Backup file not found!");
+    showNotification("Backup not found!", "error");
+    return;
+  }
+
+  // Get backup data
+  let backupDataToRestore;
+  if (backup.encrypted) {
+    try {
+      const decrypted = atob(backup.data);
+      backupDataToRestore = JSON.parse(decrypted);
+    } catch (error) {
+      showNotification("Failed to decrypt backup!", "error");
       return;
     }
+  } else {
+    backupDataToRestore = backup.data;
   }
 
-  // Set the backup in dropdown
-  const selectBackupFile = document.getElementById("selectBackupFile");
-  for (let i = 0; i < selectBackupFile.options.length; i++) {
-    if (selectBackupFile.options[i].value === backupId) {
-      selectBackupFile.selectedIndex = i;
-      break;
-    }
-  }
+  // Create complete system data from backup
+  const restoredSystemData = {
+    products: backupDataToRestore.products || [],
+    categories: backupDataToRestore.categories || [],
+    suppliers: backupDataToRestore.suppliers || [],
+    sales: backupDataToRestore.sales || [],
+    purchases: backupDataToRestore.purchases || [],
+    stockMovements: backupDataToRestore.stockMovements || [],
+    users: backupDataToRestore.users || [],
+    settings: backupDataToRestore.settings || {},
+  };
 
-  // Show restore modal
-  document.getElementById("restoreBackupModal").classList.add("active");
+  // Save to localStorage
+  localStorage.setItem(
+    "inventorySystemData",
+    JSON.stringify(restoredSystemData)
+  );
+
+  // Close modal
+  document.getElementById("restoreModal").classList.remove("active");
+
+  // Show success notification
+  showNotification(`Backup "${backup.name}" restored successfully!`, "success");
+
+  // Reload page after 2 seconds
+  setTimeout(() => {
+    alert("System data has been restored. The page will now reload.");
+    window.location.reload();
+  }, 2000);
 }
 
 // Delete backup
@@ -622,165 +461,329 @@ function deleteBackup(backupId) {
     return;
   }
 
-  // Remove from history
-  backupData.backupHistory = backupData.backupHistory.filter(
-    (b) => b.id !== backupId
-  );
-
-  // Remove from files
-  backupData.backupFiles = backupData.backupFiles.filter(
-    (b) => b.id !== backupId
-  );
-
-  // Reload tables
+  backupData.backups = backupData.backups.filter((b) => b.id !== backupId);
+  saveBackupData();
   loadBackupHistory();
+  updateBackupUI();
 
   showNotification("Backup deleted successfully!", "success");
 }
 
-// Handle restore type change
-function handleRestoreTypeChange() {
-  const partialRestoreRadio = document.getElementById("partialRestore");
-  const partialRestoreOptions = document.getElementById(
-    "partialRestoreOptions"
-  );
-
-  partialRestoreOptions.style.display = partialRestoreRadio.checked
-    ? "block"
-    : "none";
-}
-
-// Confirm restore backup
-function confirmRestoreBackup() {
-  const backupId = document.getElementById("selectBackupFile").value;
-  if (!backupId) {
-    alert("Please select a backup file to restore.");
+// Delete old backups
+function deleteOldBackups() {
+  if (!confirm("Delete all backups older than 30 days?")) {
     return;
   }
 
-  const fullRestore = document.getElementById("fullRestore").checked;
-  const backupBeforeRestore = document.getElementById(
-    "backupBeforeRestore"
-  ).checked;
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-  if (
-    confirm(
-      `Are you sure you want to restore ${
-        fullRestore ? "ALL" : "selected"
-      } data from this backup? This will ${
-        fullRestore ? "replace all current data" : "update selected tables"
-      }.`
-    )
-  ) {
-    // Close modal
-    document.getElementById("restoreBackupModal").classList.remove("active");
+  const oldBackups = backupData.backups.filter((backup) => {
+    return new Date(backup.timestamp) < thirtyDaysAgo;
+  });
 
-    // Show backup modal for restore
-    document.getElementById("backupModalTitle").textContent =
-      "Restoring Backup";
-    document.getElementById("backupStatusMessage").textContent =
-      backupBeforeRestore
-        ? "Creating backup before restore..."
-        : "Starting restore process...";
-    document.getElementById("backupDetails").style.display = "none";
+  if (oldBackups.length === 0) {
+    showNotification("No old backups found!", "info");
+    return;
+  }
 
-    // Show modal
-    document.getElementById("backupProgressModal").classList.add("active");
+  backupData.backups = backupData.backups.filter((backup) => {
+    return new Date(backup.timestamp) >= thirtyDaysAgo;
+  });
 
-    // Simulate restore process
-    const progressFill = document.getElementById("progressFill");
-    const progressPercentage = document.getElementById("progressPercentage");
+  saveBackupData();
+  loadBackupHistory();
+  updateBackupUI();
 
-    let progress = 0;
-    let step = backupBeforeRestore ? 0 : 1; // 0=backup, 1=restore
+  showNotification(`${oldBackups.length} old backups deleted!`, "success");
+}
 
-    const interval = setInterval(() => {
-      if (step === 0) {
-        // Creating backup phase
-        progress += 2;
-        if (progress >= 50) {
-          step = 1;
-          document.getElementById("backupStatusMessage").textContent =
-            "Backup created. Starting restore...";
-        }
+// Export data in various formats
+function exportData(format, type) {
+  const systemData = JSON.parse(localStorage.getItem("inventorySystemData"));
+  if (!systemData) {
+    showNotification("No data to export!", "error");
+    return;
+  }
+
+  let dataToExport;
+  let fileName;
+  let mimeType;
+
+  switch (type) {
+    case "products":
+      dataToExport = systemData.products;
+      fileName = "products-export";
+      break;
+    case "sales":
+      dataToExport = systemData.sales;
+      fileName = "sales-export";
+      break;
+    case "inventory":
+      dataToExport = systemData.products.map((p) => ({
+        name: p.name,
+        sku: p.sku,
+        category: p.category,
+        currentStock: p.currentStock,
+        minStock: p.minStock || 0,
+        price: p.price,
+        status:
+          p.currentStock === 0
+            ? "Out of Stock"
+            : p.currentStock <= (p.minStock || 10)
+            ? "Low Stock"
+            : "In Stock",
+      }));
+      fileName = "inventory-export";
+      break;
+    case "report":
+      // Generate report data
+      dataToExport = {
+        summary: {
+          totalProducts: systemData.products.length,
+          totalSales: systemData.sales.length,
+          totalValue: systemData.products.reduce(
+            (sum, p) => sum + p.price * p.currentStock,
+            0
+          ),
+          lowStockItems: systemData.products.filter(
+            (p) => p.currentStock <= (p.minStock || 10) && p.currentStock > 0
+          ).length,
+          outOfStockItems: systemData.products.filter(
+            (p) => p.currentStock === 0
+          ).length,
+        },
+        generated: new Date().toISOString(),
+      };
+      fileName = "inventory-report";
+      break;
+    default: // 'all'
+      dataToExport = systemData;
+      fileName = "inventory-full-backup";
+      break;
+  }
+
+  switch (format) {
+    case "json":
+      exportAsJSON(dataToExport, fileName);
+      break;
+    case "csv":
+      exportAsCSV(dataToExport, fileName, type);
+      break;
+    case "pdf":
+      showNotification("PDF export feature coming soon!", "info");
+      break;
+    case "excel":
+      showNotification("Excel export feature coming soon!", "info");
+      break;
+  }
+}
+
+// Export as JSON
+function exportAsJSON(data, fileName) {
+  const jsonStr = JSON.stringify(data, null, 2);
+  const blob = new Blob([jsonStr], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${fileName}-${new Date().toISOString().split("T")[0]}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  showNotification("Data exported as JSON!", "success");
+}
+
+// Export as CSV
+function exportAsCSV(data, fileName, type) {
+  let csvContent = "";
+
+  if (Array.isArray(data)) {
+    // Extract headers
+    if (data.length > 0) {
+      const headers = Object.keys(data[0]);
+      csvContent += headers.join(",") + "\n";
+
+      // Add rows
+      data.forEach((item) => {
+        const row = headers.map((header) => {
+          let value = item[header];
+          // Handle special cases
+          if (typeof value === "object") {
+            value = JSON.stringify(value);
+          }
+          // Escape commas and quotes
+          value = String(value).replace(/"/g, '""');
+          if (
+            value.includes(",") ||
+            value.includes('"') ||
+            value.includes("\n")
+          ) {
+            value = `"${value}"`;
+          }
+          return value;
+        });
+        csvContent += row.join(",") + "\n";
+      });
+    }
+  } else {
+    // For non-array data (like report)
+    csvContent = "Key,Value\n";
+    Object.entries(data).forEach(([key, value]) => {
+      if (typeof value === "object") {
+        csvContent += `${key},"${JSON.stringify(value).replace(/"/g, '""')}"\n`;
       } else {
-        // Restore phase
-        progress += 2;
+        csvContent += `${key},${value}\n`;
       }
+    });
+  }
 
-      progressFill.style.width = `${progress}%`;
-      progressPercentage.textContent = `${progress}%`;
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${fileName}-${new Date().toISOString().split("T")[0]}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 
-      if (progress >= 100) {
-        clearInterval(interval);
+  showNotification("Data exported as CSV!", "success");
+}
 
-        // Update UI to show completion
-        document.getElementById("backupStatusMessage").textContent =
-          "Restore completed successfully!";
-        document.getElementById("backupStatusMessage").style.color =
-          "var(--success-color)";
+// Handle file upload
+function handleFileUpload(file) {
+  const fileList = document.getElementById("fileList");
 
-        // Close modal after 2 seconds
-        setTimeout(() => {
-          document
-            .getElementById("backupProgressModal")
-            .classList.remove("active");
+  // Create file item
+  const fileItem = document.createElement("div");
+  fileItem.className = "file-item";
+  fileItem.innerHTML = `
+                <div class="file-icon">
+                    <i class="fas fa-file-${
+                      file.name.endsWith(".json") ? "code" : "csv"
+                    }"></i>
+                </div>
+                <div class="file-info">
+                    <div class="file-name">${file.name}</div>
+                    <div class="file-size">${(file.size / 1024).toFixed(
+                      2
+                    )} KB</div>
+                </div>
+                <button class="file-remove" onclick="this.parentElement.remove(); document.getElementById('startImportBtn').disabled = true;">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
 
-          // Reset modal
-          progressFill.style.width = "0%";
-          progressPercentage.textContent = "0%";
-          document.getElementById("backupStatusMessage").textContent =
-            "Preparing backup process...";
-          document.getElementById("backupStatusMessage").style.color = "";
+  fileList.appendChild(fileItem);
 
-          // Show success notification
+  // Enable import button
+  document.getElementById("startImportBtn").disabled = false;
+
+  // Store file reference
+  fileItem.dataset.fileName = file.name;
+  fileItem.dataset.fileType = file.name.endsWith(".json") ? "json" : "csv";
+
+  // Store file object
+  fileItem.file = file;
+}
+
+// Import data from file
+function importData() {
+  const fileItem = document.querySelector(".file-item");
+  if (!fileItem || !fileItem.file) {
+    showNotification("No file selected!", "error");
+    return;
+  }
+
+  const file = fileItem.file;
+  const fileType = file.name.endsWith(".json") ? "json" : "csv";
+  const importOption = document.querySelector(
+    'input[name="importOption"]:checked'
+  ).value;
+
+  const reader = new FileReader();
+
+  reader.onload = function (e) {
+    try {
+      if (fileType === "json") {
+        const importedData = JSON.parse(e.target.result);
+
+        if (importOption === "replace") {
+          // Replace all data
+          localStorage.setItem(
+            "inventorySystemData",
+            JSON.stringify(importedData)
+          );
           showNotification(
-            "Backup restored successfully! System will reload in 3 seconds...",
+            "Data imported successfully! System will reload.",
             "success"
           );
 
-          // Simulate system reload
           setTimeout(() => {
-            showNotification("System reloaded with restored data.", "success");
-          }, 3000);
-        }, 2000);
+            window.location.reload();
+          }, 2000);
+        } else {
+          // Merge data
+          const currentData = JSON.parse(
+            localStorage.getItem("inventorySystemData")
+          );
+          const mergedData = {
+            products: [
+              ...(currentData?.products || []),
+              ...(importedData.products || []),
+            ],
+            categories: [
+              ...(currentData?.categories || []),
+              ...(importedData.categories || []),
+            ],
+            suppliers: [
+              ...(currentData?.suppliers || []),
+              ...(importedData.suppliers || []),
+            ],
+            sales: [
+              ...(currentData?.sales || []),
+              ...(importedData.sales || []),
+            ],
+            purchases: [
+              ...(currentData?.purchases || []),
+              ...(importedData.purchases || []),
+            ],
+            stockMovements: [
+              ...(currentData?.stockMovements || []),
+              ...(importedData.stockMovements || []),
+            ],
+            users: [
+              ...(currentData?.users || []),
+              ...(importedData.users || []),
+            ],
+            settings: importedData.settings || currentData?.settings || {},
+          };
+
+          localStorage.setItem(
+            "inventorySystemData",
+            JSON.stringify(mergedData)
+          );
+          showNotification("Data merged successfully!", "success");
+        }
+      } else {
+        // CSV import - would need more complex parsing
+        showNotification(
+          "CSV import is not fully implemented in this demo",
+          "info"
+        );
       }
-    }, 50);
-  }
-}
 
-// Setup cloud backup
-function setupCloudBackup() {
-  alert(
-    "Cloud Backup Setup:\n\nThis would open a configuration wizard to connect to cloud storage providers like:\n- Google Drive\n- Dropbox\n- AWS S3\n- Microsoft OneDrive\n\nYou would configure API keys, select folders, and set up synchronization rules."
-  );
-}
+      // Clear file list
+      document.getElementById("fileList").innerHTML = "";
+      document.getElementById("startImportBtn").disabled = true;
+    } catch (error) {
+      showNotification("Error importing file: " + error.message, "error");
+    }
+  };
 
-// Save backup schedule
-function saveBackupSchedule(event) {
-  event.preventDefault();
-
-  const frequency = document.getElementById("backupFrequency").value;
-  const time = document.getElementById("backupTime").value;
-  const type = document.getElementById("backupType").value;
-  const retention = document.getElementById("retentionPeriod").value;
-
-  const localStorageChecked = document.getElementById("localStorage").checked;
-  const cloudStorageChecked = document.getElementById("cloudStorage").checked;
-  const externalDriveChecked = document.getElementById("externalDrive").checked;
-
-  if (!localStorageChecked && !cloudStorageChecked && !externalDriveChecked) {
-    alert("Please select at least one backup destination.");
-    return;
-  }
-
-  // Show success message
-  showNotification(
-    `Backup schedule saved: ${frequency} at ${time} (${type} backup, ${retention} days retention)`,
-    "success"
-  );
-
-  // In a real app, this would save the schedule to the server
+  reader.readAsText(file);
 }
 
 // Show notification
@@ -820,13 +823,6 @@ function showNotification(message, type) {
 
 // Setup event listeners
 function setupEventListeners() {
-  // Sidebar toggle
-  document
-    .getElementById("sidebarToggle")
-    .addEventListener("click", function () {
-      document.getElementById("sidebar").classList.toggle("collapsed");
-    });
-
   // Mobile menu toggle
   document
     .getElementById("mobileMenuToggle")
@@ -843,123 +839,192 @@ function setupEventListeners() {
       logout();
     });
 
-  // Action buttons
+  // Create backup button
   document
-    .getElementById("quickBackupBtn")
-    .addEventListener("click", createQuickBackup);
-  document
-    .getElementById("exportNowBtn")
-    .addEventListener("click", startExport);
-  document
-    .getElementById("fullBackupBtn")
-    .addEventListener("click", createFullBackup);
-  document
-    .getElementById("setupCloudBackupBtn")
-    .addEventListener("click", setupCloudBackup);
-
-  // Export type selection
-  document.querySelectorAll(".export-type").forEach((type) => {
-    type.addEventListener("click", function () {
-      const format = this.getAttribute("data-format");
-      selectExportType(format);
+    .getElementById("createBackupBtn")
+    .addEventListener("click", function () {
+      document.getElementById("backupModal").classList.add("active");
     });
-  });
 
-  // Data selection checkboxes
-  document.addEventListener("change", function (e) {
-    if (e.target.classList.contains("data-checkbox")) {
-      const dataId = e.target.getAttribute("data-id");
-      const dataItem = backupData.exportOptions.find(
-        (item) => item.id === dataId
-      );
-      if (dataItem) {
-        dataItem.selected = e.target.checked;
+  // Close backup modal
+  document
+    .getElementById("closeBackupModal")
+    .addEventListener("click", function () {
+      document.getElementById("backupModal").classList.remove("active");
+    });
+
+  // Cancel backup button
+  document
+    .getElementById("cancelBackupBtn")
+    .addEventListener("click", function () {
+      document.getElementById("backupModal").classList.remove("active");
+    });
+
+  // Confirm backup button
+  document
+    .getElementById("confirmBackupBtn")
+    .addEventListener("click", createBackup);
+
+  // Auto backup frequency change
+  document
+    .getElementById("autoBackupFrequency")
+    .addEventListener("change", function () {
+      backupData.settings.autoBackupFrequency = this.value;
+      saveBackupData();
+      updateBackupUI();
+    });
+
+  // Toggle auto backup
+  document
+    .getElementById("toggleAutoBackupBtn")
+    .addEventListener("click", function () {
+      backupData.settings.autoBackup = !backupData.settings.autoBackup;
+      saveBackupData();
+      updateBackupUI();
+
+      if (backupData.settings.autoBackup) {
+        showNotification("Auto backup enabled!", "success");
+      } else {
+        showNotification("Auto backup disabled!", "info");
       }
-      updateSelectAllCheckbox();
-    }
+    });
+
+  // Manage storage button
+  document
+    .getElementById("manageStorageBtn")
+    .addEventListener("click", function () {
+      showNotification("Storage management feature coming soon!", "info");
+    });
+
+  // Export all button
+  document
+    .getElementById("exportAllBtn")
+    .addEventListener("click", function () {
+      exportData("json", "all");
+    });
+
+  // Export options
+  document.querySelectorAll(".export-option").forEach((option) => {
+    option.addEventListener("click", function () {
+      const format = this.dataset.format;
+      const type = this.dataset.type;
+      exportData(format, type);
+    });
   });
-
-  // Select all data checkbox
-  document
-    .getElementById("selectAllData")
-    .addEventListener("change", selectAllData);
-
-  // Select all button
-  document
-    .getElementById("selectAllBtn")
-    .addEventListener("click", function () {
-      document.getElementById("selectAllData").checked = true;
-      selectAllData();
-    });
-
-  // Export cancel button
-  document
-    .getElementById("cancelExportBtn")
-    .addEventListener("click", function () {
-      // Reset selections
-      backupData.exportOptions.forEach((item) => {
-        item.selected = false;
-      });
-      loadExportData();
-    });
-
-  // Start export button
-  document
-    .getElementById("startExportBtn")
-    .addEventListener("click", startExport);
 
   // Refresh backups button
   document
     .getElementById("refreshBackupsBtn")
     .addEventListener("click", function () {
       loadBackupHistory();
-      showNotification("Backup history refreshed!", "success");
+      showNotification("Backup list refreshed!", "success");
     });
 
-  // Clear schedule button
+  // Delete old backups button
   document
-    .getElementById("clearScheduleBtn")
-    .addEventListener("click", function () {
-      document.getElementById("scheduleForm").reset();
-    });
+    .getElementById("deleteOldBackupsBtn")
+    .addEventListener("click", deleteOldBackups);
 
-  // Save schedule form
+  // File upload area
+  const uploadArea = document.getElementById("uploadArea");
+  const fileInput = document.getElementById("fileInput");
+
+  uploadArea.addEventListener("click", () => fileInput.click());
+
+  uploadArea.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    uploadArea.classList.add("dragover");
+  });
+
+  uploadArea.addEventListener("dragleave", () => {
+    uploadArea.classList.remove("dragover");
+  });
+
+  uploadArea.addEventListener("drop", (e) => {
+    e.preventDefault();
+    uploadArea.classList.remove("dragover");
+
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      handleFileUpload(files[0]);
+    }
+  });
+
+  fileInput.addEventListener("change", (e) => {
+    if (e.target.files.length > 0) {
+      handleFileUpload(e.target.files[0]);
+    }
+  });
+
+  // Start import button
   document
-    .getElementById("scheduleForm")
-    .addEventListener("submit", saveBackupSchedule);
+    .getElementById("startImportBtn")
+    .addEventListener("click", importData);
 
-  // Modal close buttons
-  document
-    .getElementById("closeBackupModal")
-    .addEventListener("click", function () {
-      document.getElementById("backupProgressModal").classList.remove("active");
-    });
-
+  // Restore backup modal
   document
     .getElementById("closeRestoreModal")
     .addEventListener("click", function () {
-      document.getElementById("restoreBackupModal").classList.remove("active");
+      document.getElementById("restoreModal").classList.remove("active");
     });
 
-  // Restore type radio buttons
-  document
-    .getElementById("fullRestore")
-    .addEventListener("change", handleRestoreTypeChange);
-  document
-    .getElementById("partialRestore")
-    .addEventListener("change", handleRestoreTypeChange);
-
-  // Cancel restore button
   document
     .getElementById("cancelRestoreBtn")
     .addEventListener("click", function () {
-      document.getElementById("restoreBackupModal").classList.remove("active");
+      document.getElementById("restoreModal").classList.remove("active");
+    });
+
+  // Confirm restore checkbox
+  document
+    .getElementById("confirmRestore")
+    .addEventListener("change", function () {
+      document.getElementById("confirmRestoreBtn").disabled = !this.checked;
     });
 
   // Confirm restore button
   document
     .getElementById("confirmRestoreBtn")
-    .addEventListener("click", confirmRestoreBackup);
+    .addEventListener("click", restoreBackup);
+
+  // Restore backup select change
+  document
+    .getElementById("restoreBackupSelect")
+    .addEventListener("change", function () {
+      const backupId = this.value;
+      if (backupId) {
+        const backup = backupData.backups.find((b) => b.id === backupId);
+        if (backup) {
+          const backupDate = new Date(backup.timestamp);
+          const backupSize = calculateBackupSize(backup);
+
+          const details = document.getElementById("backupDetails");
+          details.innerHTML = `
+                            <strong>${backup.name}</strong><br>
+                            <small>Created: ${formatDate(
+                              backupDate
+                            )}</small><br>
+                            <small>Size: ${backupSize}</small><br>
+                            <small>Type: ${backup.type || "Manual"}</small><br>
+                            <small>Products: ${
+                              backup.metadata?.productCount || 0
+                            }</small><br>
+                            <small>Sales: ${
+                              backup.metadata?.saleCount || 0
+                            }</small>
+                        `;
+        }
+      }
+    });
+
+  // Make sidebar menu items active on click
+  document.querySelectorAll(".menu-item").forEach((item) => {
+    item.addEventListener("click", function () {
+      document
+        .querySelectorAll(".menu-item")
+        .forEach((i) => i.classList.remove("active"));
+      this.classList.add("active");
+    });
+  });
 
   // Close modals when clicking outside
   window.addEventListener("click", function (e) {
@@ -972,12 +1037,38 @@ function setupEventListeners() {
 // Logout function
 function logout() {
   if (confirm("Are you sure you want to logout?")) {
-    // Clear authentication data
-    localStorage.removeItem("loggedIn");
-    localStorage.removeItem("userRole");
-    localStorage.removeItem("userName");
-
-    // Redirect to login page
+    localStorage.removeItem("isLoggedIn");
+    localStorage.removeItem("currentUser");
     window.location.href = "login.html";
   }
 }
+
+// Add sample backups if empty
+function addSampleBackupsIfEmpty() {
+  if (backupData.backups.length === 0) {
+    // Add a sample backup
+    const sampleBackup = {
+      id: "backup_sample",
+      name: "Initial Backup",
+      description: "Initial system backup",
+      timestamp: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days ago
+      type: "manual",
+      encrypted: false,
+      data: "{}", // Empty data for sample
+      metadata: {
+        productCount: 0,
+        saleCount: 0,
+        purchaseCount: 0,
+        userCount: 3,
+      },
+    };
+
+    backupData.backups.push(sampleBackup);
+    saveBackupData();
+    updateBackupUI();
+    loadBackupHistory();
+  }
+}
+
+// Call this function on first load
+addSampleBackupsIfEmpty();

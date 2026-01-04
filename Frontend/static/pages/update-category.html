@@ -3,22 +3,26 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Document</title>
-    <link rel="stylesheet" href="../css/update-category.css" />
+    <title>InventoryPro | Category Management</title>
     <link
       rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
     />
+    <link rel="stylesheet" href="../css/update-category.css" />
   </head>
+
   <body>
     <!-- Authentication Check -->
     <script>
-      // Check if user is logged in
       if (
-        !localStorage.getItem("loggedIn") ||
-        localStorage.getItem("loggedIn") !== "true"
+        !localStorage.getItem("isLoggedIn") ||
+        localStorage.getItem("isLoggedIn") !== "true"
       ) {
-        // Redirect to login page if not logged in
+        window.location.href = "login.html";
+      }
+
+      const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+      if (!currentUser) {
         window.location.href = "login.html";
       }
     </script>
@@ -32,78 +36,66 @@
           </div>
           <div class="logo-text">InventoryPro</div>
         </div>
-        <button class="toggle-btn" id="sidebarToggle">
-          <i class="fas fa-chevron-left"></i>
-        </button>
       </div>
 
       <div class="sidebar-menu">
-        <a href="./dashboard.html" class="menu-item active">
-          <i class="fas fa-tachometer-alt"></i>
-          <span>Dashboard</span>
-        </a>
+            <a href="./dashboard.html" class="menu-item active">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>Dashboard</span>
+            </a>
 
-        <a href="./update-category.html" class="menu-item">
-          <i class="fas fa-box-open"></i>
-          <span>Product Management</span>
-        </a>
+            <a href="./update-category.html" class="menu-item">
+                <i class="fas fa-box-open"></i>
+                <span>Product Management</span>
+            </a>
 
-        <a href="./stockmanagement.html" class="menu-item">
-          <i class="fas fa-warehouse"></i>
-          <span>Stock Management</span>
-        </a>
+            <a href="./stockmanagement.html" class="menu-item">
+                <i class="fas fa-warehouse"></i>
+                <span>Stock Management</span>
+            </a>
 
-        <a href="./sale.html" class="menu-item">
-          <i class="fas fa-chart-line"></i>
-          <span>Sales Management</span>
-        </a>
+            <a href="./category-management.html" class="menu-item">
+                <i class="fas fa-tags"></i>
+                <span>Category Management</span>
+            </a>
 
-        <a href="./category-management.html" class="menu-item">
-          <i class="fas fa-tags"></i>
-          <span>Category Management</span>
-        </a>
+            <a href="./supplier.html" class="menu-item">
+                <i class="fas fa-truck"></i>
+                <span>Supplier Management</span>
+            </a>
 
-        <a href="./supplier.html" class="menu-item">
-          <i class="fas fa-truck"></i>
-          <span>Supplier Management</span>
-        </a>
+            <a href="./purchase.html" class="menu-item">
+                <i class="fas fa-shopping-cart"></i>
+                <span>Purchase Management</span>
+            </a>
 
-        <a href="./purchase.html" class="menu-item">
-          <i class="fas fa-shopping-cart"></i>
-          <span>Purchase Management</span>
-        </a>
+            <a href="./sale.html" class="menu-item">
+                <i class="fas fa-chart-line"></i>
+                <span>Sales Management</span>
+            </a>
 
-        <a href="./detailed-analytics.html" class="menu-item">
-          <i class="fas fa-chart-bar"></i>
-          <span>Analytics & Forecasts</span>
-        </a>
+            <a href="./detailed-analytics.html" class="menu-item">
+                <i class="fas fa-chart-bar"></i>
+                <span>Analytics & Reports</span>
+            </a>
 
-        <a href="./back-up.html" class="menu-item">
-          <i class="fas fa-database"></i>
-          <span>Backup & Export</span>
-        </a>
+            <a href="./user-management.html" class="menu-item">
+                <i class="fas fa-users"></i>
+                <span>User Management</span>
+            </a>
+            <a href="./back-up.html" class="menu-item">
+                <i class="fas fa-database"></i>
+                <span>Backup & Export</span>
+            </a>
+            <a href="./barcode.html "     class="menu-item">
+                <i class="fas fa-bar code"></i>
+                <span>Barcode Scanner</span>
+            </a>
 
-        <a href="./barcode.html" class="menu-item">
-          <i class="fas fa-barcode"></i>
-          <span>Barcode Scanner</span>
-        </a>
-
-        <a href="./tansition-history.html" class="menu-item">
-          <i class="fas fa-history"></i>
-          <span>Transaction History</span>
-        </a>
-
-        <a href="./user-management.html" class="menu-item">
-          <i class="fas fa-chart-line"></i>
-          <span>User Management</span>
-        </a>
-
-        <div class="sidebar-footer" style="padding: 20px; margin-top: auto">
-          <div class="menu-item" id="logoutSidebar">
-            <i class="fas fa-sign-out-alt"></i>
-            <span>Logout</span>
-          </div>
-        </div>
+            <a href="#" class="menu-item" id="logoutSidebar">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+            </a>
       </div>
     </div>
 
@@ -119,9 +111,41 @@
         </div>
 
         <div class="header-right">
-          <div class="user-profile">
-            <div class="user-avatar" id="userAvatar">A</div>
-            <button class="logout-btn" id="logoutBtn">
+          <div
+            class="user-profile"
+            style="display: flex; align-items: center; gap: 10px"
+          >
+            <div
+              class="user-avatar"
+              id="userAvatar"
+              style="
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
+                background: linear-gradient(135deg, #3498db, #2c3e50);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-weight: bold;
+              "
+            ></div>
+            <button
+              class="logout-btn"
+              id="logoutBtn"
+              style="
+                background: none;
+                border: none;
+                color: #e74c3c;
+                cursor: pointer;
+                font-weight: 600;
+                padding: 5px 10px;
+                border-radius: 5px;
+                display: flex;
+                align-items: center;
+                gap: 5px;
+              "
+            >
               <i class="fas fa-sign-out-alt"></i> Logout
             </button>
           </div>
@@ -134,74 +158,13 @@
         <div class="page-header">
           <div>
             <h1 class="page-title">Product Management</h1>
-            <p class="page-subtitle">
+            <p class="page-subtitle" style="color: #7f8c8d; margin-top: 5px">
               Manage your inventory products, stock levels, and pricing
             </p>
           </div>
           <button class="btn btn-primary" id="addProductBtn">
             <i class="fas fa-plus"></i> Add New Product
           </button>
-        </div>
-
-        <!-- Statistics Cards -->
-        <div class="stats-cards">
-          <div class="stat-card">
-            <div class="stat-icon">
-              <i class="fas fa-boxes"></i>
-            </div>
-            <div class="stat-details">
-              <div class="stat-value" id="totalProducts">1,245</div>
-              <div class="stat-label">Total Products</div>
-            </div>
-          </div>
-
-          <div class="stat-card">
-            <div
-              class="stat-icon"
-              style="
-                background: rgba(39, 174, 96, 0.1);
-                color: var(--success-color);
-              "
-            >
-              <i class="fas fa-check-circle"></i>
-            </div>
-            <div class="stat-details">
-              <div class="stat-value" id="inStockProducts">1,098</div>
-              <div class="stat-label">In Stock</div>
-            </div>
-          </div>
-
-          <div class="stat-card">
-            <div
-              class="stat-icon"
-              style="
-                background: rgba(243, 156, 18, 0.1);
-                color: var(--warning-color);
-              "
-            >
-              <i class="fas fa-exclamation-triangle"></i>
-            </div>
-            <div class="stat-details">
-              <div class="stat-value" id="lowStockProducts">47</div>
-              <div class="stat-label">Low Stock</div>
-            </div>
-          </div>
-
-          <div class="stat-card">
-            <div
-              class="stat-icon"
-              style="
-                background: rgba(231, 76, 60, 0.1);
-                color: var(--accent-color);
-              "
-            >
-              <i class="fas fa-times-circle"></i>
-            </div>
-            <div class="stat-details">
-              <div class="stat-value" id="outOfStockProducts">8</div>
-              <div class="stat-label">Out of Stock</div>
-            </div>
-          </div>
         </div>
 
         <!-- Action Bar -->
@@ -213,79 +176,60 @@
               id="searchInput"
               placeholder="Search products by name, SKU, or category..."
             />
-            <i class="fas fa-search search-icon"></i>
+            <i
+              class="fas fa-search"
+              style="
+                position: absolute;
+                right: 15px;
+                top: 50%;
+                transform: translateY(-50%);
+                color: #7f8c8d;
+              "
+            ></i>
           </div>
 
-          <div class="filter-group">
-            <select class="filter-select" id="categoryFilter">
+          <div
+            class="filter-group"
+            style="display: flex; gap: 10px; flex-wrap: wrap"
+          >
+            <select
+              class="filter-select"
+              id="categoryFilter"
+              style="
+                padding: 10px 15px;
+                border: 2px solid #e1e8ed;
+                border-radius: 8px;
+                font-size: 14px;
+                min-width: 150px;
+              "
+            >
               <option value="">All Categories</option>
-              <option value="electronics">Electronics</option>
-              <option value="furniture">Furniture</option>
-              <option value="clothing">Clothing</option>
-              <option value="home">Home & Kitchen</option>
-              <option value="sports">Sports & Outdoors</option>
+              <!-- Categories will be populated by JavaScript -->
             </select>
 
-            <select class="filter-select" id="stockFilter">
+            <select
+              class="filter-select"
+              id="stockFilter"
+              style="
+                padding: 10px 15px;
+                border: 2px solid #e1e8ed;
+                border-radius: 8px;
+                font-size: 14px;
+                min-width: 150px;
+              " >
+              </select>
+            
               <option value="">All Stock Status</option>
               <option value="in-stock">In Stock</option>
               <option value="low-stock">Low Stock</option>
               <option value="out-of-stock">Out of Stock</option>
             </select>
-
-            <select class="filter-select" id="sortFilter">
-              <option value="name-asc">Sort by Name (A-Z)</option>
-              <option value="name-desc">Sort by Name (Z-A)</option>
-              <option value="price-asc">Sort by Price (Low to High)</option>
-              <option value="price-desc">Sort by Price (High to Low)</option>
-              <option value="stock-asc">Sort by Stock (Low to High)</option>
-              <option value="stock-desc">Sort by Stock (High to Low)</option>
-            </select>
           </div>
         </div>
 
-        <!-- View Toggle -->
-        <div class="view-toggle">
-          <button class="view-btn active" id="gridViewBtn">
-            <i class="fas fa-th-large"></i> Grid View
-          </button>
-          <button class="view-btn" id="tableViewBtn">
-            <i class="fas fa-list"></i> Table View
-          </button>
-        </div>
-
-        <!-- Grid View -->
-        <div class="grid-view active" id="gridView">
-          <div class="products-grid" id="productsGrid">
-            <!-- Product cards will be populated by JavaScript -->
-          </div>
-        </div>
-
-        <!-- Table View -->
-        <div class="table-view" id="tableView">
-          <div class="table-container">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>Product ID</th>
-                  <th>Product Name</th>
-                  <th>Category</th>
-                  <th>Price</th>
-                  <th>Stock</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody id="productsTable">
-                <!-- Products will be populated by JavaScript -->
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Pagination -->
-        <div class="pagination" id="pagination">
-          <!-- Pagination will be generated by JavaScript -->
+        <!-- Products Grid -->
+        <div class="products-grid" id="productsGrid">
+          <!-- Products will be populated by JavaScript -->
         </div>
       </div>
     </div>
@@ -311,7 +255,7 @@
               </div>
 
               <div class="form-group">
-                <label for="productSku">SKU (Stock Keeping Unit) *</label>
+                <label for="productSku">SKU *</label>
                 <input
                   type="text"
                   id="productSku"
@@ -326,14 +270,7 @@
                 <label for="productCategory">Category *</label>
                 <select id="productCategory" class="form-control" required>
                   <option value="">Select Category</option>
-                  <option value="electronics">Electronics</option>
-                  <option value="furniture">Furniture</option>
-                  <option value="clothing">Clothing</option>
-                  <option value="home">Home & Kitchen</option>
-                  <option value="sports">Sports & Outdoors</option>
-                  <option value="books">Books & Media</option>
-                  <option value="beauty">Beauty & Personal Care</option>
-                  <option value="toys">Toys & Games</option>
+                  <!-- Categories will be populated by JavaScript -->
                 </select>
               </div>
 
@@ -392,15 +329,24 @@
               </div>
             </div>
 
-            <div class="form-group">
-              <label for="productSupplier">Supplier</label>
-              <select id="productSupplier" class="form-control">
-                <option value="">Select Supplier</option>
-                <option value="supplier1">Supplier ABC</option>
-                <option value="supplier2">Supplier XYZ</option>
-                <option value="supplier3">Global Supplies Inc.</option>
-                <option value="supplier4">Prime Distributors</option>
-              </select>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="productMaxStock">Maximum Stock Level</label>
+                <input
+                  type="number"
+                  id="productMaxStock"
+                  class="form-control"
+                  min="0"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="productSupplier">Supplier</label>
+                <select id="productSupplier" class="form-control">
+                  <option value="">Select Supplier</option>
+                  <!-- Suppliers will be populated by JavaScript -->
+                </select>
+              </div>
             </div>
 
             <div class="form-group">
@@ -414,7 +360,14 @@
             </div>
 
             <div class="form-actions">
-              <button type="button" class="btn" id="cancelBtn">Cancel</button>
+              <button
+                type="button"
+                class="btn"
+                id="cancelBtn"
+                style="background: #e1e8ed; color: #333"
+              >
+                Cancel
+              </button>
               <button type="submit" class="btn btn-primary" id="saveProductBtn">
                 <i class="fas fa-save"></i> Save Product
               </button>
@@ -423,22 +376,7 @@
         </div>
       </div>
     </div>
-
-    <!-- Product Details Modal -->
-    <div class="modal" id="productDetailsModal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3 class="modal-title" id="detailsModalTitle">Product Details</h3>
-          <button class="modal-close" id="closeDetailsModal">&times;</button>
-        </div>
-        <div class="modal-body">
-          <div id="productDetailsContent">
-            <!-- Product details will be populated by JavaScript -->
-          </div>
-        </div>
-      </div>
-    </div>
-
+  
     <script src="../js/update-category.js"></script>
   </body>
 </html>

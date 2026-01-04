@@ -11,598 +11,457 @@
     />
   </head>
   <body>
+    <!-- Authentication Check -->
     <script>
-      // Check if user is logged in
-      if (
-        !localStorage.getItem("loggedIn") ||
-        localStorage.getItem("loggedIn") !== "true"
-      ) {
-        // Redirect to login page if not logged in
-        window.location.href = "login.html";
-      }
+        if (!localStorage.getItem('isLoggedIn') || localStorage.getItem('isLoggedIn') !== 'true') {
+            window.location.href = 'login.html';
+        }
+
+        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+        if (!currentUser) {
+            window.location.href = 'login.html';
+        }
+
+        // Check if user is admin - only admins should access backup
+        if (currentUser.role !== 'admin') {
+            window.location.href = 'dashboard.html';
+        }
     </script>
 
     <!-- Sidebar -->
     <div class="sidebar" id="sidebar">
-      <div class="sidebar-header">
-        <div class="logo">
-          <div class="logo-icon">
-            <i class="fas fa-boxes"></i>
-          </div>
-          <div class="logo-text">InventoryPro</div>
+        <div class="sidebar-header">
+            <div class="logo">
+                <div class="logo-icon">
+                    <i class="fas fa-boxes"></i>
+                </div>
+                <div class="logo-text">InventoryPro</div>
+            </div>
         </div>
-        <button class="toggle-btn" id="sidebarToggle">
-          <i class="fas fa-chevron-left"></i>
-        </button>
-      </div>
 
-      <div class="sidebar-menu">
-        <a href="./dashboard.html" class="menu-item active">
-          <i class="fas fa-tachometer-alt"></i>
-          <span>Dashboard</span>
-        </a>
+       <div class="sidebar-menu">
+            <a href="./dashboard.html" class="menu-item active">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>Dashboard</span>
+            </a>
 
-        <a href="./update-category.html" class="menu-item">
-          <i class="fas fa-box-open"></i>
-          <span>Product Management</span>
-        </a>
+            <a href="./update-category.html" class="menu-item">
+                <i class="fas fa-box-open"></i>
+                <span>Product Management</span>
+            </a>
 
-        <a href="./stockmanagement.html" class="menu-item">
-          <i class="fas fa-warehouse"></i>
-          <span>Stock Management</span>
-        </a>
+            <a href="./stockmanagement.html" class="menu-item">
+                <i class="fas fa-warehouse"></i>
+                <span>Stock Management</span>
+            </a>
 
-        <a href="./sale.html" class="menu-item">
-          <i class="fas fa-chart-line"></i>
-          <span>Sales Management</span>
-        </a>
+            <a href="./category-management.html" class="menu-item">
+                <i class="fas fa-tags"></i>
+                <span>Category Management</span>
+            </a>
 
-        <a href="./category-management.html" class="menu-item">
-          <i class="fas fa-tags"></i>
-          <span>Category Management</span>
-        </a>
+            <a href="./supplier.html" class="menu-item">
+                <i class="fas fa-truck"></i>
+                <span>Supplier Management</span>
+            </a>
 
-        <a href="./supplier.html" class="menu-item">
-          <i class="fas fa-truck"></i>
-          <span>Supplier Management</span>
-        </a>
+            <a href="./purchase.html" class="menu-item">
+                <i class="fas fa-shopping-cart"></i>
+                <span>Purchase Management</span>
+            </a>
 
-        <a href="./purchase.html" class="menu-item">
-          <i class="fas fa-shopping-cart"></i>
-          <span>Purchase Management</span>
-        </a>
+            <a href="./sale.html" class="menu-item">
+                <i class="fas fa-chart-line"></i>
+                <span>Sales Management</span>
+            </a>
 
-        <a href="./detailed-analytics.html" class="menu-item">
-          <i class="fas fa-chart-bar"></i>
-          <span>Analytics & Forecasts</span>
-        </a>
+            <a href="./detailed-analytics.html" class="menu-item">
+                <i class="fas fa-chart-bar"></i>
+                <span>Analytics & Reports</span>
+            </a>
 
-        <a href="./back-up.html" class="menu-item">
-          <i class="fas fa-database"></i>
-          <span>Backup & Export</span>
-        </a>
+            <a href="./user-management.html" class="menu-item">
+                <i class="fas fa-users"></i>
+                <span>User Management</span>
+            </a>
+            <a href="./back-up.html" class="menu-item">
+                <i class="fas fa-database"></i>
+                <span>Backup & Export</span>
+            </a>
+            <a href="./barcode.html " class="menu-item">
+                <i class="fas fa-barcode"></i>
+                <span>Barcode Scanner</span>
+            </a>
 
-        <a href="./barcode.html" class="menu-item">
-          <i class="fas fa-barcode"></i>
-          <span>Barcode Scanner</span>
-        </a>
-
-        <a href="./tansition-history.html" class="menu-item">
-          <i class="fas fa-history"></i>
-          <span>Transaction History</span>
-        </a>
-
-        <a href="./user-management.html" class="menu-item">
-          <i class="fas fa-chart-line"></i>
-          <span>User management</span>
-        </a>
-
-        <div class="sidebar-footer" style="padding: 20px; margin-top: auto">
-          <div class="menu-item" id="logoutSidebar">
-            <i class="fas fa-sign-out-alt"></i>
-            <span>Logout</span>
-          </div>
+            <a href="#" class="menu-item" id="logoutSidebar">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+            </a>
         </div>
-      </div>
     </div>
-
     <!-- Main Content -->
     <div class="main-content" id="mainContent">
-      <!-- Header -->
-      <div class="header">
-        <div class="header-left">
-          <button class="mobile-menu-toggle" id="mobileMenuToggle">
-            <i class="fas fa-bars"></i>
-          </button>
-          <h1 id="pageTitle">Backup & Export</h1>
-        </div>
+        <!-- Header -->
+        <div class="header">
+            <div class="header-left">
+                <button class="mobile-menu-toggle" id="mobileMenuToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h1 id="pageTitle">Backup & Export</h1>
+            </div>
 
-        <div class="header-right">
-          <div class="user-profile">
-            <div class="user-avatar" id="userAvatar">A</div>
-            <button class="logout-btn" id="logoutBtn">
-              <i class="fas fa-sign-out-alt"></i> Logout
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Content -->
-      <div class="content">
-        <!-- Page Header -->
-        <div class="page-header">
-          <div>
-            <h1 class="page-title">Backup & Export</h1>
-            <p class="page-subtitle">
-              Secure your data with backups and export in multiple formats
-            </p>
-          </div>
-          <div class="action-buttons">
-            <button class="btn btn-primary" id="quickBackupBtn">
-              <i class="fas fa-bolt"></i> Quick Backup
-            </button>
-            <button class="btn btn-success" id="exportNowBtn">
-              <i class="fas fa-file-export"></i> Export Now
-            </button>
-          </div>
-        </div>
-
-        <!-- Storage Overview -->
-        <div class="storage-overview">
-          <div class="storage-card">
-            <div class="card-header">
-              <div class="card-icon">
-                <i class="fas fa-database"></i>
-              </div>
-              <div class="storage-value">2.8 GB / 10 GB</div>
-            </div>
-            <div class="card-title">Database Storage</div>
-            <div class="card-subtitle">Total inventory data storage usage</div>
-            <div class="storage-bar">
-              <div class="storage-fill good" style="width: 28%"></div>
-            </div>
-            <div class="storage-info">
-              <span>28% used</span>
-              <span>7.2 GB free</span>
-            </div>
-          </div>
-
-          <div class="storage-card success">
-            <div class="card-header">
-              <div class="card-icon">
-                <i class="fas fa-hdd"></i>
-              </div>
-              <div class="storage-value">15.4 GB / 50 GB</div>
-            </div>
-            <div class="card-title">Backup Storage</div>
-            <div class="card-subtitle">Backup files and archives storage</div>
-            <div class="storage-bar">
-              <div class="storage-fill warning" style="width: 31%"></div>
-            </div>
-            <div class="storage-info">
-              <span>31% used</span>
-              <span>34.6 GB free</span>
-            </div>
-          </div>
-
-          <div class="storage-card warning">
-            <div class="card-header">
-              <div class="card-icon">
-                <i class="fas fa-cloud"></i>
-              </div>
-              <div class="storage-value">Last: 2 hours ago</div>
-            </div>
-            <div class="card-title">Last Backup</div>
-            <div class="card-subtitle">Most recent successful backup</div>
-            <div class="storage-bar">
-              <div class="storage-fill good" style="width: 100%"></div>
-            </div>
-            <div class="storage-info">
-              <span
-                >Status:
-                <strong style="color: var(--success-color)"
-                  >Completed</strong
-                ></span
-              >
-              <span>Size: 245 MB</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Backup Options -->
-        <div class="backup-options">
-          <div class="option-card">
-            <div class="option-header">
-              <div class="option-icon">
-                <i class="fas fa-database"></i>
-              </div>
-              <div>
-                <div class="option-title">Full Database Backup</div>
-                <div class="card-subtitle">
-                  Complete backup of all system data
+            <div class="header-right">
+                <div class="user-profile" style="display: flex; align-items: center; gap: 10px;">
+                    <div class="user-avatar" id="userAvatar"
+                        style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #3498db, #2c3e50); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
+                    </div>
+                    <button class="logout-btn" id="logoutBtn"
+                        style="background: none; border: none; color: #e74c3c; cursor: pointer; font-weight: 600; padding: 5px 10px; border-radius: 5px; display: flex; align-items: center; gap: 5px;">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
                 </div>
-              </div>
             </div>
-            <div class="option-description">
-              Create a complete backup of your entire inventory database
-              including products, sales, customers, and system settings.
-            </div>
-            <div class="option-features">
-              <div class="feature-item">
-                <i class="fas fa-check-circle"></i>
-                <span>Includes all tables and records</span>
-              </div>
-              <div class="feature-item">
-                <i class="fas fa-check-circle"></i>
-                <span>Compressed for storage efficiency</span>
-              </div>
-              <div class="feature-item">
-                <i class="fas fa-check-circle"></i>
-                <span>Encrypted for security</span>
-              </div>
-            </div>
-            <button class="btn btn-primary" id="fullBackupBtn">
-              <i class="fas fa-save"></i> Create Full Backup
-            </button>
-          </div>
+        </div>
 
-          <div class="option-card">
-            <div class="option-header">
-              <div class="option-icon">
-                <i class="fas fa-cloud-upload-alt"></i>
-              </div>
-              <div>
-                <div class="option-title">Cloud Backup</div>
-                <div class="card-subtitle">
-                  Automatic backup to cloud storage
+        <!-- Content -->
+        <div class="content">
+            <!-- Page Header -->
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">Backup & Export</h1>
+                    <p class="page-subtitle">Secure your data with backups and export in various formats</p>
                 </div>
-              </div>
+                <div class="backup-status">
+                    <div class="status-indicator status-online"></div>
+                    <span style="font-weight: 600; color: var(--success-color);">Auto Backup: Active</span>
+                </div>
             </div>
-            <div class="option-description">
-              Automatically backup your data to secure cloud storage. Set up
-              schedules and let the system handle the rest.
+
+            <!-- Backup Cards -->
+            <div class="backup-cards">
+                <div class="backup-card">
+                    <div class="card-icon">
+                        <i class="fas fa-database"></i>
+                    </div>
+                    <h3 class="card-title">Create Backup</h3>
+                    <p class="card-description">Create a complete backup of your inventory system including products,
+                        sales, purchases, and settings.</p>
+                    <button class="btn btn-primary" id="createBackupBtn" style="width: 100%;">
+                        <i class="fas fa-save"></i> Create Backup Now
+                    </button>
+                    <div class="card-stats">
+                        <div class="stat-item">
+                            <div class="stat-value" id="lastBackupTime">Never</div>
+                            <div class="stat-label">Last Backup</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="backupSize">0 MB</div>
+                            <div class="stat-label">Backup Size</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="backup-card success">
+                    <div class="card-icon">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                    </div>
+                    <h3 class="card-title">Auto Backup</h3>
+                    <p class="card-description">Automatically backup your data daily to prevent data loss. Backups are
+                        stored securely.</p>
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <label style="font-size: 14px; margin-bottom: 5px;">Auto Backup Frequency</label>
+                        <select class="form-control" id="autoBackupFrequency"
+                            style="padding: 8px 12px; font-size: 14px;">
+                            <option value="daily">Daily</option>
+                            <option value="weekly">Weekly</option>
+                            <option value="monthly">Monthly</option>
+                            <option value="disabled" selected>Disabled</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-success" id="toggleAutoBackupBtn" style="width: 100%;">
+                        <i class="fas fa-power-off"></i> Enable Auto Backup
+                    </button>
+                </div>
+
+                <div class="backup-card warning">
+                    <div class="card-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h3 class="card-title">Data Security</h3>
+                    <p class="card-description">Your data is encrypted and stored securely. Backups are protected with
+                        industry-standard encryption.</p>
+                    <div class="size-indicator">
+                        <div class="size-bar">
+                            <div class="size-fill" id="storageFill" style="width: 25%;"></div>
+                        </div>
+                        <div class="size-text" id="storageText">25% used</div>
+                    </div>
+                    <button class="btn btn-warning" id="manageStorageBtn" style="width: 100%; margin-top: 15px;">
+                        <i class="fas fa-cog"></i> Manage Storage
+                    </button>
+                </div>
             </div>
-            <div class="option-features">
-              <div class="feature-item">
-                <i class="fas fa-check-circle"></i>
-                <span>Automatic scheduled backups</span>
-              </div>
-              <div class="feature-item">
-                <i class="fas fa-check-circle"></i>
-                <span>Secure cloud storage</span>
-              </div>
-              <div class="feature-item">
-                <i class="fas fa-check-circle"></i>
-                <span>Version history retention</span>
-              </div>
+
+            <!-- Export Options -->
+            <div class="export-options">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <i class="fas fa-file-export"></i> Export Data
+                    </h3>
+                    <div>
+                        <button class="btn btn-outline" id="exportAllBtn">
+                            <i class="fas fa-download"></i> Export All Data
+                        </button>
+                    </div>
+                </div>
+                <p style="color: #7f8c8d; margin-bottom: 25px;">Export your inventory data in various formats for
+                    analysis, reporting, or migration.</p>
+
+                <div class="export-grid">
+                    <div class="export-option" data-format="json" data-type="all">
+                        <div class="export-icon">
+                            <i class="fas fa-code"></i>
+                        </div>
+                        <h4 class="export-title">JSON Format</h4>
+                        <p class="export-desc">Complete data export for backup or migration</p>
+                    </div>
+
+                    <div class="export-option" data-format="csv" data-type="products">
+                        <div class="export-icon">
+                            <i class="fas fa-table"></i>
+                        </div>
+                        <h4 class="export-title">Products CSV</h4>
+                        <p class="export-desc">Export product catalog for spreadsheet analysis</p>
+                    </div>
+
+                    <div class="export-option" data-format="csv" data-type="sales">
+                        <div class="export-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <h4 class="export-title">Sales CSV</h4>
+                        <p class="export-desc">Export sales data for financial analysis</p>
+                    </div>
+
+                    <div class="export-option" data-format="csv" data-type="inventory">
+                        <div class="export-icon">
+                            <i class="fas fa-warehouse"></i>
+                        </div>
+                        <h4 class="export-title">Inventory CSV</h4>
+                        <p class="export-desc">Export stock levels and inventory reports</p>
+                    </div>
+
+                    <div class="export-option" data-format="pdf" data-type="report">
+                        <div class="export-icon">
+                            <i class="fas fa-file-pdf"></i>
+                        </div>
+                        <h4 class="export-title">PDF Report</h4>
+                        <p class="export-desc">Generate comprehensive PDF report</p>
+                    </div>
+
+                    <div class="export-option" data-format="excel" data-type="all">
+                        <div class="export-icon">
+                            <i class="fas fa-file-excel"></i>
+                        </div>
+                        <h4 class="export-title">Excel Format</h4>
+                        <p class="export-desc">Export all data to Excel spreadsheet</p>
+                    </div>
+                </div>
             </div>
-            <button class="btn btn-outline" id="setupCloudBackupBtn">
-              <i class="fas fa-cog"></i> Setup Cloud Backup
-            </button>
-          </div>
+
+            <!-- Backup History -->
+            <div class="backup-history">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <i class="fas fa-history"></i> Backup History
+                    </h3>
+                    <button class="btn btn-outline" id="refreshBackupsBtn">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+                <p style="color: #7f8c8d; margin-bottom: 25px;">View and manage your previous backups. You can restore,
+                    download, or delete backups.</p>
+
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Backup Name</th>
+                                <th>Date & Time</th>
+                                <th>Size</th>
+                                <th>Type</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="backupTableBody">
+                            <!-- Backups will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div style="text-align: center; margin-top: 20px;">
+                    <button class="btn btn-danger" id="deleteOldBackupsBtn">
+                        <i class="fas fa-trash"></i> Delete Old Backups (30+ days)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Import Section -->
+            <div class="import-section">
+                <div class="section-header">
+                    <h3 class="section-title">
+                        <i class="fas fa-file-import"></i> Import Data
+                    </h3>
+                </div>
+                <p style="color: #7f8c8d; margin-bottom: 25px;">Import data from previous backups or external sources.
+                    Supported formats: JSON, CSV.</p>
+
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                    </div>
+                    <div class="upload-text">Drop your file here or click to browse</div>
+                    <div class="upload-subtext">Supports .json, .csv files up to 10MB</div>
+                    <button class="btn btn-primary" id="browseFilesBtn">
+                        <i class="fas fa-folder-open"></i> Browse Files
+                    </button>
+                    <input type="file" class="file-input" id="fileInput" accept=".json,.csv">
+                </div>
+
+                <div class="file-list" id="fileList">
+                    <!-- Uploaded files will appear here -->
+                </div>
+
+                <div class="progress-container" id="progressContainer" style="display: none;">
+                    <div class="progress-header">
+                        <div class="progress-label">Importing Data</div>
+                        <div class="progress-percent" id="progressPercent">0%</div>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill" style="width: 0%;"></div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+                    <h4 style="margin-bottom: 15px; color: var(--primary-color);">Import Options</h4>
+                    <div class="form-group">
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                            <input type="radio" name="importOption" value="replace" checked>
+                            <span>Replace all existing data</span>
+                        </label>
+                        <label
+                            style="display: flex; align-items: center; gap: 10px; margin-top: 10px; cursor: pointer;">
+                            <input type="radio" name="importOption" value="merge">
+                            <span>Merge with existing data</span>
+                        </label>
+                    </div>
+                    <button class="btn btn-success" id="startImportBtn" style="width: 100%;" disabled>
+                        <i class="fas fa-play"></i> Start Import
+                    </button>
+                </div>
+            </div>
         </div>
-
-        <!-- Export Options -->
-        <div class="export-options">
-          <div class="section-header">
-            <h3 class="section-title">
-              <i class="fas fa-file-export"></i> Export Data
-            </h3>
-            <div class="action-buttons">
-              <button class="btn btn-outline" id="selectAllBtn">
-                <i class="fas fa-check-square"></i> Select All
-              </button>
-            </div>
-          </div>
-
-          <div class="export-types">
-            <div class="export-type" data-format="csv">
-              <div class="type-icon">
-                <i class="fas fa-file-csv"></i>
-              </div>
-              <div class="type-name">CSV Format</div>
-              <div class="type-desc">Comma separated values</div>
-            </div>
-
-            <div class="export-type selected" data-format="excel">
-              <div class="type-icon">
-                <i class="fas fa-file-excel"></i>
-              </div>
-              <div class="type-name">Excel Format</div>
-              <div class="type-desc">Microsoft Excel files</div>
-            </div>
-
-            <div class="export-type" data-format="pdf">
-              <div class="type-icon">
-                <i class="fas fa-file-pdf"></i>
-              </div>
-              <div class="type-name">PDF Format</div>
-              <div class="type-desc">Portable document format</div>
-            </div>
-
-            <div class="export-type" data-format="json">
-              <div class="type-icon">
-                <i class="fas fa-file-code"></i>
-              </div>
-              <div class="type-name">JSON Format</div>
-              <div class="type-desc">JavaScript Object Notation</div>
-            </div>
-          </div>
-
-          <div class="data-selection">
-            <div class="selection-header">
-              <div class="selection-title">Select Data to Export</div>
-              <div class="select-all">
-                <input type="checkbox" id="selectAllData" />
-                <label for="selectAllData">Select All Data</label>
-              </div>
-            </div>
-
-            <div class="table-container">
-              <table class="data-table">
-                <thead>
-                  <tr>
-                    <th>Data Type</th>
-                    <th>Records</th>
-                    <th>Last Updated</th>
-                    <th>Size</th>
-                    <th>Select</th>
-                  </tr>
-                </thead>
-                <tbody id="exportDataTable">
-                  <!-- Data will be populated by JavaScript -->
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div class="form-actions">
-            <button class="btn" id="cancelExportBtn">Cancel</button>
-            <button class="btn btn-success" id="startExportBtn">
-              <i class="fas fa-download"></i> Start Export
-            </button>
-          </div>
-        </div>
-
-        <!-- Backup History -->
-        <div class="backup-history">
-          <div class="section-header">
-            <h3 class="section-title">
-              <i class="fas fa-history"></i> Backup History
-            </h3>
-            <button class="btn btn-outline" id="refreshBackupsBtn">
-              <i class="fas fa-sync-alt"></i> Refresh
-            </button>
-          </div>
-
-          <div class="history-table-container">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th>Backup Name</th>
-                  <th>Date & Time</th>
-                  <th>Type</th>
-                  <th>Size</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody id="backupHistoryTable">
-                <!-- Backup history will be populated by JavaScript -->
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Schedule Backup -->
-        <div class="schedule-backup">
-          <div class="section-header">
-            <h3 class="section-title">
-              <i class="fas fa-clock"></i> Schedule Automatic Backup
-            </h3>
-          </div>
-
-          <form id="scheduleForm">
-            <div class="form-row">
-              <div class="form-group">
-                <label for="backupFrequency">Backup Frequency</label>
-                <select id="backupFrequency" class="form-control">
-                  <option value="daily">Daily</option>
-                  <option value="weekly" selected>Weekly</option>
-                  <option value="monthly">Monthly</option>
-                  <option value="custom">Custom</option>
-                </select>
-              </div>
-
-              <div class="form-group">
-                <label for="backupTime">Time of Day</label>
-                <select id="backupTime" class="form-control">
-                  <option value="00:00">12:00 AM</option>
-                  <option value="01:00">1:00 AM</option>
-                  <option value="02:00" selected>2:00 AM</option>
-                  <option value="03:00">3:00 AM</option>
-                  <option value="04:00">4:00 AM</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label for="backupType">Backup Type</label>
-                <select id="backupType" class="form-control">
-                  <option value="full">Full Database</option>
-                  <option value="incremental" selected>Incremental</option>
-                  <option value="differential">Differential</option>
-                </select>
-              </div>
-
-              <div class="form-group">
-                <label for="retentionPeriod">Retention Period</label>
-                <select id="retentionPeriod" class="form-control">
-                  <option value="7">7 days</option>
-                  <option value="14">14 days</option>
-                  <option value="30" selected>30 days</option>
-                  <option value="90">90 days</option>
-                  <option value="365">1 year</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label for="backupDestination">Backup Destination</label>
-              <div class="checkbox-container" style="margin-top: 10px">
-                <input type="checkbox" id="localStorage" checked />
-                <label for="localStorage">Local Server</label>
-
-                <input
-                  type="checkbox"
-                  id="cloudStorage"
-                  style="margin-left: 20px"
-                />
-                <label for="cloudStorage">Cloud Storage</label>
-
-                <input
-                  type="checkbox"
-                  id="externalDrive"
-                  style="margin-left: 20px"
-                />
-                <label for="externalDrive">External Drive</label>
-              </div>
-            </div>
-
-            <div class="form-actions">
-              <button type="button" class="btn" id="clearScheduleBtn">
-                Clear
-              </button>
-              <button type="submit" class="btn btn-primary">
-                <i class="fas fa-save"></i> Save Schedule
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
     </div>
 
-    <!-- Backup Progress Modal -->
-    <div class="modal" id="backupProgressModal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3 class="modal-title" id="backupModalTitle">Creating Backup</h3>
-          <button class="modal-close" id="closeBackupModal">&times;</button>
-        </div>
-        <div class="modal-body">
-          <div id="backupProgressContent">
-            <p id="backupStatusMessage">Preparing backup process...</p>
-
-            <div class="progress-container">
-              <div class="progress-header">
-                <span>Progress</span>
-                <span id="progressPercentage">0%</span>
-              </div>
-              <div class="progress-bar">
-                <div class="progress-fill" id="progressFill"></div>
-              </div>
+    <!-- Create Backup Modal -->
+    <div class="modal" id="backupModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Create New Backup</h3>
+                <button class="modal-close" id="closeBackupModal">&times;</button>
             </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="backupName">Backup Name</label>
+                    <input type="text" id="backupName" class="form-control" placeholder="Enter backup name"
+                        value="Backup-">
+                </div>
 
-            <div id="backupDetails" style="margin-top: 20px; display: none">
-              <div
-                style="
-                  display: flex;
-                  justify-content: space-between;
-                  margin-bottom: 5px;
-                "
-              >
-                <span>Current Table:</span>
-                <span id="currentTable">-</span>
-              </div>
-              <div
-                style="
-                  display: flex;
-                  justify-content: space-between;
-                  margin-bottom: 5px;
-                "
-              >
-                <span>Records Processed:</span>
-                <span id="recordsProcessed">0</span>
-              </div>
-              <div style="display: flex; justify-content: space-between">
-                <span>Estimated Time:</span>
-                <span id="estimatedTime">-</span>
-              </div>
+                <div class="form-group">
+                    <label for="backupDescription">Description (Optional)</label>
+                    <textarea id="backupDescription" class="form-control" placeholder="Enter description..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Include in Backup:</label>
+                    <div style="margin-top: 10px;">
+                        <label style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                            <input type="checkbox" id="includeProducts" checked>
+                            <span>Products & Inventory</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                            <input type="checkbox" id="includeSales" checked>
+                            <span>Sales & Transactions</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                            <input type="checkbox" id="includePurchases" checked>
+                            <span>Purchases & Suppliers</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                            <input type="checkbox" id="includeUsers" checked>
+                            <span>Users & Settings</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="checkbox" id="encryptBackup">
+                        <span>Encrypt backup (Recommended for security)</span>
+                    </label>
+                </div>
             </div>
-          </div>
+            <div class="modal-footer">
+                <button class="btn" id="cancelBackupBtn">Cancel</button>
+                <button class="btn btn-primary" id="confirmBackupBtn">
+                    <i class="fas fa-save"></i> Create Backup
+                </button>
+            </div>
         </div>
-      </div>
     </div>
 
     <!-- Restore Backup Modal -->
-    <div class="modal" id="restoreBackupModal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3 class="modal-title">Restore from Backup</h3>
-          <button class="modal-close" id="closeRestoreModal">&times;</button>
+    <div class="modal" id="restoreModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Restore Backup</h3>
+                <button class="modal-close" id="closeRestoreModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="color: #e74c3c; font-weight: 600; margin-bottom: 20px;">
+                    <i class="fas fa-exclamation-triangle"></i> Warning: This will replace all current data with the
+                    backup data.
+                </p>
+
+                <div class="form-group">
+                    <label for="restoreBackupSelect">Select Backup to Restore</label>
+                    <select id="restoreBackupSelect" class="form-control">
+                        <!-- Backups will be populated by JavaScript -->
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Backup Details:</label>
+                    <div id="backupDetails"
+                        style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-top: 10px;">
+                        Select a backup to view details
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="checkbox" id="confirmRestore">
+                        <span>I understand this will replace all current data</span>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" id="cancelRestoreBtn">Cancel</button>
+                <button class="btn btn-danger" id="confirmRestoreBtn" disabled>
+                    <i class="fas fa-history"></i> Restore Backup
+                </button>
+            </div>
         </div>
-        <div class="modal-body">
-          <div class="form-group">
-            <label for="selectBackupFile">Select Backup File</label>
-            <select id="selectBackupFile" class="form-control">
-              <option value="">Choose a backup file</option>
-              <!-- Backup files will be populated by JavaScript -->
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label>Restore Options</label>
-            <div class="checkbox-container" style="margin-top: 10px">
-              <input type="radio" id="fullRestore" name="restoreType" checked />
-              <label for="fullRestore">Full Restore (Replace all data)</label>
-            </div>
-            <div class="checkbox-container">
-              <input type="radio" id="partialRestore" name="restoreType" />
-              <label for="partialRestore"
-                >Partial Restore (Select tables)</label
-              >
-            </div>
-          </div>
-
-          <div
-            id="partialRestoreOptions"
-            style="display: none; margin-top: 15px"
-          >
-            <label>Select Tables to Restore</label>
-            <div
-              style="
-                max-height: 200px;
-                overflow-y: auto;
-                border: 1px solid #e1e8ed;
-                border-radius: 5px;
-                padding: 10px;
-                margin-top: 10px;
-              "
-            >
-              <!-- Tables will be populated by JavaScript -->
-            </div>
-          </div>
-
-          <div class="form-group">
-            <div class="checkbox-container">
-              <input type="checkbox" id="backupBeforeRestore" checked />
-              <label for="backupBeforeRestore"
-                >Create backup before restoring</label
-              >
-            </div>
-          </div>
-
-          <div class="modal-actions">
-            <button type="button" class="btn" id="cancelRestoreBtn">
-              Cancel
-            </button>
-            <button type="button" class="btn btn-danger" id="confirmRestoreBtn">
-              <i class="fas fa-redo"></i> Restore Backup
-            </button>
-          </div>
-        </div>
-      </div>
     </div>
     <script src="../js/back-up.js"></script>
   </body>

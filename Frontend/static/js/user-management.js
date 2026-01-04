@@ -1,393 +1,59 @@
-// Check authentication on page load
+// Initialize on page load
 document.addEventListener("DOMContentLoaded", function () {
-  // Get user info from localStorage
-  const userRole = localStorage.getItem("userRole") || "admin";
-  const userName = localStorage.getItem("userName") || "Administrator";
-
-  // Update UI with user info
-  document.getElementById("userAvatar").textContent = userName
-    .charAt(0)
-    .toUpperCase();
-
-  // Initialize user data
-  loadUserData();
-  setupEventListeners();
-
-  // Hide permissions section for staff by default
-  updatePermissionVisibility();
-});
-
-// Sample user data
-let usersData = {
-  users: [
-    {
-      id: "U001",
-      firstName: "John",
-      lastName: "Smith",
-      email: "john.smith@inventorypro.com",
-      username: "john.smith",
-      role: "admin",
-      status: "active",
-      phone: "+91 9876543210",
-      department: "admin",
-      lastLogin: "2023-10-18 14:30",
-      joinDate: "2023-01-15",
-      permissions: [
-        "dashboard",
-        "products",
-        "stock",
-        "sales",
-        "users",
-        "reports",
-        "settings",
-        "export",
-      ],
-      notes: "System administrator with full access",
-    },
-    {
-      id: "U002",
-      firstName: "Sarah",
-      lastName: "Johnson",
-      email: "sarah.johnson@inventorypro.com",
-      username: "sarah.j",
-      role: "manager",
-      status: "active",
-      phone: "+91 9876543211",
-      department: "sales",
-      lastLogin: "2023-10-18 11:15",
-      joinDate: "2023-03-20",
-      permissions: [
-        "dashboard",
-        "products",
-        "stock",
-        "sales",
-        "reports",
-        "export",
-      ],
-      notes: "Sales department manager",
-    },
-    {
-      id: "U003",
-      firstName: "Michael",
-      lastName: "Chen",
-      email: "michael.chen@inventorypro.com",
-      username: "michael.c",
-      role: "staff",
-      status: "active",
-      phone: "+91 9876543212",
-      department: "inventory",
-      lastLogin: "2023-10-17 16:45",
-      joinDate: "2023-05-10",
-      permissions: ["dashboard", "products", "stock"],
-      notes: "Inventory control specialist",
-    },
-    {
-      id: "U004",
-      firstName: "Emily",
-      lastName: "Davis",
-      email: "emily.davis@inventorypro.com",
-      username: "emily.d",
-      role: "staff",
-      status: "active",
-      phone: "+91 9876543213",
-      department: "sales",
-      lastLogin: "2023-10-17 10:20",
-      joinDate: "2023-06-15",
-      permissions: ["dashboard", "sales"],
-      notes: "Sales representative",
-    },
-    {
-      id: "U005",
-      firstName: "Robert",
-      lastName: "Wilson",
-      email: "robert.wilson@inventorypro.com",
-      username: "robert.w",
-      role: "manager",
-      status: "active",
-      phone: "+91 9876543214",
-      department: "inventory",
-      lastLogin: "2023-10-16 09:30",
-      joinDate: "2023-02-28",
-      permissions: ["dashboard", "products", "stock", "reports"],
-      notes: "Inventory manager",
-    },
-    {
-      id: "U006",
-      firstName: "Lisa",
-      lastName: "Thompson",
-      email: "lisa.thompson@inventorypro.com",
-      username: "lisa.t",
-      role: "staff",
-      status: "inactive",
-      phone: "+91 9876543215",
-      department: "purchasing",
-      lastLogin: "2023-09-15 13:10",
-      joinDate: "2023-04-05",
-      permissions: ["dashboard"],
-      notes: "On leave until further notice",
-    },
-    {
-      id: "U007",
-      firstName: "David",
-      lastName: "Brown",
-      email: "david.brown@inventorypro.com",
-      username: "david.b",
-      role: "staff",
-      status: "pending",
-      phone: "+91 9876543216",
-      department: "finance",
-      lastLogin: "Never",
-      joinDate: "2023-10-01",
-      permissions: ["dashboard"],
-      notes: "New hire, pending training",
-    },
-  ],
-  activity: [
-    {
-      id: "A001",
-      type: "login",
-      user: "John Smith",
-      text: "User logged into the system",
-      time: "Today, 14:30",
-    },
-    {
-      id: "A002",
-      type: "update",
-      user: "Sarah Johnson",
-      text: "Updated sales report settings",
-      time: "Today, 11:15",
-    },
-    {
-      id: "A003",
-      type: "create",
-      user: "Michael Chen",
-      text: "Added new product to inventory",
-      time: "Yesterday, 16:45",
-    },
-    {
-      id: "A004",
-      type: "update",
-      user: "Emily Davis",
-      text: "Processed new sales order",
-      time: "Yesterday, 10:20",
-    },
-    {
-      id: "A005",
-      type: "delete",
-      user: "Robert Wilson",
-      text: "Removed expired products from stock",
-      time: "2 days ago, 09:30",
-    },
-  ],
-};
-
-// Load user data into tables
-function loadUserData() {
-  loadUsersTable();
-  loadActivityList();
-  updateUserStats();
-}
-
-// Load users table
-function loadUsersTable() {
-  const usersTable = document.getElementById("usersTable");
-  usersTable.innerHTML = "";
-
-  // Apply filters if any
-  let filteredUsers = filterUsers();
-
-  if (filteredUsers.length === 0) {
-    usersTable.innerHTML = `
-                    <tr>
-                        <td colspan="7" style="text-align: center; padding: 40px; color: #7f8c8d;">
-                            <i class="fas fa-user-slash" style="font-size: 40px; margin-bottom: 15px;"></i>
-                            <div>No users found</div>
-                        </td>
-                    </tr>
-                `;
-    return;
+  // Set user info
+  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+  if (currentUser) {
+    document.getElementById("userAvatar").textContent = currentUser.name
+      .charAt(0)
+      .toUpperCase();
   }
 
-  filteredUsers.forEach((user) => {
-    const row = document.createElement("tr");
+  // Load users
+  loadUsers();
+  loadUserActivity();
+  setupEventListeners();
+});
 
-    // Determine status badge
-    let statusClass = "";
-    let statusText = "";
-    switch (user.status) {
-      case "active":
-        statusClass = "status-active";
-        statusText = "Active";
-        break;
-      case "inactive":
-        statusClass = "status-inactive";
-        statusText = "Inactive";
-        break;
-      case "pending":
-        statusClass = "status-pending";
-        statusText = "Pending";
-        break;
-    }
+// Load users from localStorage
+function loadUsers() {
+  const systemData = JSON.parse(localStorage.getItem("inventorySystemData"));
+  const users = systemData?.users || [];
 
-    // Determine role badge
-    let roleClass = "";
-    let roleText = "";
-    switch (user.role) {
-      case "admin":
-        roleClass = "role-admin";
-        roleText = "Administrator";
-        break;
-      case "manager":
-        roleClass = "role-manager";
-        roleText = "Manager";
-        break;
-      case "staff":
-        roleClass = "role-staff";
-        roleText = "Staff";
-        break;
-    }
+  // Update statistics
+  updateUserStatistics(users);
 
-    // Create permission indicators
-    const permissionCount = user.permissions.length;
-    const permissionIndicators = Array(8)
-      .fill(0)
-      .map((_, i) => {
-        return `<div class="permission-dot ${
-          i < permissionCount ? "active" : ""
-        }"></div>`;
-      })
-      .join("");
-
-    row.innerHTML = `
-                    <td><strong>${user.id}</strong></td>
-                    <td>
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, var(--secondary-color), var(--primary-color)); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
-                                ${user.firstName.charAt(
-                                  0
-                                )}${user.lastName.charAt(0)}
-                            </div>
-                            <div>
-                                <div style="font-weight: 600;">${
-                                  user.firstName
-                                } ${user.lastName}</div>
-                                <div style="font-size: 14px; color: #7f8c8d;">${
-                                  user.email
-                                }</div>
-                            </div>
-                        </div>
-                    </td>
-                    <td><span class="role-badge ${roleClass}">${roleText}</span></td>
-                    <td><span class="status-badge ${statusClass}">${statusText}</span></td>
-                    <td>${user.lastLogin}</td>
-                    <td>
-                        <div class="permission-indicators">
-                            ${permissionIndicators}
-                        </div>
-                        <div style="font-size: 12px; color: #7f8c8d; margin-top: 5px;">${permissionCount} permissions</div>
-                    </td>
-                    <td>
-                        <button class="btn btn-sm btn-primary" onclick="viewUserDetails('${
-                          user.id
-                        }')">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                        <button class="btn btn-sm btn-warning" onclick="editUser('${
-                          user.id
-                        }')">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="btn btn-sm btn-danger" onclick="deleteUser('${
-                          user.id
-                        }')">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </td>
-                `;
-    usersTable.appendChild(row);
-  });
-}
-
-// Load activity list
-function loadActivityList() {
-  const activityList = document.getElementById("activityList");
-  activityList.innerHTML = "";
-
-  usersData.activity.forEach((activity) => {
-    const item = document.createElement("li");
-    item.className = "activity-item";
-
-    // Determine activity icon
-    let activityIcon = "";
-    switch (activity.type) {
-      case "login":
-        activityIcon = "fa-sign-in-alt";
-        break;
-      case "logout":
-        activityIcon = "fa-sign-out-alt";
-        break;
-      case "create":
-        activityIcon = "fa-plus-circle";
-        break;
-      case "update":
-        activityIcon = "fa-edit";
-        break;
-      case "delete":
-        activityIcon = "fa-trash";
-        break;
-      default:
-        activityIcon = "fa-info-circle";
-    }
-
-    item.innerHTML = `
-                    <div class="activity-icon">
-                        <i class="fas ${activityIcon}"></i>
-                    </div>
-                    <div class="activity-details">
-                        <div class="activity-text">
-                            <strong>${activity.user}</strong> ${activity.text}
-                        </div>
-                        <div class="activity-time">${activity.time}</div>
-                    </div>
-                `;
-    activityList.appendChild(item);
-  });
+  // Display users in table
+  displayUsers(users);
 }
 
 // Update user statistics
-function updateUserStats() {
-  const totalUsers = usersData.users.length;
-  const adminUsers = usersData.users.filter(
-    (user) => user.role === "admin"
-  ).length;
-  const managerUsers = usersData.users.filter(
-    (user) => user.role === "manager"
-  ).length;
-  const staffUsers = usersData.users.filter(
-    (user) => user.role === "staff"
-  ).length;
+function updateUserStatistics(users) {
+  const totalUsers = users.length;
+  const activeUsers = users.filter((u) => u.status === "active").length;
+  const adminUsers = users.filter((u) => u.role === "admin").length;
+  const managerUsers = users.filter((u) => u.role === "manager").length;
 
   document.getElementById("totalUsers").textContent = totalUsers;
+  document.getElementById("activeUsers").textContent = activeUsers;
   document.getElementById("adminUsers").textContent = adminUsers;
   document.getElementById("managerUsers").textContent = managerUsers;
-  document.getElementById("staffUsers").textContent = staffUsers;
 }
 
-// Filter users based on search criteria
-function filterUsers() {
-  const searchTerm = document.getElementById("userSearch").value.toLowerCase();
+// Display users in table
+function displayUsers(users) {
+  const usersTableBody = document.getElementById("usersTableBody");
+  const searchTerm = document.getElementById("searchInput").value.toLowerCase();
   const roleFilter = document.getElementById("roleFilter").value;
   const statusFilter = document.getElementById("statusFilter").value;
 
-  return usersData.users.filter((user) => {
+  // Filter users
+  let filteredUsers = users.filter((user) => {
     // Search filter
     const matchesSearch =
       !searchTerm ||
-      user.firstName.toLowerCase().includes(searchTerm) ||
-      user.lastName.toLowerCase().includes(searchTerm) ||
+      user.name.toLowerCase().includes(searchTerm) ||
       user.email.toLowerCase().includes(searchTerm) ||
-      user.username.toLowerCase().includes(searchTerm) ||
-      `${user.firstName} ${user.lastName}`.toLowerCase().includes(searchTerm);
+      user.username.toLowerCase().includes(searchTerm);
 
     // Role filter
     const matchesRole = !roleFilter || user.role === roleFilter;
@@ -397,175 +63,261 @@ function filterUsers() {
 
     return matchesSearch && matchesRole && matchesStatus;
   });
+
+  // Display users
+  if (filteredUsers.length === 0) {
+    usersTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 40px; color: #7f8c8d;">
+                            <i class="fas fa-users" style="font-size: 60px; margin-bottom: 20px; opacity: 0.3;"></i>
+                            <h3>No users found</h3>
+                            <p>Try adjusting your search or filters</p>
+                        </td>
+                    </tr>
+                `;
+    return;
+  }
+
+  usersTableBody.innerHTML = "";
+
+  filteredUsers.forEach((user) => {
+    const row = document.createElement("tr");
+
+    // Determine role badge
+    let roleBadge = "";
+    if (user.role === "admin") {
+      roleBadge = '<span class="role-badge role-admin">Administrator</span>';
+    } else if (user.role === "manager") {
+      roleBadge = '<span class="role-badge role-manager">Manager</span>';
+    } else {
+      roleBadge = '<span class="role-badge role-staff">Staff</span>';
+    }
+
+    // Determine status badge
+    let statusBadge = "";
+    if (user.status === "active") {
+      statusBadge = '<span class="status-badge status-active">Active</span>';
+    } else if (user.status === "inactive") {
+      statusBadge =
+        '<span class="status-badge status-inactive">Inactive</span>';
+    } else {
+      statusBadge =
+        '<span class="status-badge status-suspended">Suspended</span>';
+    }
+
+    // Format last login
+    let lastLogin = user.lastLogin ? formatDate(user.lastLogin) : "Never";
+
+    row.innerHTML = `
+                    <td>${user.id}</td>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #3498db, #2c3e50); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
+                                ${user.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                                <div style="font-weight: 600;">${
+                                  user.name
+                                }</div>
+                                <div style="font-size: 12px; color: #7f8c8d;">@${
+                                  user.username
+                                }</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>${user.email}</td>
+                    <td>${roleBadge}</td>
+                    <td>${statusBadge}</td>
+                    <td>${lastLogin}</td>
+                    <td>
+                        <div style="display: flex; gap: 5px;">
+                            <button class="btn btn-sm btn-primary" onclick="viewUserDetails(${
+                              user.id
+                            })">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn btn-sm btn-warning" onclick="editUser(${
+                              user.id
+                            })">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteUser(${
+                              user.id
+                            })" ${user.id === 1 ? "disabled" : ""}>
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+    usersTableBody.appendChild(row);
+  });
+}
+
+// Format date
+function formatDate(dateString) {
+  const date = new Date(dateString);
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 // View user details
 function viewUserDetails(userId) {
-  const user = usersData.users.find((u) => u.id === userId);
+  const systemData = JSON.parse(localStorage.getItem("inventorySystemData"));
+  const user = systemData.users.find((u) => u.id === userId);
+
   if (!user) return;
 
   document.getElementById(
-    "userDetailsTitle"
-  ).textContent = `User Details: ${user.firstName} ${user.lastName}`;
+    "detailsModalTitle"
+  ).textContent = `${user.name}'s Profile`;
 
-  // Determine status badge
-  let statusClass = "";
-  let statusText = "";
-  switch (user.status) {
-    case "active":
-      statusClass = "status-active";
-      statusText = "Active";
-      break;
-    case "inactive":
-      statusClass = "status-inactive";
-      statusText = "Inactive";
-      break;
-    case "pending":
-      statusClass = "status-pending";
-      statusText = "Pending";
-      break;
-  }
-
-  // Determine role badge
-  let roleClass = "";
+  // Determine role text
   let roleText = "";
-  switch (user.role) {
-    case "admin":
-      roleClass = "role-admin";
-      roleText = "Administrator";
-      break;
-    case "manager":
-      roleClass = "role-manager";
-      roleText = "Manager";
-      break;
-    case "staff":
-      roleClass = "role-staff";
-      roleText = "Staff";
-      break;
+  if (user.role === "admin") {
+    roleText = "Administrator";
+  } else if (user.role === "manager") {
+    roleText = "Manager";
+  } else {
+    roleText = "Staff";
   }
 
-  // Get department name
-  const departmentNames = {
-    sales: "Sales",
-    inventory: "Inventory",
-    purchasing: "Purchasing",
-    finance: "Finance",
-    admin: "Administration",
-  };
-  const departmentName = departmentNames[user.department] || user.department;
+  // Determine status text
+  let statusText = "";
+  let statusColor = "";
+  if (user.status === "active") {
+    statusText = "Active";
+    statusColor = "var(--success-color)";
+  } else if (user.status === "inactive") {
+    statusText = "Inactive";
+    statusColor = "#7f8c8d";
+  } else {
+    statusText = "Suspended";
+    statusColor = "var(--accent-color)";
+  }
 
-  // Get permissions list
-  const permissionNames = {
-    dashboard: "Dashboard Access",
-    products: "Product Management",
-    stock: "Stock Management",
-    sales: "Sales Management",
-    users: "User Management",
-    reports: "Reports & Analytics",
-    settings: "System Settings",
-    export: "Export Data",
-  };
-
-  let permissionsHtml = "";
-  user.permissions.forEach((perm) => {
-    permissionsHtml += `<div>✓ ${permissionNames[perm] || perm}</div>`;
-  });
+  // Get permissions based on role
+  let permissions = [];
+  if (user.role === "admin") {
+    permissions = [
+      "Full system access",
+      "User management",
+      "Product management",
+      "Stock management",
+      "Sales management",
+      "Reports",
+    ];
+  } else if (user.role === "manager") {
+    permissions = [
+      "Product management",
+      "Stock management",
+      "Sales management",
+      "Reports",
+    ];
+  } else {
+    permissions = ["View products", "View stock", "Process sales"];
+  }
 
   const detailsContent = document.getElementById("userDetailsContent");
   detailsContent.innerHTML = `
-                <div class="user-profile-display">
-                    <div class="user-avatar-large">
-                        ${user.firstName.charAt(0)}${user.lastName.charAt(0)}
+                <div class="profile-card">
+                    <div class="profile-header">
+                        <div class="profile-avatar">
+                            ${user.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div class="profile-info">
+                            <h3>${user.name}</h3>
+                            <p>${roleText} • ${statusText}</p>
+                        </div>
                     </div>
-                    <div class="user-info">
-                        <div class="user-name">${user.firstName} ${
-    user.lastName
-  }</div>
-                        <div class="user-role"><span class="role-badge ${roleClass}">${roleText}</span></div>
-                        <div style="margin-top: 10px; color: #7f8c8d;">${
-                          user.email
-                        }</div>
-                    </div>
-                </div>
-                
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px;">
-                    <div>
-                        <h4 style="margin-bottom: 15px;">Account Information</h4>
-                        <table style="width: 100%;">
-                            <tr>
-                                <td style="padding: 8px 0; color: #7f8c8d;">User ID:</td>
-                                <td style="padding: 8px 0; font-weight: 600;">${
-                                  user.id
-                                }</td>
-                            </tr>
-                            <tr>
-                                <td style="padding: 8px 0; color: #7f8c8d;">Username:</td>
-                                <td style="padding: 8px 0;">${
-                                  user.username
-                                }</td>
-                            </tr>
-                            <tr>
-                                <td style="padding: 8px 0; color: #7f8c8d;">Status:</td>
-                                <td style="padding: 8px 0;"><span class="status-badge ${statusClass}">${statusText}</span></td>
-                            </tr>
-                            <tr>
-                                <td style="padding: 8px 0; color: #7f8c8d;">Department:</td>
-                                <td style="padding: 8px 0;">${departmentName}</td>
-                            </tr>
-                        </table>
-                    </div>
-                    <div>
-                        <h4 style="margin-bottom: 15px;">Contact Information</h4>
-                        <table style="width: 100%;">
-                            <tr>
-                                <td style="padding: 8px 0; color: #7f8c8d;">Phone:</td>
-                                <td style="padding: 8px 0;">${user.phone}</td>
-                            </tr>
-                            <tr>
-                                <td style="padding: 8px 0; color: #7f8c8d;">Last Login:</td>
-                                <td style="padding: 8px 0;">${
+                    <div class="profile-body">
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <div class="info-label">Username</div>
+                                <div class="info-value">@${user.username}</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">Email Address</div>
+                                <div class="info-value">${user.email}</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">Phone Number</div>
+                                <div class="info-value">${
+                                  user.phone || "Not provided"
+                                }</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">Department</div>
+                                <div class="info-value">${
+                                  user.department || "Not specified"
+                                }</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">Account Created</div>
+                                <div class="info-value">${
+                                  user.createdAt
+                                    ? formatDate(user.createdAt)
+                                    : "Unknown"
+                                }</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">Last Login</div>
+                                <div class="info-value">${
                                   user.lastLogin
-                                }</td>
-                            </tr>
-                            <tr>
-                                <td style="padding: 8px 0; color: #7f8c8d;">Join Date:</td>
-                                <td style="padding: 8px 0;">${
-                                  user.joinDate
-                                }</td>
-                            </tr>
-                        </table>
-                    </div>
-                </div>
-                
-                <div style="margin-bottom: 30px;">
-                    <h4 style="margin-bottom: 15px;">Permissions</h4>
-                    <div style="background: #f8f9fa; border-radius: 10px; padding: 20px;">
+                                    ? formatDate(user.lastLogin)
+                                    : "Never"
+                                }</div>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 30px;">
+                            <h4 style="margin-bottom: 15px; color: var(--primary-color);">User Permissions</h4>
+                            <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                                ${permissions
+                                  .map(
+                                    (permission) => `
+                                    <span style="padding: 5px 10px; background: rgba(52, 152, 219, 0.1); border-radius: 5px; font-size: 14px; color: var(--secondary-color);">
+                                        <i class="fas fa-check"></i> ${permission}
+                                    </span>
+                                `
+                                  )
+                                  .join("")}
+                            </div>
+                        </div>
+                        
                         ${
-                          permissionsHtml ||
-                          '<div style="color: #7f8c8d; font-style: italic;">No specific permissions assigned</div>'
+                          user.notes
+                            ? `
+                            <div style="margin-top: 30px;">
+                                <h4 style="margin-bottom: 10px; color: var(--primary-color);">Notes</h4>
+                                <p style="color: #7f8c8d; line-height: 1.6; padding: 15px; background: #f8f9fa; border-radius: 8px;">${user.notes}</p>
+                            </div>
+                        `
+                            : ""
                         }
+                        
+                        <div style="display: flex; justify-content: flex-end; gap: 15px; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+                            <button class="btn" onclick="closeUserDetailsModal()">Close</button>
+                            <button class="btn btn-warning" onclick="editUser(${
+                              user.id
+                            })">
+                                <i class="fas fa-edit"></i> Edit User
+                            </button>
+                            ${
+                              user.id !== 1
+                                ? `
+                                <button class="btn btn-danger" onclick="deleteUser(${user.id})">
+                                    <i class="fas fa-trash"></i> Delete User
+                                </button>
+                            `
+                                : ""
+                            }
+                        </div>
                     </div>
-                </div>
-                
-                <div style="margin-bottom: 30px;">
-                    <h4 style="margin-bottom: 15px;">Notes</h4>
-                    <p style="color: #7f8c8d; font-style: italic;">${
-                      user.notes || "No notes available"
-                    }</p>
-                </div>
-                
-                <div style="display: flex; justify-content: flex-end; gap: 15px; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
-                    <button class="btn" onclick="closeUserDetailsModal()">Close</button>
-                    <button class="btn btn-warning" onclick="editUser('${
-                      user.id
-                    }')">
-                        <i class="fas fa-edit"></i> Edit User
-                    </button>
-                    <button class="btn btn-primary" onclick="resetUserPassword('${
-                      user.id
-                    }')">
-                        <i class="fas fa-key"></i> Reset Password
-                    </button>
                 </div>
             `;
 
@@ -579,48 +331,36 @@ function closeUserDetailsModal() {
 
 // Edit user
 function editUser(userId) {
-  const user = usersData.users.find((u) => u.id === userId);
+  const systemData = JSON.parse(localStorage.getItem("inventorySystemData"));
+  const user = systemData.users.find((u) => u.id === userId);
+
   if (!user) return;
 
   document.getElementById("modalTitle").textContent = "Edit User";
   document.getElementById("userModal").classList.add("active");
 
+  // Split name into first and last
+  const nameParts = user.name.split(" ");
+  const firstName = nameParts[0];
+  const lastName = nameParts.slice(1).join(" ");
+
   // Fill form with user data
-  document.getElementById("userFirstName").value = user.firstName;
-  document.getElementById("userLastName").value = user.lastName;
-  document.getElementById("userEmail").value = user.email;
-  document.getElementById("userUsername").value = user.username;
-  document.getElementById("userRole").value = user.role;
-  document.getElementById("userStatus").value = user.status;
-  document.getElementById("userPhone").value = user.phone || "";
-  document.getElementById("userDepartment").value = user.department || "";
-  document.getElementById("userNotes").value = user.notes || "";
+  document.getElementById("firstName").value = firstName;
+  document.getElementById("lastName").value = lastName;
+  document.getElementById("username").value = user.username;
+  document.getElementById("email").value = user.email;
+  document.getElementById("phone").value = user.phone || "";
+  document.getElementById("department").value = user.department || "";
+  document.getElementById("role").value = user.role;
+  document.getElementById("status").value = user.status;
+  document.getElementById("notes").value = user.notes || "";
 
-  // Clear password fields for editing
-  document.getElementById("userPassword").value = "";
-  document.getElementById("userConfirmPassword").value = "";
-
-  // Set permissions
-  const permissions = user.permissions || [];
-  document.getElementById("permDashboard").checked =
-    permissions.includes("dashboard");
-  document.getElementById("permProducts").checked =
-    permissions.includes("products");
-  document.getElementById("permStock").checked = permissions.includes("stock");
-  document.getElementById("permSales").checked = permissions.includes("sales");
-  document.getElementById("permUsers").checked = permissions.includes("users");
-  document.getElementById("permReports").checked =
-    permissions.includes("reports");
-  document.getElementById("permSettings").checked =
-    permissions.includes("settings");
-  document.getElementById("permExport").checked =
-    permissions.includes("export");
+  // Remove password requirement for editing
+  document.getElementById("password").required = false;
+  document.getElementById("confirmPassword").required = false;
 
   // Store user ID for update
   document.getElementById("saveUserBtn").dataset.userId = userId;
-
-  // Update permission visibility based on role
-  updatePermissionVisibility();
 }
 
 // Add new user
@@ -631,68 +371,76 @@ function addNewUser() {
   // Clear form
   document.getElementById("userForm").reset();
 
-  // Set default permissions
-  document.getElementById("permDashboard").checked = true;
-  document.getElementById("permProducts").checked = false;
-  document.getElementById("permStock").checked = false;
-  document.getElementById("permSales").checked = false;
-  document.getElementById("permUsers").checked = false;
-  document.getElementById("permReports").checked = false;
-  document.getElementById("permSettings").checked = false;
-  document.getElementById("permExport").checked = false;
+  // Add password requirement for new user
+  document.getElementById("password").required = true;
+  document.getElementById("confirmPassword").required = true;
 
-  // Remove stored user ID
+  // Set default status
+  document.getElementById("status").value = "active";
+
   delete document.getElementById("saveUserBtn").dataset.userId;
-
-  // Update permission visibility based on role
-  updatePermissionVisibility();
 }
 
 // Delete user
 function deleteUser(userId) {
-  const user = usersData.users.find((u) => u.id === userId);
+  const systemData = JSON.parse(localStorage.getItem("inventorySystemData"));
+  const user = systemData.users.find((u) => u.id === userId);
+
   if (!user) return;
 
-  // Don't allow deleting your own account
-  const currentUser = localStorage.getItem("userName");
-  if (`${user.firstName} ${user.lastName}` === currentUser) {
-    alert("You cannot delete your own account!");
+  // Prevent deletion of default admin (id: 1)
+  if (userId === 1) {
+    showNotification(
+      "Cannot delete the default administrator account.",
+      "error"
+    );
     return;
   }
 
-  if (
-    !confirm(
-      `Are you sure you want to delete user ${user.firstName} ${user.lastName}? This action cannot be undone.`
-    )
-  ) {
+  // Get current user
+  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+  if (currentUser.id === userId) {
+    showNotification("You cannot delete your own account.", "error");
     return;
   }
 
-  // In a real app, you would send a delete request to the server
-  usersData.users = usersData.users.filter((u) => u.id !== userId);
-
-  // Reload data
-  loadUserData();
-
-  // Show success notification
-  showNotification(
-    `User ${user.firstName} ${user.lastName} deleted successfully!`,
-    "success"
-  );
+  document.getElementById(
+    "deleteMessage"
+  ).textContent = `Are you sure you want to delete ${user.name}?`;
+  document.getElementById("deleteModal").classList.add("active");
+  document.getElementById("confirmDeleteBtn").dataset.userId = userId;
 }
 
-// Reset user password
-function resetUserPassword(userId) {
-  const user = usersData.users.find((u) => u.id === userId);
-  if (!user) return;
+// Confirm delete user
+function confirmDeleteUser() {
+  const userId = parseInt(
+    document.getElementById("confirmDeleteBtn").dataset.userId
+  );
 
-  if (
-    confirm(
-      `Reset password for ${user.firstName} ${user.lastName}? A temporary password will be generated and sent to their email.`
-    )
-  ) {
-    showNotification(`Password reset email sent to ${user.email}`, "success");
+  const systemData = JSON.parse(localStorage.getItem("inventorySystemData"));
+  const userIndex = systemData.users.findIndex((u) => u.id === userId);
+
+  if (userIndex === -1) {
+    showNotification("User not found!", "error");
+    return;
   }
+
+  const userName = systemData.users[userIndex].name;
+
+  // Remove user
+  systemData.users.splice(userIndex, 1);
+
+  // Save to localStorage
+  localStorage.setItem("inventorySystemData", JSON.stringify(systemData));
+
+  // Close modal
+  document.getElementById("deleteModal").classList.remove("active");
+
+  // Show notification
+  showNotification(`User ${userName} deleted successfully!`, "success");
+
+  // Reload users
+  loadUsers();
 }
 
 // Save user (add or update)
@@ -700,146 +448,205 @@ function saveUser(event) {
   event.preventDefault();
 
   // Get form values
-  const firstName = document.getElementById("userFirstName").value;
-  const lastName = document.getElementById("userLastName").value;
-  const email = document.getElementById("userEmail").value;
-  const username = document.getElementById("userUsername").value;
-  const password = document.getElementById("userPassword").value;
-  const confirmPassword = document.getElementById("userConfirmPassword").value;
-  const role = document.getElementById("userRole").value;
-  const status = document.getElementById("userStatus").value;
-  const phone = document.getElementById("userPhone").value;
-  const department = document.getElementById("userDepartment").value;
-  const notes = document.getElementById("userNotes").value;
+  const firstName = document.getElementById("firstName").value.trim();
+  const lastName = document.getElementById("lastName").value.trim();
+  const username = document.getElementById("username").value.trim();
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+  const confirmPassword = document.getElementById("confirmPassword").value;
+  const phone = document.getElementById("phone").value.trim();
+  const department = document.getElementById("department").value.trim();
+  const role = document.getElementById("role").value;
+  const status = document.getElementById("status").value;
+  const notes = document.getElementById("notes").value.trim();
 
-  // Validate passwords if adding new user
+  // Validation
+  if (!firstName || !lastName || !username || !email || !role || !status) {
+    showNotification("Please fill in all required fields.", "error");
+    return;
+  }
+
+  // Check if editing or adding new user
   const userId = document.getElementById("saveUserBtn").dataset.userId;
+
   if (!userId) {
+    // Adding new user - password is required
+    if (!password || !confirmPassword) {
+      showNotification("Password is required for new users.", "error");
+      return;
+    }
+
     if (password.length < 6) {
-      alert("Password must be at least 6 characters long!");
+      showNotification("Password must be at least 6 characters.", "error");
       return;
     }
 
     if (password !== confirmPassword) {
-      alert("Passwords do not match!");
+      showNotification("Passwords do not match.", "error");
+      return;
+    }
+  } else {
+    // Editing existing user - password is optional
+    if (password && password.length > 0) {
+      if (password.length < 6) {
+        showNotification("Password must be at least 6 characters.", "error");
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        showNotification("Passwords do not match.", "error");
+        return;
+      }
+    }
+  }
+
+  const systemData = JSON.parse(localStorage.getItem("inventorySystemData"));
+
+  // Check if username already exists (for new user)
+  if (!userId) {
+    const existingUser = systemData.users.find((u) => u.username === username);
+    if (existingUser) {
+      showNotification(
+        "Username already exists. Please choose a different username.",
+        "error"
+      );
       return;
     }
   }
 
-  // Collect permissions
-  const permissions = [];
-  if (document.getElementById("permDashboard").checked)
-    permissions.push("dashboard");
-  if (document.getElementById("permProducts").checked)
-    permissions.push("products");
-  if (document.getElementById("permStock").checked) permissions.push("stock");
-  if (document.getElementById("permSales").checked) permissions.push("sales");
-  if (document.getElementById("permUsers").checked) permissions.push("users");
-  if (document.getElementById("permReports").checked)
-    permissions.push("reports");
-  if (document.getElementById("permSettings").checked)
-    permissions.push("settings");
-  if (document.getElementById("permExport").checked) permissions.push("export");
+  // Check if email already exists (for new user)
+  if (!userId) {
+    const existingEmail = systemData.users.find((u) => u.email === email);
+    if (existingEmail) {
+      showNotification(
+        "Email already exists. Please use a different email address.",
+        "error"
+      );
+      return;
+    }
+  }
 
-  // Check if we're editing or adding
   if (userId) {
     // Update existing user
-    const userIndex = usersData.users.findIndex((u) => u.id === userId);
+    const userIndex = systemData.users.findIndex(
+      (u) => u.id === parseInt(userId)
+    );
     if (userIndex !== -1) {
-      usersData.users[userIndex] = {
-        ...usersData.users[userIndex],
-        firstName: firstName,
-        lastName: lastName,
-        email: email,
+      const updatedUser = {
+        ...systemData.users[userIndex],
+        name: `${firstName} ${lastName}`,
         username: username,
+        email: email,
+        phone: phone || null,
+        department: department || null,
         role: role,
         status: status,
-        phone: phone,
-        department: department,
-        permissions: permissions,
-        notes: notes,
+        notes: notes || null,
       };
 
-      // Update password only if provided
-      if (password) {
-        // In a real app, you would hash the password before saving
-        console.log("Password updated for user:", userId);
+      // Update password if provided
+      if (password && password.length > 0) {
+        updatedUser.password = password;
       }
+
+      systemData.users[userIndex] = updatedUser;
 
       showNotification("User updated successfully!", "success");
     }
   } else {
     // Add new user
     const newUser = {
-      id: "U" + (usersData.users.length + 1).toString().padStart(3, "0"),
-      firstName: firstName,
-      lastName: lastName,
-      email: email,
+      id: generateId(systemData.users),
+      name: `${firstName} ${lastName}`,
       username: username,
+      email: email,
+      password: password,
+      phone: phone || null,
+      department: department || null,
       role: role,
       status: status,
-      phone: phone,
-      department: department,
-      lastLogin: "Never",
-      joinDate: new Date().toISOString().split("T")[0],
-      permissions: permissions,
-      notes: notes,
+      notes: notes || null,
+      createdAt: new Date().toISOString(),
+      lastLogin: null,
     };
 
-    usersData.users.push(newUser);
+    systemData.users.push(newUser);
     showNotification("User added successfully!", "success");
   }
 
-  // Close modal
+  // Save to localStorage
+  localStorage.setItem("inventorySystemData", JSON.stringify(systemData));
+
+  // Close modal and reset form
   document.getElementById("userModal").classList.remove("active");
-
-  // Reset form
   document.getElementById("userForm").reset();
+  delete document.getElementById("saveUserBtn").dataset.userId;
 
-  // Reload data
-  loadUserData();
+  // Reload users
+  loadUsers();
 }
 
-// Update permission visibility based on role
-function updatePermissionVisibility() {
-  const role = document.getElementById("userRole").value;
-  const permissionsSection = document.getElementById("permissionsSection");
+// Generate unique ID
+function generateId(items) {
+  if (items.length === 0) return 1;
+  return Math.max(...items.map((item) => item.id)) + 1;
+}
 
-  if (role === "admin") {
-    // Admin has all permissions by default
-    document.getElementById("permDashboard").checked = true;
-    document.getElementById("permProducts").checked = true;
-    document.getElementById("permStock").checked = true;
-    document.getElementById("permSales").checked = true;
-    document.getElementById("permUsers").checked = true;
-    document.getElementById("permReports").checked = true;
-    document.getElementById("permSettings").checked = true;
-    document.getElementById("permExport").checked = true;
-    permissionsSection.style.display = "none";
-  } else {
-    permissionsSection.style.display = "block";
+// Load user activity
+function loadUserActivity() {
+  const activityList = document.getElementById("activityList");
 
-    // Set default permissions based on role
-    if (role === "manager") {
-      document.getElementById("permDashboard").checked = true;
-      document.getElementById("permProducts").checked = true;
-      document.getElementById("permStock").checked = true;
-      document.getElementById("permSales").checked = true;
-      document.getElementById("permUsers").checked = false;
-      document.getElementById("permReports").checked = true;
-      document.getElementById("permSettings").checked = false;
-      document.getElementById("permExport").checked = true;
-    } else if (role === "staff") {
-      document.getElementById("permDashboard").checked = true;
-      document.getElementById("permProducts").checked = true;
-      document.getElementById("permStock").checked = true;
-      document.getElementById("permSales").checked = true;
-      document.getElementById("permUsers").checked = false;
-      document.getElementById("permReports").checked = false;
-      document.getElementById("permSettings").checked = false;
-      document.getElementById("permExport").checked = false;
-    }
-  }
+  // Sample activity data (in a real app, this would come from the server)
+  const activities = [
+    {
+      user: "Administrator",
+      action: "Logged in to the system",
+      time: "10 minutes ago",
+    },
+    {
+      user: "Manager User",
+      action: "Updated stock levels for Wireless Headphones",
+      time: "45 minutes ago",
+    },
+    {
+      user: "Staff User",
+      action: "Processed a new sale order #SO-1024",
+      time: "2 hours ago",
+    },
+    {
+      user: "Administrator",
+      action: 'Added new user "John Doe"',
+      time: "1 day ago",
+    },
+    {
+      user: "Manager User",
+      action: "Generated monthly sales report",
+      time: "2 days ago",
+    },
+  ];
+
+  activityList.innerHTML = "";
+
+  activities.forEach((activity) => {
+    const item = document.createElement("div");
+    item.className = "activity-item";
+    item.style.cssText =
+      "display: flex; padding: 15px 0; border-bottom: 1px solid #eee;";
+    item.innerHTML = `
+                    <div class="activity-icon" style="width: 40px; height: 40px; border-radius: 50%; background: rgba(52, 152, 219, 0.1); display: flex; align-items: center; justify-content: center; margin-right: 15px; color: var(--secondary-color);">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="activity-details" style="flex: 1;">
+                        <div class="activity-text" style="margin-bottom: 5px;">
+                            <strong>${activity.user}</strong> ${activity.action}
+                        </div>
+                        <div class="activity-time" style="font-size: 13px; color: #7f8c8d;">
+                            ${activity.time}
+                        </div>
+                    </div>
+                `;
+    activityList.appendChild(item);
+  });
 }
 
 // Show notification
@@ -902,80 +709,53 @@ function setupEventListeners() {
       logout();
     });
 
-  // Action buttons
+  // Add user button
   document.getElementById("addUserBtn").addEventListener("click", addNewUser);
+
+  // Search and filter events
   document
-    .getElementById("exportUsersBtn")
-    .addEventListener("click", function () {
-      showNotification("User list exported successfully!", "success");
-    });
-
+    .getElementById("searchInput")
+    .addEventListener("input", () => loadUsers());
   document
-    .getElementById("importUsersBtn")
-    .addEventListener("click", function () {
-      alert("Import Users feature would allow importing users from CSV/Excel.");
-    });
-
-  // Apply filters button
-  document
-    .getElementById("applyFiltersBtn")
-    .addEventListener("click", function () {
-      loadUsersTable();
-      showNotification("Filters applied successfully!", "success");
-    });
-
-  // View all activity button
-  document
-    .getElementById("viewAllActivityBtn")
-    .addEventListener("click", function () {
-      alert("This would show all user activity in a separate page/modal.");
-    });
-
-  // Modal close buttons
-  document
-    .getElementById("closeUserModal")
-    .addEventListener("click", function () {
-      document.getElementById("userModal").classList.remove("active");
-    });
-
-  document
-    .getElementById("closeUserDetailsModal")
-    .addEventListener("click", closeUserDetailsModal);
-
-  // Cancel button
-  document
-    .getElementById("cancelUserBtn")
-    .addEventListener("click", function () {
-      document.getElementById("userModal").classList.remove("active");
-    });
-
-  // User form submission
-  document.getElementById("userForm").addEventListener("submit", saveUser);
-
-  // Role change event
-  document
-    .getElementById("userRole")
-    .addEventListener("change", updatePermissionVisibility);
-
-  // Search input with debounce
-  let searchTimeout;
-  document.getElementById("userSearch").addEventListener("input", function () {
-    clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(() => {
-      loadUsersTable();
-    }, 500);
-  });
-
-  // Filter change events
-  document.getElementById("roleFilter").addEventListener("change", function () {
-    loadUsersTable();
-  });
-
+    .getElementById("roleFilter")
+    .addEventListener("change", () => loadUsers());
   document
     .getElementById("statusFilter")
-    .addEventListener("change", function () {
-      loadUsersTable();
+    .addEventListener("change", () => loadUsers());
+
+  // Modal close buttons
+  document.getElementById("closeModal").addEventListener("click", function () {
+    document.getElementById("userModal").classList.remove("active");
+  });
+
+  document
+    .getElementById("closeDetailsModal")
+    .addEventListener("click", closeUserDetailsModal);
+
+  document
+    .getElementById("closeDeleteModal")
+    .addEventListener("click", function () {
+      document.getElementById("deleteModal").classList.remove("active");
     });
+
+  // Cancel buttons
+  document.getElementById("cancelBtn").addEventListener("click", function () {
+    document.getElementById("userModal").classList.remove("active");
+  });
+
+  document
+    .getElementById("cancelDeleteBtn")
+    .addEventListener("click", function () {
+      document.getElementById("deleteModal").classList.remove("active");
+    });
+
+  // Form submissions
+  document.getElementById("userForm").addEventListener("submit", saveUser);
+
+  // Delete confirmation
+  document
+    .getElementById("confirmDeleteBtn")
+    .addEventListener("click", confirmDeleteUser);
 
   // Close modals when clicking outside
   window.addEventListener("click", function (e) {
@@ -988,12 +768,63 @@ function setupEventListeners() {
 // Logout function
 function logout() {
   if (confirm("Are you sure you want to logout?")) {
-    // Clear authentication data
-    localStorage.removeItem("loggedIn");
-    localStorage.removeItem("userRole");
-    localStorage.removeItem("userName");
-
-    // Redirect to login page
+    localStorage.removeItem("isLoggedIn");
+    localStorage.removeItem("currentUser");
     window.location.href = "login.html";
   }
 }
+
+// Add sample users if empty (for demo purposes)
+function addSampleUsersIfEmpty() {
+  const systemData = JSON.parse(localStorage.getItem("inventorySystemData"));
+
+  if (systemData.users.length === 0) {
+    systemData.users = [
+      {
+        id: 1,
+        name: "Administrator",
+        username: "admin",
+        password: "admin123",
+        email: "admin@inventorypro.com",
+        phone: "+1-234-567-8901",
+        department: "IT",
+        role: "admin",
+        status: "active",
+        createdAt: "2023-01-01",
+        lastLogin: new Date().toISOString(),
+      },
+      {
+        id: 2,
+        name: "Manager User",
+        username: "manager",
+        password: "manager123",
+        email: "manager@inventorypro.com",
+        phone: "+1-987-654-3210",
+        department: "Operations",
+        role: "manager",
+        status: "active",
+        createdAt: "2023-02-15",
+        lastLogin: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
+      },
+      {
+        id: 3,
+        name: "Staff User",
+        username: "staff",
+        password: "staff123",
+        email: "staff@inventorypro.com",
+        phone: "+1-555-123-4567",
+        department: "Sales",
+        role: "staff",
+        status: "active",
+        createdAt: "2023-03-20",
+        lastLogin: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
+      },
+    ];
+
+    localStorage.setItem("inventorySystemData", JSON.stringify(systemData));
+    loadUsers();
+  }
+}
+
+// Call this function on first load
+addSampleUsersIfEmpty();

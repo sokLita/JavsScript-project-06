@@ -433,11 +433,11 @@ function loadAllTransactionsTable() {
     // Format amount
     let amountDisplay = "";
     if (transaction.amount > 0) {
-      amountDisplay = `<span style="color: var(--success-color); font-weight: 600;">$${transaction.amount.toFixed(
+      amountDisplay = `<span style="color: var(--success-color); font-weight: 600;">₹${transaction.amount.toFixed(
         2
       )}</span>`;
     } else if (transaction.amount < 0) {
-      amountDisplay = `<span style="color: var(--accent-color); font-weight: 600;">$${Math.abs(
+      amountDisplay = `<span style="color: var(--accent-color); font-weight: 600;">₹${Math.abs(
         transaction.amount
       ).toFixed(2)}</span>`;
     } else {
@@ -806,7 +806,7 @@ function viewTransactionDetails(transactionId) {
                                     <tr>
                                         <td>${transaction.product}</td>
                                         <td>${transaction.quantity}</td>
-                                        <td>$${(
+                                        <td>₹${(
                                           transaction.amount /
                                           transaction.quantity
                                         ).toFixed(2)}</td>
@@ -901,11 +901,11 @@ function viewTransactionDetails(transactionId) {
                                     <tr>
                                         <td>${transaction.product}</td>
                                         <td>${transaction.quantity}</td>
-                                        <td>$${(
+                                        <td>₹${(
                                           Math.abs(transaction.amount) /
                                           transaction.quantity
                                         ).toFixed(2)}</td>
-                                        <td><strong style="color: var(--accent-color);">$${Math.abs(
+                                        <td><strong style="color: var(--accent-color);">₹${Math.abs(
                                           transaction.amount
                                         ).toFixed(2)}</strong></td>
                                     </tr>
@@ -981,10 +981,10 @@ function viewTransactionDetails(transactionId) {
                                         ${
                                           transaction.amount !== 0
                                             ? transaction.amount > 0
-                                              ? `<span style="color: var(--success-color);">$${transaction.amount.toFixed(
+                                              ? `<span style="color: var(--success-color);">₹${transaction.amount.toFixed(
                                                   2
                                                 )}</span>`
-                                              : `<span style="color: var(--accent-color);">$${Math.abs(
+                                              : `<span style="color: var(--accent-color);">₹${Math.abs(
                                                   transaction.amount
                                                 ).toFixed(2)}</span>`
                                             : "-"

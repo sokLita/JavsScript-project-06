@@ -1,498 +1,138 @@
-// Check authentication on page load
+// Initialize on page load
 document.addEventListener("DOMContentLoaded", function () {
-  // Get user info from localStorage
-  const userRole = localStorage.getItem("userRole") || "admin";
-  const userName = localStorage.getItem("userName") || "Administrator";
+  // Set user info
+  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+  if (currentUser) {
+    document.getElementById("userAvatar").textContent = currentUser.name
+      .charAt(0)
+      .toUpperCase();
+  }
 
-  // Update UI with user info
-  document.getElementById("userAvatar").textContent = userName
-    .charAt(0)
-    .toUpperCase();
-
-  // Initialize supplier data
-  initializeCharts();
-  loadSupplierData();
+  // Load suppliers
+  loadSuppliers();
   setupEventListeners();
+
+  // Check role for permissions
+  if (currentUser.role === "staff") {
+    document.getElementById("addSupplierBtn").style.display = "none";
+  }
+
+  // Add sample data if empty
+  addSampleSuppliersIfEmpty();
 });
 
-// Sample supplier data
-let supplierData = {
-  suppliers: [
-    {
-      id: "SUP-001",
-      code: "ABC-001",
-      name: "ElectroTech Solutions",
-      contactPerson: "Rajesh Kumar",
-      contactTitle: "Sales Manager",
-      phone: "+91 9876543210",
-      email: "rajesh@electrotech.com",
-      address: "123 Industrial Area",
-      city: "Mumbai",
-      state: "Maharashtra",
-      zipCode: "400001",
-      country: "India",
-      taxId: "GSTIN27ABCET1234N1",
-      paymentTerms: "net30",
-      category: "electronics",
-      productsSupplied: [
-        "Wireless Headphones",
-        "Smart Watches",
-        "Bluetooth Speakers",
-        "Charging Cables",
-      ],
-      rating: 4.5,
-      status: "active",
-      totalSpend: 1250000,
-      totalOrders: 45,
-      onTimeRate: 96,
-      avgDeliveryTime: 2.5,
-      notes: "Reliable supplier with good quality products",
-      joinDate: "2022-03-15",
-      lastOrder: "2023-10-15",
-    },
-    {
-      id: "SUP-002",
-      code: "XYZ-002",
-      name: "Global Furniture Inc.",
-      contactPerson: "Priya Sharma",
-      contactTitle: "Account Manager",
-      phone: "+91 9876543211",
-      email: "priya@globalfurniture.com",
-      address: "456 Corporate Park",
-      city: "Delhi",
-      state: "Delhi",
-      zipCode: "110001",
-      country: "India",
-      taxId: "GSTIN07XYZGF4567N2",
-      paymentTerms: "net60",
-      category: "furniture",
-      productsSupplied: [
-        "Office Chairs",
-        "Desks",
-        "Conference Tables",
-        "Storage Cabinets",
-      ],
-      rating: 4.2,
-      status: "active",
-      totalSpend: 850000,
-      totalOrders: 28,
-      onTimeRate: 92,
-      avgDeliveryTime: 5.2,
-      notes: "Bulk orders get 10% discount",
-      joinDate: "2022-06-22",
-      lastOrder: "2023-10-10",
-    },
-    {
-      id: "SUP-003",
-      code: "RMP-003",
-      name: "Prime Raw Materials",
-      contactPerson: "Vikram Singh",
-      contactTitle: "Director",
-      phone: "+91 9876543212",
-      email: "vikram@primeraw.com",
-      address: "789 Factory Zone",
-      city: "Ahmedabad",
-      state: "Gujarat",
-      zipCode: "380001",
-      country: "India",
-      taxId: "GSTIN24PRM7890N3",
-      paymentTerms: "cod",
-      category: "raw_materials",
-      productsSupplied: [
-        "Plastic Granules",
-        "Metal Sheets",
-        "Electronic Components",
-        "Packaging Materials",
-      ],
-      rating: 3.8,
-      status: "active",
-      totalSpend: 2150000,
-      totalOrders: 67,
-      onTimeRate: 88,
-      avgDeliveryTime: 3.8,
-      notes: "Sometimes delayed in monsoon season",
-      joinDate: "2021-11-10",
-      lastOrder: "2023-10-05",
-    },
-    {
-      id: "SUP-004",
-      code: "PKG-004",
-      name: "Packaging Masters",
-      contactPerson: "Anita Desai",
-      contactTitle: "Sales Executive",
-      phone: "+91 9876543213",
-      email: "anita@packagingmasters.com",
-      address: "101 Logistics Park",
-      city: "Bangalore",
-      state: "Karnataka",
-      zipCode: "560001",
-      country: "India",
-      taxId: "GSTIN29PKGM5678N4",
-      paymentTerms: "net15",
-      category: "packaging",
-      productsSupplied: ["Cardboard Boxes", "Bubble Wrap", "Tape", "Labels"],
-      rating: 4.7,
-      status: "active",
-      totalSpend: 320000,
-      totalOrders: 89,
-      onTimeRate: 98,
-      avgDeliveryTime: 1.5,
-      notes: "Excellent quality and fast delivery",
-      joinDate: "2023-01-15",
-      lastOrder: "2023-10-18",
-    },
-    {
-      id: "SUP-005",
-      code: "OFS-005",
-      name: "Office Supply Co.",
-      contactPerson: "Mohan Lal",
-      contactTitle: "Owner",
-      phone: "+91 9876543214",
-      email: "mohan@officesupply.co",
-      address: "202 Stationery Market",
-      city: "Chennai",
-      state: "Tamil Nadu",
-      zipCode: "600001",
-      country: "India",
-      taxId: "GSTIN33OFS9012N5",
-      paymentTerms: "net30",
-      category: "office_supplies",
-      productsSupplied: ["Notebooks", "Pens", "Printers", "Toner Cartridges"],
-      rating: 4.0,
-      status: "inactive",
-      totalSpend: 185000,
-      totalOrders: 23,
-      onTimeRate: 85,
-      avgDeliveryTime: 4.0,
-      notes: "No orders in last 4 months",
-      joinDate: "2022-08-05",
-      lastOrder: "2023-06-20",
-    },
-    {
-      id: "SUP-006",
-      code: "SVC-006",
-      name: "Tech Services Ltd.",
-      contactPerson: "Sanjay Patel",
-      contactTitle: "Service Manager",
-      phone: "+91 9876543215",
-      email: "sanjay@techservices.com",
-      address: "303 Tech Park",
-      city: "Hyderabad",
-      state: "Telangana",
-      zipCode: "500001",
-      country: "India",
-      taxId: "GSTIN36TSVC3456N6",
-      paymentTerms: "advance",
-      category: "services",
-      productsSupplied: [
-        "IT Support",
-        "Equipment Maintenance",
-        "Software Licenses",
-        "Consulting",
-      ],
-      rating: 4.3,
-      status: "pending",
-      totalSpend: 450000,
-      totalOrders: 12,
-      onTimeRate: 90,
-      avgDeliveryTime: 0,
-      notes: "New supplier, pending approval",
-      joinDate: "2023-09-10",
-      lastOrder: null,
-    },
-  ],
-  purchases: [
-    {
-      poNumber: "PO-2023-101",
-      supplierId: "SUP-001",
-      supplierName: "ElectroTech Solutions",
-      date: "2023-10-15",
-      products: ["Wireless Headphones (50 units)", "Smart Watches (25 units)"],
-      totalAmount: 87500,
-      status: "delivered",
-      deliveryDate: "2023-10-17",
-    },
-    {
-      poNumber: "PO-2023-102",
-      supplierId: "SUP-002",
-      supplierName: "Global Furniture Inc.",
-      date: "2023-10-10",
-      products: ["Office Chairs (20 units)"],
-      totalAmount: 125000,
-      status: "in_transit",
-      deliveryDate: "2023-10-18",
-    },
-    {
-      poNumber: "PO-2023-103",
-      supplierId: "SUP-004",
-      supplierName: "Packaging Masters",
-      date: "2023-10-12",
-      products: ["Cardboard Boxes (500 units)", "Bubble Wrap (100 rolls)"],
-      totalAmount: 28500,
-      status: "delivered",
-      deliveryDate: "2023-10-13",
-    },
-    {
-      poNumber: "PO-2023-104",
-      supplierId: "SUP-003",
-      supplierName: "Prime Raw Materials",
-      date: "2023-10-05",
-      products: ["Plastic Granules (1000 kg)", "Metal Sheets (200 sheets)"],
-      totalAmount: 185000,
-      status: "processing",
-      deliveryDate: "2023-10-20",
-    },
-    {
-      poNumber: "PO-2023-105",
-      supplierId: "SUP-001",
-      supplierName: "ElectroTech Solutions",
-      date: "2023-09-28",
-      products: [
-        "Bluetooth Speakers (30 units)",
-        "Charging Cables (100 units)",
-      ],
-      totalAmount: 42500,
-      status: "delivered",
-      deliveryDate: "2023-09-30",
-    },
-  ],
-};
+// Load suppliers from localStorage
+function loadSuppliers() {
+  const systemData = JSON.parse(localStorage.getItem("inventorySystemData"));
+  const suppliers = systemData?.suppliers || [];
+  const purchases = systemData?.purchases || [];
 
-// Initialize charts
-function initializeCharts() {
-  // Supplier Performance Chart
-  const performanceCtx = document
-    .getElementById("performanceChart")
-    .getContext("2d");
-  const performanceChart = new Chart(performanceCtx, {
-    type: "bar",
-    data: {
-      labels: [
-        "Jan",
-        "Feb",
-        "Mar",
-        "Apr",
-        "May",
-        "Jun",
-        "Jul",
-        "Aug",
-        "Sep",
-        "Oct",
-      ],
-      datasets: [
-        {
-          label: "On-Time Delivery %",
-          data: [92, 94, 91, 95, 93, 96, 94, 95, 96, 94],
-          backgroundColor: "rgba(52, 152, 219, 0.7)",
-          borderColor: "#3498db",
-          borderWidth: 1,
-        },
-        {
-          label: "Avg Rating",
-          data: [4.1, 4.2, 4.0, 4.3, 4.2, 4.3, 4.1, 4.2, 4.3, 4.2],
-          backgroundColor: "rgba(39, 174, 96, 0.7)",
-          borderColor: "#27ae60",
-          borderWidth: 1,
-          type: "line",
-          yAxisID: "y1",
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: {
-          position: "top",
-        },
-      },
-      scales: {
-        y: {
-          beginAtZero: false,
-          min: 85,
-          max: 100,
-          title: {
-            display: true,
-            text: "On-Time %",
-          },
-        },
-        y1: {
-          position: "right",
-          beginAtZero: false,
-          min: 3.5,
-          max: 5,
-          title: {
-            display: true,
-            text: "Avg Rating",
-          },
-          grid: {
-            drawOnChartArea: false,
-          },
-        },
-      },
-    },
-  });
+  // Calculate statistics
+  updateStatistics(suppliers, purchases);
 
-  // Spend by Category Chart
-  const spendCtx = document.getElementById("spendChart").getContext("2d");
-  const spendChart = new Chart(spendCtx, {
-    type: "pie",
-    data: {
-      labels: [
-        "Electronics",
-        "Furniture",
-        "Raw Materials",
-        "Packaging",
-        "Office Supplies",
-        "Services",
-      ],
-      datasets: [
-        {
-          data: [1250000, 850000, 2150000, 320000, 185000, 450000],
-          backgroundColor: [
-            "#3498db",
-            "#9b59b6",
-            "#e74c3c",
-            "#f39c12",
-            "#1abc9c",
-            "#34495e",
-          ],
-          borderWidth: 1,
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: {
-          position: "right",
-        },
-        tooltip: {
-          callbacks: {
-            label: function (context) {
-              const label = context.label || "";
-              const value = context.raw || 0;
-              const total = context.dataset.data.reduce((a, b) => a + b, 0);
-              const percentage = Math.round((value / total) * 100);
-              return `${label}: $${value.toLocaleString()} (${percentage}%)`;
-            },
-          },
-        },
-      },
-    },
-  });
-
-  // Update chart on period change
-  document
-    .getElementById("performancePeriod")
-    .addEventListener("change", function () {
-      // In a real app, you would fetch new data based on the selected period
-      performanceChart.update();
-      spendChart.update();
-    });
+  // Display suppliers
+  displaySuppliers(suppliers);
 }
 
-// Load supplier data into tables
-function loadSupplierData() {
-  loadSuppliersTable();
-  loadSupplierCards();
-  loadTopSuppliersTable();
-  loadNeedsAttentionTable();
-  loadRecentPurchasesTable();
-  updateOverviewStats();
+// Update statistics
+function updateStatistics(suppliers, purchases) {
+  const totalSuppliers = suppliers.length;
+  const activeSuppliers = suppliers.filter((s) => s.status === "active").length;
+
+  // Calculate pending orders from purchases
+  const pendingOrders = purchases.filter((p) => p.status === "ordered").length;
+
+  // Calculate overdue payments (simplified)
+  const overduePayments = purchases
+    .filter((p) => {
+      if (!p.dueDate) return false;
+      const dueDate = new Date(p.dueDate);
+      const today = new Date();
+      return p.status === "received" && dueDate < today && p.balanceDue > 0;
+    })
+    .reduce((sum, p) => sum + (p.balanceDue || 0), 0);
+
+  document.getElementById("totalSuppliers").textContent = totalSuppliers;
+  document.getElementById("activeSuppliers").textContent = activeSuppliers;
+  document.getElementById("pendingOrders").textContent = pendingOrders;
+  document.getElementById(
+    "overduePayments"
+  ).textContent = `₹${overduePayments.toLocaleString()}`;
 }
 
-// Load suppliers table
-function loadSuppliersTable() {
-  const suppliersTable = document.getElementById("suppliersTable");
-  suppliersTable.innerHTML = "";
+// Display suppliers in grid and table
+function displaySuppliers(suppliers) {
+  const searchTerm = document.getElementById("searchInput").value.toLowerCase();
+  const statusFilter = document.getElementById("statusFilter").value;
+  const ratingFilter = document.getElementById("ratingFilter").value;
 
-  supplierData.suppliers.forEach((supplier) => {
-    const row = document.createElement("tr");
+  // Filter suppliers
+  let filteredSuppliers = suppliers.filter((supplier) => {
+    // Search filter
+    const matchesSearch =
+      !searchTerm ||
+      supplier.name.toLowerCase().includes(searchTerm) ||
+      (supplier.contactPerson &&
+        supplier.contactPerson.toLowerCase().includes(searchTerm)) ||
+      supplier.email.toLowerCase().includes(searchTerm) ||
+      (supplier.phone && supplier.phone.toLowerCase().includes(searchTerm));
 
-    // Determine status badge
-    let statusClass = "";
-    let statusText = "";
-    if (supplier.status === "active") {
-      statusClass = "status-active";
-      statusText = "Active";
-    } else if (supplier.status === "inactive") {
-      statusClass = "status-inactive";
-      statusText = "Inactive";
-    } else {
-      statusClass = "status-pending";
-      statusText = "Pending";
-    }
+    // Status filter
+    const matchesStatus = !statusFilter || supplier.status === statusFilter;
 
-    // Generate rating stars
-    const ratingStars = generateRatingStars(supplier.rating);
+    // Rating filter
+    const matchesRating = !ratingFilter || supplier.rating == ratingFilter;
 
-    row.innerHTML = `
-                    <td><strong>${supplier.code}</strong></td>
-                    <td><strong>${supplier.name}</strong></td>
-                    <td>${supplier.contactPerson}<br><small>${
-      supplier.contactTitle
-    }</small></td>
-                    <td>${supplier.phone}</td>
-                    <td>${supplier.email}</td>
-                    <td>
-                        <div class="product-list">
-                            ${supplier.productsSupplied
-                              .slice(0, 2)
-                              .map(
-                                (product) =>
-                                  `<span class="product-tag">${product}</span>`
-                              )
-                              .join("")}
-                            ${
-                              supplier.productsSupplied.length > 2
-                                ? `<span class="product-tag">+${
-                                    supplier.productsSupplied.length - 2
-                                  } more</span>`
-                                : ""
-                            }
-                        </div>
-                    </td>
-                    <td>
-                        <div class="rating-badge">
-                            ${ratingStars}
-                            <span>${supplier.rating.toFixed(1)}</span>
-                        </div>
-                    </td>
-                    <td><span class="status-badge ${statusClass}">${statusText}</span></td>
-                    <td>
-                        <button class="btn btn-sm btn-primary" onclick="viewSupplierDetails('${
-                          supplier.id
-                        }')">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                        <button class="btn btn-sm btn-warning" onclick="editSupplier('${
-                          supplier.id
-                        }')">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="btn btn-sm btn-danger" onclick="deleteSupplier('${
-                          supplier.id
-                        }')">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </td>
+    return matchesSearch && matchesStatus && matchesRating;
+  });
+
+  // Display in grid view
+  displayGridSuppliers(filteredSuppliers);
+
+  // Display in table view
+  displayTableSuppliers(filteredSuppliers);
+
+  // Update pagination
+  updatePagination(filteredSuppliers.length);
+}
+
+// Display suppliers in grid view
+function displayGridSuppliers(suppliers) {
+  const suppliersGrid = document.getElementById("suppliersGrid");
+
+  if (suppliers.length === 0) {
+    suppliersGrid.innerHTML = `
+                    <div style="grid-column: 1 / -1; text-align: center; padding: 50px; color: #7f8c8d;">
+                        <i class="fas fa-truck" style="font-size: 60px; margin-bottom: 20px;"></i>
+                        <h3>No suppliers found</h3>
+                        <p>Try adjusting your search or filters</p>
+                        ${
+                          suppliers.length === 0
+                            ? '<button class="btn btn-primary" id="addFirstSupplierBtn" style="margin-top: 20px;"><i class="fas fa-plus"></i> Add Your First Supplier</button>'
+                            : ""
+                        }
+                    </div>
                 `;
-    suppliersTable.appendChild(row);
+
+    if (suppliers.length === 0) {
+      document
+        .getElementById("addFirstSupplierBtn")
+        ?.addEventListener("click", () => {
+          document.getElementById("addSupplierBtn").click();
+        });
+    }
+    return;
+  }
+
+  suppliersGrid.innerHTML = "";
+
+  suppliers.forEach((supplier) => {
+    const supplierCard = createSupplierCard(supplier);
+    suppliersGrid.appendChild(supplierCard);
   });
 }
 
-// Load supplier cards
-function loadSupplierCards() {
-  const cardsContainer = document.getElementById("cardsTab");
-  cardsContainer.innerHTML = "";
-
-  supplierData.suppliers.forEach((supplier) => {
-    const card = createSupplierCard(supplier);
-    cardsContainer.appendChild(card);
-  });
-}
-
-// Create supplier card
+// Create supplier card element
 function createSupplierCard(supplier) {
   const card = document.createElement("div");
   card.className = "supplier-card";
@@ -500,86 +140,99 @@ function createSupplierCard(supplier) {
   // Determine status badge
   let statusClass = "";
   let statusText = "";
-  if (supplier.status === "active") {
-    statusClass = "status-active";
-    statusText = "Active";
-  } else if (supplier.status === "inactive") {
-    statusClass = "status-inactive";
-    statusText = "Inactive";
-  } else {
-    statusClass = "status-pending";
-    statusText = "Pending";
+  switch (supplier.status) {
+    case "active":
+      statusClass = "status-active";
+      statusText = "Active";
+      break;
+    case "inactive":
+      statusClass = "status-inactive";
+      statusText = "Inactive";
+      break;
+    case "pending":
+      statusClass = "status-pending";
+      statusText = "Pending";
+      break;
   }
 
-  // Generate rating stars
-  const ratingStars = generateRatingStars(supplier.rating);
+  // Create rating stars
+  const rating = supplier.rating || 3;
+  const stars = "★".repeat(rating) + "☆".repeat(5 - rating);
+
+  // Get purchase history
+  const systemData = JSON.parse(localStorage.getItem("inventorySystemData"));
+  const purchases = systemData?.purchases || [];
+  const supplierPurchases = purchases.filter(
+    (p) => p.supplierId === supplier.id
+  );
+  const totalPurchases = supplierPurchases.length;
+  const totalSpent = supplierPurchases.reduce((sum, p) => sum + p.total, 0);
 
   card.innerHTML = `
                 <div class="supplier-header">
-                    <div>
-                        <div class="supplier-name">${supplier.name}</div>
-                        <div class="supplier-category">${getCategoryName(
-                          supplier.category
-                        )}</div>
+                    <div class="supplier-avatar">
+                        ${supplier.name.charAt(0).toUpperCase()}
                     </div>
-                    <div class="supplier-rating">
-                        <i class="fas fa-star"></i>
-                        <span>${supplier.rating.toFixed(1)}</span>
+                    <div class="supplier-info">
+                        <div class="supplier-name">${supplier.name}</div>
+                        <div class="supplier-category">${
+                          supplier.category || "Uncategorized"
+                        }</div>
                     </div>
                 </div>
                 <div class="supplier-body">
-                    <div class="supplier-info">
-                        <div class="info-row">
+                    <div class="supplier-contact">
+                        <div class="contact-item">
                             <i class="fas fa-user"></i>
-                            <span>${supplier.contactPerson} (${
-    supplier.contactTitle
-  })</span>
+                            <span>${supplier.contactPerson || "N/A"}</span>
                         </div>
-                        <div class="info-row">
-                            <i class="fas fa-phone"></i>
-                            <span>${supplier.phone}</span>
-                        </div>
-                        <div class="info-row">
+                        <div class="contact-item">
                             <i class="fas fa-envelope"></i>
                             <span>${supplier.email}</span>
                         </div>
-                        <div class="info-row">
-                            <i class="fas fa-map-marker-alt"></i>
-                            <span>${supplier.city}, ${supplier.state}</span>
+                        <div class="contact-item">
+                            <i class="fas fa-phone"></i>
+                            <span>${supplier.phone || "N/A"}</span>
                         </div>
                     </div>
-                    <div>
-                        <div style="font-size: 12px; color: #7f8c8d; margin-bottom: 5px;">Products Supplied:</div>
-                        <div class="product-list">
-                            ${supplier.productsSupplied
-                              .slice(0, 3)
-                              .map(
-                                (product) =>
-                                  `<span class="product-tag">${product}</span>`
-                              )
-                              .join("")}
-                            ${
-                              supplier.productsSupplied.length > 3
-                                ? `<span class="product-tag">+${
-                                    supplier.productsSupplied.length - 3
-                                  } more</span>`
-                                : ""
-                            }
+                    
+                    <div class="supplier-stats">
+                        <div class="stat-item">
+                            <div class="stat-number">${totalPurchases}</div>
+                            <div class="stat-label-small">Total Orders</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number">₹${totalSpent.toLocaleString()}</div>
+                            <div class="stat-label-small">Total Spent</div>
                         </div>
                     </div>
-                </div>
-                <div class="supplier-footer">
-                    <span class="status-badge ${statusClass}">${statusText}</span>
-                    <div style="display: flex; gap: 10px;">
-                        <button class="btn btn-sm btn-primary" onclick="viewSupplierDetails('${
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                            <span style="font-size: 14px; color: #7f8c8d;">Rating:</span>
+                            <span style="color: #f39c12; font-size: 16px;">${stars}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 14px; color: #7f8c8d;">Status:</span>
+                            <span class="status-badge ${statusClass}">${statusText}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="supplier-actions">
+                        <button class="btn btn-primary" onclick="viewSupplierDetails(${
                           supplier.id
-                        }')">
-                            <i class="fas fa-eye"></i>
+                        })">
+                            <i class="fas fa-eye"></i> View
                         </button>
-                        <button class="btn btn-sm btn-warning" onclick="editSupplier('${
+                        <button class="btn btn-warning" onclick="editSupplier(${
                           supplier.id
-                        }')">
-                            <i class="fas fa-edit"></i>
+                        })">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                        <button class="btn btn-danger" onclick="deleteSupplier(${
+                          supplier.id
+                        })">
+                            <i class="fas fa-trash"></i> Delete
                         </button>
                     </div>
                 </div>
@@ -588,418 +241,179 @@ function createSupplierCard(supplier) {
   return card;
 }
 
-// Load top suppliers table
-function loadTopSuppliersTable() {
-  const topTable = document.getElementById("topSuppliersTable");
-  topTable.innerHTML = "";
+// Display suppliers in table view
+function displayTableSuppliers(suppliers) {
+  const tableBody = document.getElementById("suppliersTable");
+  tableBody.innerHTML = "";
 
-  // Sort suppliers by total spend (descending)
-  const topSuppliers = [...supplierData.suppliers]
-    .sort((a, b) => b.totalSpend - a.totalSpend)
-    .slice(0, 10);
-
-  topSuppliers.forEach((supplier, index) => {
+  if (suppliers.length === 0) {
     const row = document.createElement("tr");
-
-    // Generate rating stars
-    const ratingStars = generateRatingStars(supplier.rating);
-
     row.innerHTML = `
-                    <td>#${index + 1}</td>
-                    <td><strong>${supplier.name}</strong></td>
-                    <td>$${supplier.totalSpend.toLocaleString()}</td>
-                    <td>${supplier.totalOrders}</td>
-                    <td>
-                        <div class="rating-badge">
-                            ${ratingStars}
-                            <span>${supplier.rating.toFixed(1)}</span>
-                        </div>
-                    </td>
-                    <td>${supplier.onTimeRate}%</td>
-                    <td>${supplier.avgDeliveryTime} days</td>
-                    <td>
-                        <button class="btn btn-sm btn-primary" onclick="viewSupplierDetails('${
-                          supplier.id
-                        }')">
-                            <i class="fas fa-eye"></i>
-                        </button>
+                    <td colspan="8" style="text-align: center; padding: 40px; color: #7f8c8d;">
+                        <i class="fas fa-truck" style="font-size: 40px; margin-bottom: 10px;"></i>
+                        <p>No suppliers found</p>
                     </td>
                 `;
-    topTable.appendChild(row);
-  });
-}
-
-// Load needs attention table
-function loadNeedsAttentionTable() {
-  const needsTable = document.getElementById("needsAttentionTable");
-  needsTable.innerHTML = "";
-
-  // Find suppliers that need attention
-  const needsAttention = supplierData.suppliers.filter((supplier) => {
-    // Inactive for more than 90 days
-    if (supplier.status === "inactive") return true;
-
-    // Low rating (less than 3.5)
-    if (supplier.rating < 3.5) return true;
-
-    // Low on-time rate (less than 85%)
-    if (supplier.onTimeRate < 85) return true;
-
-    return false;
-  });
-
-  if (needsAttention.length === 0) {
-    needsTable.innerHTML = `
-                    <tr>
-                        <td colspan="7" style="text-align: center; padding: 40px; color: #7f8c8d;">
-                            <i class="fas fa-check-circle" style="font-size: 40px; margin-bottom: 15px; color: var(--success-color);"></i>
-                            <div>All suppliers are performing well!</div>
-                        </td>
-                    </tr>
-                `;
+    tableBody.appendChild(row);
     return;
   }
 
-  needsAttention.forEach((supplier) => {
+  suppliers.forEach((supplier) => {
     const row = document.createElement("tr");
-
-    // Determine issue
-    let issue = "";
-    let action = "";
-
-    if (supplier.status === "inactive") {
-      issue = "Inactive for 90+ days";
-      action = "Contact to reactivate";
-    } else if (supplier.rating < 3.5) {
-      issue = `Low rating (${supplier.rating.toFixed(1)})`;
-      action = "Review performance";
-    } else if (supplier.onTimeRate < 85) {
-      issue = `Low on-time rate (${supplier.onTimeRate}%)`;
-      action = "Discuss delivery issues";
-    }
 
     // Determine status badge
     let statusClass = "";
     let statusText = "";
-    if (supplier.status === "active") {
-      statusClass = "status-active";
-      statusText = "Active";
-    } else if (supplier.status === "inactive") {
-      statusClass = "status-inactive";
-      statusText = "Inactive";
-    } else {
-      statusClass = "status-pending";
-      statusText = "Pending";
+    switch (supplier.status) {
+      case "active":
+        statusClass = "status-active";
+        statusText = "Active";
+        break;
+      case "inactive":
+        statusClass = "status-inactive";
+        statusText = "Inactive";
+        break;
+      case "pending":
+        statusClass = "status-pending";
+        statusText = "Pending";
+        break;
     }
 
-    // Generate rating stars
-    const ratingStars = generateRatingStars(supplier.rating);
+    // Create rating stars
+    const rating = supplier.rating || 3;
+    const stars = "★".repeat(rating) + "☆".repeat(5 - rating);
+
+    // Get product count from products
+    const systemData = JSON.parse(localStorage.getItem("inventorySystemData"));
+    const products = systemData?.products || [];
+    const productCount = products.filter(
+      (p) => p.supplierId === supplier.id
+    ).length;
 
     row.innerHTML = `
                     <td><strong>${supplier.name}</strong></td>
-                    <td><span style="color: var(--warning-color); font-weight: 600;">${issue}</span></td>
-                    <td>${supplier.lastOrder || "No orders"}</td>
-                    <td>
-                        <div class="rating-badge">
-                            ${ratingStars}
-                            <span>${supplier.rating.toFixed(1)}</span>
-                        </div>
-                    </td>
+                    <td>${supplier.contactPerson || "N/A"}</td>
+                    <td>${supplier.email}</td>
+                    <td>${supplier.phone || "N/A"}</td>
+                    <td>${productCount}</td>
                     <td><span class="status-badge ${statusClass}">${statusText}</span></td>
-                    <td>${action}</td>
+                    <td><span style="color: #f39c12;">${stars}</span></td>
                     <td>
-                        <button class="btn btn-sm btn-primary" onclick="viewSupplierDetails('${
+                        <button class="btn btn-primary btn-sm" onclick="viewSupplierDetails(${
                           supplier.id
-                        }')">
+                        })">
                             <i class="fas fa-eye"></i>
                         </button>
-                        <button class="btn btn-sm btn-warning" onclick="editSupplier('${
+                        <button class="btn btn-warning btn-sm" onclick="editSupplier(${
                           supplier.id
-                        }')">
+                        })">
                             <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteSupplier(${
+                          supplier.id
+                        })">
+                            <i class="fas fa-trash"></i>
                         </button>
                     </td>
                 `;
-    needsTable.appendChild(row);
+    tableBody.appendChild(row);
   });
 }
 
-// Load recent purchases table
-function loadRecentPurchasesTable() {
-  const purchasesTable = document.getElementById("recentPurchasesTable");
-  purchasesTable.innerHTML = "";
+// Update pagination
+function updatePagination(totalItems) {
+  const pagination = document.getElementById("pagination");
+  pagination.innerHTML = "";
 
-  supplierData.purchases.forEach((purchase) => {
-    const row = document.createElement("tr");
-
-    // Determine status
-    let statusBadge = "";
-    if (purchase.status === "delivered") {
-      statusBadge = '<span class="status-badge status-active">Delivered</span>';
-    } else if (purchase.status === "in_transit") {
-      statusBadge =
-        '<span class="status-badge status-pending">In Transit</span>';
-    } else {
-      statusBadge =
-        '<span class="status-badge status-pending">Processing</span>';
+  // For now, we'll just show a simple pagination info
+  if (totalItems > 0) {
+    pagination.innerHTML = `
+                    <div style="color: #7f8c8d; font-size: 14px;">
+                        Showing ${totalItems} supplier${
+      totalItems !== 1 ? "s" : ""
     }
-
-    row.innerHTML = `
-                    <td><strong>${purchase.poNumber}</strong></td>
-                    <td>${purchase.supplierName}</td>
-                    <td>${purchase.date}</td>
-                    <td>${purchase.products.join(", ")}</td>
-                    <td><strong>$${purchase.totalAmount.toLocaleString()}</strong></td>
-                    <td>${statusBadge}</td>
-                    <td>${purchase.deliveryDate}</td>
+                    </div>
                 `;
-    purchasesTable.appendChild(row);
-  });
-}
-
-// Update overview statistics
-function updateOverviewStats() {
-  const totalSuppliers = supplierData.suppliers.length;
-  const activeSuppliers = supplierData.suppliers.filter(
-    (s) => s.status === "active"
-  ).length;
-  const pendingSuppliers = supplierData.suppliers.filter(
-    (s) => s.status === "pending"
-  ).length;
-  const inactiveSuppliers = supplierData.suppliers.filter(
-    (s) => s.status === "inactive"
-  ).length;
-
-  // Calculate average metrics
-  const activeSuppliersData = supplierData.suppliers.filter(
-    (s) => s.status === "active"
-  );
-  const avgDeliveryTime =
-    activeSuppliersData.length > 0
-      ? (
-          activeSuppliersData.reduce((sum, s) => sum + s.avgDeliveryTime, 0) /
-          activeSuppliersData.length
-        ).toFixed(1)
-      : 0;
-
-  const avgRating =
-    activeSuppliersData.length > 0
-      ? (
-          activeSuppliersData.reduce((sum, s) => sum + s.rating, 0) /
-          activeSuppliersData.length
-        ).toFixed(1)
-      : 0;
-
-  const onTimeRate =
-    activeSuppliersData.length > 0
-      ? Math.round(
-          activeSuppliersData.reduce((sum, s) => sum + s.onTimeRate, 0) /
-            activeSuppliersData.length
-        )
-      : 0;
-
-  const totalSpend = supplierData.suppliers.reduce(
-    (sum, s) => sum + s.totalSpend,
-    0
-  );
-
-  // Update DOM
-  document.getElementById("totalSuppliers").textContent = totalSuppliers;
-  document.getElementById("activeSuppliers").textContent = activeSuppliers;
-  document.getElementById("pendingSuppliers").textContent = pendingSuppliers;
-  document.getElementById("inactiveSuppliers").textContent = inactiveSuppliers;
-  document.getElementById("avgDeliveryTime").textContent = avgDeliveryTime;
-  document.getElementById("avgRating").textContent = avgRating;
-  document.getElementById("onTimeRate").textContent = onTimeRate + "%";
-  document.getElementById("totalSpend").textContent =
-    "$" + (totalSpend / 1000000).toFixed(1) + "M";
-}
-
-// Generate rating stars HTML
-function generateRatingStars(rating) {
-  let stars = "";
-  const fullStars = Math.floor(rating);
-  const halfStar = rating % 1 >= 0.5;
-
-  for (let i = 0; i < fullStars; i++) {
-    stars += '<i class="fas fa-star"></i>';
   }
-
-  if (halfStar) {
-    stars += '<i class="fas fa-star-half-alt"></i>';
-  }
-
-  const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
-  for (let i = 0; i < emptyStars; i++) {
-    stars += '<i class="far fa-star"></i>';
-  }
-
-  return stars;
-}
-
-// Get category name from value
-function getCategoryName(categoryValue) {
-  const categories = {
-    electronics: "Electronics",
-    furniture: "Furniture",
-    raw_materials: "Raw Materials",
-    packaging: "Packaging",
-    office_supplies: "Office Supplies",
-    services: "Services",
-  };
-  return categories[categoryValue] || categoryValue;
-}
-
-// Get payment terms name from value
-function getPaymentTerms(termsValue) {
-  const terms = {
-    net30: "Net 30 Days",
-    net60: "Net 60 Days",
-    net15: "Net 15 Days",
-    cod: "Cash on Delivery",
-    advance: "Advance Payment",
-  };
-  return terms[termsValue] || termsValue;
 }
 
 // View supplier details
 function viewSupplierDetails(supplierId) {
-  const supplier = supplierData.suppliers.find((s) => s.id === supplierId);
+  const systemData = JSON.parse(localStorage.getItem("inventorySystemData"));
+  const supplier = systemData.suppliers.find((s) => s.id === supplierId);
+  const purchases = systemData.purchases || [];
+  const products = systemData.products || [];
+
   if (!supplier) return;
 
-  document.getElementById(
-    "supplierDetailsTitle"
-  ).textContent = `Supplier Details: ${supplier.name}`;
+  document.getElementById("detailsModalTitle").textContent = supplier.name;
 
-  // Determine status badge
-  let statusClass = "";
-  let statusText = "";
-  if (supplier.status === "active") {
-    statusClass = "status-active";
-    statusText = "Active";
-  } else if (supplier.status === "inactive") {
-    statusClass = "status-inactive";
-    statusText = "Inactive";
-  } else {
-    statusClass = "status-pending";
-    statusText = "Pending";
-  }
-
-  // Generate rating stars
-  const ratingStars = generateRatingStars(supplier.rating);
-
-  // Get purchases for this supplier
-  const supplierPurchases = supplierData.purchases.filter(
+  // Calculate statistics
+  const supplierPurchases = purchases.filter(
     (p) => p.supplierId === supplierId
   );
+  const totalOrders = supplierPurchases.length;
+  const totalSpent = supplierPurchases.reduce((sum, p) => sum + p.total, 0);
+  const avgOrderValue = totalOrders > 0 ? totalSpent / totalOrders : 0;
 
-  // Generate purchases table rows
-  let purchasesRows = "";
-  if (supplierPurchases.length > 0) {
-    supplierPurchases.forEach((purchase) => {
-      purchasesRows += `
-                        <tr>
-                            <td>${purchase.poNumber}</td>
-                            <td>${purchase.date}</td>
-                            <td>${purchase.products.join(", ")}</td>
-                            <td>$${purchase.totalAmount.toLocaleString()}</td>
-                            <td>${purchase.deliveryDate}</td>
-                        </tr>
-                    `;
-    });
-  } else {
-    purchasesRows = `
-                    <tr>
-                        <td colspan="5" style="text-align: center; padding: 20px; color: #7f8c8d;">
-                            No purchase history available
-                        </td>
-                    </tr>
-                `;
-  }
+  // Get products from this supplier
+  const supplierProducts = products.filter((p) => p.supplierId === supplierId);
+
+  // Create rating stars
+  const rating = supplier.rating || 3;
+  const stars = "★".repeat(rating) + "☆".repeat(5 - rating);
 
   const detailsContent = document.getElementById("supplierDetailsContent");
   detailsContent.innerHTML = `
-                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 30px; margin-bottom: 30px;">
-                    <div>
-                        <h4 style="margin-bottom: 15px;">Supplier Information</h4>
-                        <table style="width: 100%;">
-                            <tr>
-                                <td style="padding: 8px 0; color: #7f8c8d;">Supplier ID:</td>
-                                <td style="padding: 8px 0; font-weight: 600;">${
-                                  supplier.code
-                                }</td>
-                            </tr>
-                            <tr>
-                                <td style="padding: 8px 0; color: #7f8c8d;">Company Name:</td>
-                                <td style="padding: 8px 0; font-weight: 600;">${
-                                  supplier.name
-                                }</td>
-                            </tr>
-                            <tr>
-                                <td style="padding: 8px 0; color: #7f8c8d;">Category:</td>
-                                <td style="padding: 8px 0;">${getCategoryName(
-                                  supplier.category
-                                )}</td>
-                            </tr>
-                            <tr>
-                                <td style="padding: 8px 0; color: #7f8c8d;">Status:</td>
-                                <td style="padding: 8px 0;"><span class="status-badge ${statusClass}">${statusText}</span></td>
-                            </tr>
-                            <tr>
-                                <td style="padding: 8px 0; color: #7f8c8d;">Rating:</td>
-                                <td style="padding: 8px 0;">
-                                    <div class="rating-badge">
-                                        ${ratingStars}
-                                        <span>${supplier.rating.toFixed(
-                                          1
-                                        )}</span>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td style="padding: 8px 0; color: #7f8c8d;">Join Date:</td>
-                                <td style="padding: 8px 0;">${
-                                  supplier.joinDate
-                                }</td>
-                            </tr>
-                            <tr>
-                                <td style="padding: 8px 0; color: #7f8c8d;">Last Order:</td>
-                                <td style="padding: 8px 0;">${
-                                  supplier.lastOrder || "No orders yet"
-                                }</td>
-                            </tr>
-                        </table>
+                <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 30px; margin-bottom: 30px;">
+                    <div style="text-align: center;">
+                        <div style="width: 100px; height: 100px; border-radius: 50%; background: linear-gradient(135deg, var(--secondary-color), var(--primary-color)); color: white; display: flex; align-items: center; justify-content: center; font-size: 36px; font-weight: bold; margin: 0 auto 20px;">
+                            ${supplier.name.charAt(0).toUpperCase()}
+                        </div>
+                        <h3 style="margin-bottom: 10px;">${supplier.name}</h3>
+                        <div style="margin-bottom: 10px;">
+                            <span class="status-badge ${
+                              supplier.status === "active"
+                                ? "status-active"
+                                : supplier.status === "pending"
+                                ? "status-pending"
+                                : "status-inactive"
+                            }">
+                                ${
+                                  supplier.status.charAt(0).toUpperCase() +
+                                  supplier.status.slice(1)
+                                }
+                            </span>
+                        </div>
+                        <div style="color: #f39c12; font-size: 20px; margin-bottom: 20px;">
+                            ${stars}
+                        </div>
+                        <div style="color: #7f8c8d; font-size: 14px;">
+                            ${supplier.category || "No category specified"}
+                        </div>
                     </div>
                     <div>
-                        <h4 style="margin-bottom: 15px;">Performance Metrics</h4>
-                        <div style="background: #f8f9fa; border-radius: 10px; padding: 20px;">
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                                <span>Total Spend:</span>
-                                <span style="font-weight: 600;">$${supplier.totalSpend.toLocaleString()}</span>
+                        <h4 style="margin-bottom: 15px; color: var(--primary-color);">Supplier Statistics</h4>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 30px;">
+                            <div style="background: #f8f9fa; border-radius: 8px; padding: 15px; text-align: center;">
+                                <div style="font-size: 24px; font-weight: 700; color: var(--primary-color);">${totalOrders}</div>
+                                <div style="font-size: 12px; color: #7f8c8d;">Total Orders</div>
                             </div>
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                                <span>Total Orders:</span>
-                                <span style="font-weight: 600;">${
-                                  supplier.totalOrders
-                                }</span>
+                            <div style="background: #f8f9fa; border-radius: 8px; padding: 15px; text-align: center;">
+                                <div style="font-size: 24px; font-weight: 700; color: var(--primary-color);">₹${totalSpent.toLocaleString()}</div>
+                                <div style="font-size: 12px; color: #7f8c8d;">Total Spent</div>
                             </div>
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                                <span>On-Time Delivery:</span>
-                                <span style="font-weight: 600;">${
-                                  supplier.onTimeRate
-                                }%</span>
+                            <div style="background: #f8f9fa; border-radius: 8px; padding: 15px; text-align: center;">
+                                <div style="font-size: 24px; font-weight: 700; color: var(--primary-color);">₹${avgOrderValue.toFixed(
+                                  2
+                                )}</div>
+                                <div style="font-size: 12px; color: #7f8c8d;">Avg Order Value</div>
                             </div>
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                                <span>Avg Delivery Time:</span>
-                                <span style="font-weight: 600;">${
-                                  supplier.avgDeliveryTime
-                                } days</span>
-                            </div>
-                            <div style="display: flex; justify-content: space-between;">
-                                <span>Payment Terms:</span>
-                                <span style="font-weight: 600;">${getPaymentTerms(
-                                  supplier.paymentTerms
-                                )}</span>
+                            <div style="background: #f8f9fa; border-radius: 8px; padding: 15px; text-align: center;">
+                                <div style="font-size: 24px; font-weight: 700; color: var(--primary-color);">${
+                                  supplierProducts.length
+                                }</div>
+                                <div style="font-size: 12px; color: #7f8c8d;">Products</div>
                             </div>
                         </div>
                     </div>
@@ -1007,100 +421,103 @@ function viewSupplierDetails(supplierId) {
                 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px;">
                     <div>
-                        <h4 style="margin-bottom: 15px;">Contact Information</h4>
-                        <table style="width: 100%;">
-                            <tr>
-                                <td style="padding: 8px 0; color: #7f8c8d;">Contact Person:</td>
-                                <td style="padding: 8px 0;">${
-                                  supplier.contactPerson
-                                }</td>
-                            </tr>
-                            <tr>
-                                <td style="padding: 8px 0; color: #7f8c8d;">Title:</td>
-                                <td style="padding: 8px 0;">${
-                                  supplier.contactTitle
-                                }</td>
-                            </tr>
-                            <tr>
-                                <td style="padding: 8px 0; color: #7f8c8d;">Phone:</td>
-                                <td style="padding: 8px 0;">${
-                                  supplier.phone
-                                }</td>
-                            </tr>
-                            <tr>
-                                <td style="padding: 8px 0; color: #7f8c8d;">Email:</td>
-                                <td style="padding: 8px 0;">${
+                        <h4 style="margin-bottom: 15px; color: var(--primary-color);">Contact Information</h4>
+                        <div style="background: #f8f9fa; border-radius: 8px; padding: 20px;">
+                            <div style="margin-bottom: 15px;">
+                                <div style="font-size: 12px; color: #7f8c8d;">Contact Person</div>
+                                <div style="font-weight: 600;">${
+                                  supplier.contactPerson || "N/A"
+                                }</div>
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <div style="font-size: 12px; color: #7f8c8d;">Email</div>
+                                <div style="font-weight: 600;">${
                                   supplier.email
-                                }</td>
-                            </tr>
-                            <tr>
-                                <td style="padding: 8px 0; color: #7f8c8d;">Tax ID:</td>
-                                <td style="padding: 8px 0;">${
-                                  supplier.taxId
-                                }</td>
-                            </tr>
-                        </table>
+                                }</div>
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <div style="font-size: 12px; color: #7f8c8d;">Phone</div>
+                                <div style="font-weight: 600;">${
+                                  supplier.phone || "N/A"
+                                }</div>
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <div style="font-size: 12px; color: #7f8c8d;">Website</div>
+                                <div style="font-weight: 600;">${
+                                  supplier.website || "N/A"
+                                }</div>
+                            </div>
+                        </div>
                     </div>
+                    
                     <div>
-                        <h4 style="margin-bottom: 15px;">Address</h4>
-                        <p>${supplier.address}<br>
-                        ${supplier.city}, ${supplier.state} ${
-    supplier.zipCode
-  }<br>
-                        ${supplier.country}</p>
+                        <h4 style="margin-bottom: 15px; color: var(--primary-color);">Address & Payment</h4>
+                        <div style="background: #f8f9fa; border-radius: 8px; padding: 20px;">
+                            <div style="margin-bottom: 15px;">
+                                <div style="font-size: 12px; color: #7f8c8d;">Address</div>
+                                <div style="font-weight: 600;">${
+                                  supplier.address || "N/A"
+                                }</div>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                                <div>
+                                    <div style="font-size: 12px; color: #7f8c8d;">City</div>
+                                    <div style="font-weight: 600;">${
+                                      supplier.city || "N/A"
+                                    }</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 12px; color: #7f8c8d;">Country</div>
+                                    <div style="font-weight: 600;">${
+                                      supplier.country || "N/A"
+                                    }</div>
+                                </div>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                                <div>
+                                    <div style="font-size: 12px; color: #7f8c8d;">Payment Terms</div>
+                                    <div style="font-weight: 600;">${
+                                      supplier.paymentTerms || 30
+                                    } days</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 12px; color: #7f8c8d;">Credit Limit</div>
+                                    <div style="font-weight: 600;">${
+                                      supplier.creditLimit
+                                        ? "₹" +
+                                          supplier.creditLimit.toLocaleString()
+                                        : "No limit"
+                                    }</div>
+                                </div>
+                            </div>
+                            <div>
+                                <div style="font-size: 12px; color: #7f8c8d;">Tax ID</div>
+                                <div style="font-weight: 600;">${
+                                  supplier.taxId || "N/A"
+                                }</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
-                <div style="margin-bottom: 30px;">
-                    <h4 style="margin-bottom: 15px;">Products Supplied</h4>
-                    <div class="product-list">
-                        ${supplier.productsSupplied
-                          .map(
-                            (product) =>
-                              `<span class="product-tag">${product}</span>`
-                          )
-                          .join("")}
+                <div>
+                    <h4 style="margin-bottom: 15px; color: var(--primary-color);">Description</h4>
+                    <div style="background: #f8f9fa; border-radius: 8px; padding: 20px; color: #7f8c8d; line-height: 1.6;">
+                        ${supplier.description || "No description available."}
                     </div>
-                </div>
-                
-                <div style="margin-bottom: 30px;">
-                    <h4 style="margin-bottom: 15px;">Purchase History</h4>
-                    <div class="table-container">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>PO Number</th>
-                                    <th>Date</th>
-                                    <th>Products</th>
-                                    <th>Amount</th>
-                                    <th>Delivery Date</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${purchasesRows}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                
-                <div style="margin-bottom: 30px;">
-                    <h4 style="margin-bottom: 15px;">Notes</h4>
-                    <p style="color: #7f8c8d; font-style: italic;">${
-                      supplier.notes
-                    }</p>
                 </div>
                 
                 <div style="display: flex; justify-content: flex-end; gap: 15px; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
                     <button class="btn" onclick="closeSupplierDetailsModal()">Close</button>
-                    <button class="btn btn-warning" onclick="editSupplier('${
+                    <button class="btn btn-warning" onclick="editSupplier(${
                       supplier.id
-                    }')">
+                    })">
                         <i class="fas fa-edit"></i> Edit Supplier
                     </button>
-                    <button class="btn btn-primary" onclick="createPurchaseOrder('${
+                    <button class="btn btn-primary" onclick="createNewPurchase(${
                       supplier.id
-                    }')">
-                        <i class="fas fa-shopping-cart"></i> Create Purchase Order
+                    })">
+                        <i class="fas fa-shopping-cart"></i> New Purchase Order
                     </button>
                 </div>
             `;
@@ -1113,20 +530,23 @@ function closeSupplierDetailsModal() {
   document.getElementById("supplierDetailsModal").classList.remove("active");
 }
 
-// Create purchase order for supplier
-function createPurchaseOrder(supplierId) {
-  const supplier = supplierData.suppliers.find((s) => s.id === supplierId);
-  if (!supplier) return;
-
-  alert(
-    `Creating purchase order for ${supplier.name}. This would open the purchase order form.`
-  );
+// Create new purchase order for supplier
+function createNewPurchase(supplierId) {
   closeSupplierDetailsModal();
+  // In a real app, this would redirect to the purchase management page
+  // or open a purchase order modal
+  showNotification("Redirecting to create new purchase order...", "info");
+  setTimeout(() => {
+    // Simulate redirect
+    window.location.href = "purchases.html";
+  }, 1000);
 }
 
 // Edit supplier
 function editSupplier(supplierId) {
-  const supplier = supplierData.suppliers.find((s) => s.id === supplierId);
+  const systemData = JSON.parse(localStorage.getItem("inventorySystemData"));
+  const supplier = systemData.suppliers.find((s) => s.id === supplierId);
+
   if (!supplier) return;
 
   document.getElementById("modalTitle").textContent = "Edit Supplier";
@@ -1134,22 +554,33 @@ function editSupplier(supplierId) {
 
   // Fill form with supplier data
   document.getElementById("supplierName").value = supplier.name;
-  document.getElementById("supplierCode").value = supplier.code;
-  document.getElementById("contactPerson").value = supplier.contactPerson;
-  document.getElementById("contactTitle").value = supplier.contactTitle;
-  document.getElementById("phone").value = supplier.phone;
-  document.getElementById("email").value = supplier.email;
-  document.getElementById("address").value = supplier.address;
-  document.getElementById("city").value = supplier.city;
-  document.getElementById("state").value = supplier.state;
-  document.getElementById("zipCode").value = supplier.zipCode;
-  document.getElementById("country").value = supplier.country;
-  document.getElementById("taxId").value = supplier.taxId;
-  document.getElementById("paymentTerms").value = supplier.paymentTerms;
-  document.getElementById("supplierCategory").value = supplier.category;
-  document.getElementById("productsSupplied").value =
-    supplier.productsSupplied.join(", ");
-  document.getElementById("notes").value = supplier.notes || "";
+  document.getElementById("supplierCode").value = supplier.code || "";
+  document.getElementById("supplierCategory").value = supplier.category || "";
+  document.getElementById("supplierStatus").value = supplier.status || "active";
+  document.getElementById("supplierDescription").value =
+    supplier.description || "";
+
+  // Contact tab
+  document.getElementById("contactPerson").value = supplier.contactPerson || "";
+  document.getElementById("contactPosition").value =
+    supplier.contactPosition || "";
+  document.getElementById("supplierEmail").value = supplier.email || "";
+  document.getElementById("supplierPhone").value = supplier.phone || "";
+  document.getElementById("supplierMobile").value = supplier.mobile || "";
+  document.getElementById("supplierFax").value = supplier.fax || "";
+  document.getElementById("supplierWebsite").value = supplier.website || "";
+
+  // Additional info tab
+  document.getElementById("supplierAddress").value = supplier.address || "";
+  document.getElementById("supplierCity").value = supplier.city || "";
+  document.getElementById("supplierState").value = supplier.state || "";
+  document.getElementById("supplierZip").value = supplier.zip || "";
+  document.getElementById("supplierCountry").value = supplier.country || "";
+  document.getElementById("supplierTaxId").value = supplier.taxId || "";
+  document.getElementById("paymentTerms").value = supplier.paymentTerms || 30;
+  document.getElementById("creditLimit").value = supplier.creditLimit || "";
+  document.getElementById("supplierRating").value = supplier.rating || 3;
+  document.getElementById("supplierNotes").value = supplier.notes || "";
 
   // Store supplier ID for update
   document.getElementById("saveSupplierBtn").dataset.supplierId = supplierId;
@@ -1157,53 +588,43 @@ function editSupplier(supplierId) {
 
 // Delete supplier
 function deleteSupplier(supplierId) {
-  const supplier = supplierData.suppliers.find((s) => s.id === supplierId);
-  if (!supplier) return;
-
   if (
     !confirm(
-      `Are you sure you want to delete supplier ${supplier.name}? This action cannot be undone.`
+      "Are you sure you want to delete this supplier? This action cannot be undone."
     )
   ) {
     return;
   }
 
-  // Remove supplier from array
-  supplierData.suppliers = supplierData.suppliers.filter(
+  const systemData = JSON.parse(localStorage.getItem("inventorySystemData"));
+
+  // Check if supplier has associated products or purchases
+  const products = systemData.products.filter(
+    (p) => p.supplierId === supplierId
+  );
+  const purchases = systemData.purchases.filter(
+    (p) => p.supplierId === supplierId
+  );
+
+  if (products.length > 0 || purchases.length > 0) {
+    alert(
+      "Cannot delete supplier. There are products or purchase orders associated with this supplier."
+    );
+    return;
+  }
+
+  // Remove supplier
+  systemData.suppliers = systemData.suppliers.filter(
     (s) => s.id !== supplierId
   );
 
-  // Update overview stats
-  updateOverviewStats();
+  localStorage.setItem("inventorySystemData", JSON.stringify(systemData));
 
-  // Reload data
-  loadSupplierData();
+  // Show notification
+  showNotification("Supplier deleted successfully!", "success");
 
-  // Show success message
-  showNotification(
-    `Supplier ${supplier.name} deleted successfully!`,
-    "success"
-  );
-}
-
-// Add new supplier
-function addNewSupplier() {
-  document.getElementById("modalTitle").textContent = "Add New Supplier";
-  document.getElementById("supplierModal").classList.add("active");
-
-  // Clear form
-  document.getElementById("supplierForm").reset();
-
-  // Set default country
-  document.getElementById("country").value = "India";
-
-  // Generate supplier code if empty
-  const nextId = supplierData.suppliers.length + 1;
-  document.getElementById("supplierCode").value = `SUP-${nextId
-    .toString()
-    .padStart(3, "0")}`;
-
-  delete document.getElementById("saveSupplierBtn").dataset.supplierId;
+  // Reload suppliers
+  loadSuppliers();
 }
 
 // Save supplier (add or update)
@@ -1212,25 +633,40 @@ function saveSupplier(event) {
 
   // Get form values
   const supplierName = document.getElementById("supplierName").value;
-  const supplierCode = document.getElementById("supplierCode").value;
-  const contactPerson = document.getElementById("contactPerson").value;
-  const contactTitle = document.getElementById("contactTitle").value;
-  const phone = document.getElementById("phone").value;
-  const email = document.getElementById("email").value;
-  const address = document.getElementById("address").value;
-  const city = document.getElementById("city").value;
-  const state = document.getElementById("state").value;
-  const zipCode = document.getElementById("zipCode").value;
-  const country = document.getElementById("country").value;
-  const taxId = document.getElementById("taxId").value;
-  const paymentTerms = document.getElementById("paymentTerms").value;
+  const supplierCode =
+    document.getElementById("supplierCode").value || generateSupplierCode();
   const supplierCategory = document.getElementById("supplierCategory").value;
-  const productsSupplied = document
-    .getElementById("productsSupplied")
-    .value.split(",")
-    .map((p) => p.trim())
-    .filter((p) => p);
-  const notes = document.getElementById("notes").value;
+  const supplierStatus = document.getElementById("supplierStatus").value;
+  const supplierDescription = document.getElementById(
+    "supplierDescription"
+  ).value;
+
+  // Contact details
+  const contactPerson = document.getElementById("contactPerson").value;
+  const contactPosition = document.getElementById("contactPosition").value;
+  const supplierEmail = document.getElementById("supplierEmail").value;
+  const supplierPhone = document.getElementById("supplierPhone").value;
+  const supplierMobile = document.getElementById("supplierMobile").value;
+  const supplierFax = document.getElementById("supplierFax").value;
+  const supplierWebsite = document.getElementById("supplierWebsite").value;
+
+  // Additional info
+  const supplierAddress = document.getElementById("supplierAddress").value;
+  const supplierCity = document.getElementById("supplierCity").value;
+  const supplierState = document.getElementById("supplierState").value;
+  const supplierZip = document.getElementById("supplierZip").value;
+  const supplierCountry = document.getElementById("supplierCountry").value;
+  const supplierTaxId = document.getElementById("supplierTaxId").value;
+  const paymentTerms =
+    parseInt(document.getElementById("paymentTerms").value) || 30;
+  const creditLimit = document.getElementById("creditLimit").value
+    ? parseFloat(document.getElementById("creditLimit").value)
+    : null;
+  const supplierRating =
+    parseInt(document.getElementById("supplierRating").value) || 3;
+  const supplierNotes = document.getElementById("supplierNotes").value;
+
+  const systemData = JSON.parse(localStorage.getItem("inventorySystemData"));
 
   // Check if we're editing or adding
   const supplierId =
@@ -1238,28 +674,35 @@ function saveSupplier(event) {
 
   if (supplierId) {
     // Update existing supplier
-    const supplierIndex = supplierData.suppliers.findIndex(
-      (s) => s.id === supplierId
+    const supplierIndex = systemData.suppliers.findIndex(
+      (s) => s.id === parseInt(supplierId)
     );
     if (supplierIndex !== -1) {
-      supplierData.suppliers[supplierIndex] = {
-        ...supplierData.suppliers[supplierIndex],
+      systemData.suppliers[supplierIndex] = {
+        ...systemData.suppliers[supplierIndex],
         name: supplierName,
         code: supplierCode,
-        contactPerson: contactPerson,
-        contactTitle: contactTitle,
-        phone: phone,
-        email: email,
-        address: address,
-        city: city,
-        state: state,
-        zipCode: zipCode,
-        country: country,
-        taxId: taxId,
-        paymentTerms: paymentTerms,
         category: supplierCategory,
-        productsSupplied: productsSupplied,
-        notes: notes,
+        status: supplierStatus,
+        description: supplierDescription,
+        contactPerson: contactPerson,
+        contactPosition: contactPosition,
+        email: supplierEmail,
+        phone: supplierPhone,
+        mobile: supplierMobile,
+        fax: supplierFax,
+        website: supplierWebsite,
+        address: supplierAddress,
+        city: supplierCity,
+        state: supplierState,
+        zip: supplierZip,
+        country: supplierCountry,
+        taxId: supplierTaxId,
+        paymentTerms: paymentTerms,
+        creditLimit: creditLimit,
+        rating: supplierRating,
+        notes: supplierNotes,
+        updatedAt: new Date().toISOString(),
       };
 
       showNotification("Supplier updated successfully!", "success");
@@ -1267,48 +710,71 @@ function saveSupplier(event) {
   } else {
     // Add new supplier
     const newSupplier = {
-      id:
-        "SUP-" +
-        (supplierData.suppliers.length + 1).toString().padStart(3, "0"),
-      code: supplierCode,
+      id: generateId(systemData.suppliers),
       name: supplierName,
-      contactPerson: contactPerson,
-      contactTitle: contactTitle,
-      phone: phone,
-      email: email,
-      address: address,
-      city: city,
-      state: state,
-      zipCode: zipCode,
-      country: country,
-      taxId: taxId,
-      paymentTerms: paymentTerms,
+      code: supplierCode,
       category: supplierCategory,
-      productsSupplied: productsSupplied,
-      rating: 4.0, // Default rating
-      status: "active",
-      totalSpend: 0,
-      totalOrders: 0,
-      onTimeRate: 90, // Default on-time rate
-      avgDeliveryTime: 3.0, // Default delivery time
-      notes: notes,
-      joinDate: new Date().toISOString().split("T")[0],
-      lastOrder: null,
+      status: supplierStatus,
+      description: supplierDescription,
+      contactPerson: contactPerson,
+      contactPosition: contactPosition,
+      email: supplierEmail,
+      phone: supplierPhone,
+      mobile: supplierMobile,
+      fax: supplierFax,
+      website: supplierWebsite,
+      address: supplierAddress,
+      city: supplierCity,
+      state: supplierState,
+      zip: supplierZip,
+      country: supplierCountry,
+      taxId: supplierTaxId,
+      paymentTerms: paymentTerms,
+      creditLimit: creditLimit,
+      rating: supplierRating,
+      notes: supplierNotes,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
 
-    supplierData.suppliers.push(newSupplier);
+    systemData.suppliers.push(newSupplier);
     showNotification("Supplier added successfully!", "success");
   }
 
-  // Close modal
+  // Save to localStorage
+  localStorage.setItem("inventorySystemData", JSON.stringify(systemData));
+
+  // Close modal and reset form
   document.getElementById("supplierModal").classList.remove("active");
-
-  // Reset form
   document.getElementById("supplierForm").reset();
+  delete document.getElementById("saveSupplierBtn").dataset.supplierId;
 
-  // Update overview stats and reload data
-  updateOverviewStats();
-  loadSupplierData();
+  // Reset tabs to first tab
+  document
+    .querySelectorAll(".tab-btn")
+    .forEach((btn) => btn.classList.remove("active"));
+  document
+    .querySelectorAll(".tab-content")
+    .forEach((content) => content.classList.remove("active"));
+  document.querySelector('[data-tab="basic"]').classList.add("active");
+  document.getElementById("basicTab").classList.add("active");
+
+  // Reload suppliers
+  loadSuppliers();
+}
+
+// Generate supplier code
+function generateSupplierCode() {
+  const systemData = JSON.parse(localStorage.getItem("inventorySystemData"));
+  const suppliers = systemData.suppliers || [];
+  const count = suppliers.length + 1;
+  return `SUP-${count.toString().padStart(4, "0")}`;
+}
+
+// Generate unique ID
+function generateId(items) {
+  if (items.length === 0) return 1;
+  return Math.max(...items.map((item) => item.id)) + 1;
 }
 
 // Show notification
@@ -1346,35 +812,6 @@ function showNotification(message, type) {
   }, 3000);
 }
 
-// Handle tab switching
-function switchTab(tabName) {
-  // Hide all tabs
-  document.getElementById("listTab").style.display = "none";
-  document.getElementById("cardsTab").style.display = "none";
-  document.getElementById("topTab").style.display = "none";
-  document.getElementById("needsTab").style.display = "none";
-
-  // Show selected tab
-  if (tabName === "list") {
-    document.getElementById("listTab").style.display = "block";
-  } else if (tabName === "cards") {
-    document.getElementById("cardsTab").style.display = "grid";
-    loadSupplierCards();
-  } else if (tabName === "top") {
-    document.getElementById("topTab").style.display = "block";
-    loadTopSuppliersTable();
-  } else if (tabName === "needs") {
-    document.getElementById("needsTab").style.display = "block";
-    loadNeedsAttentionTable();
-  }
-
-  // Update tab buttons
-  document.querySelectorAll(".tab").forEach((tab) => {
-    tab.classList.remove("active");
-  });
-  event.target.classList.add("active");
-}
-
 // Setup event listeners
 function setupEventListeners() {
   // Sidebar toggle
@@ -1400,65 +837,116 @@ function setupEventListeners() {
       logout();
     });
 
-  // Action buttons
+  // View toggle buttons
+  document.getElementById("gridViewBtn").addEventListener("click", function () {
+    document.getElementById("gridViewBtn").classList.add("active");
+    document.getElementById("tableViewBtn").classList.remove("active");
+    document.getElementById("gridView").classList.add("active");
+    document.getElementById("tableView").classList.remove("active");
+  });
+
   document
-    .getElementById("newSupplierBtn")
-    .addEventListener("click", addNewSupplier);
-  document
-    .getElementById("importSuppliersBtn")
+    .getElementById("tableViewBtn")
     .addEventListener("click", function () {
-      alert(
-        "Import Suppliers feature would allow importing suppliers from CSV/Excel."
-      );
-    });
-  document
-    .getElementById("exportSuppliersBtn")
-    .addEventListener("click", function () {
-      showNotification("Suppliers exported successfully!", "success");
+      document.getElementById("tableViewBtn").classList.add("active");
+      document.getElementById("gridViewBtn").classList.remove("active");
+      document.getElementById("tableView").classList.add("active");
+      document.getElementById("gridView").classList.remove("active");
     });
 
-  // Apply filters button
+  // Search and filter events
   document
-    .getElementById("applyFiltersBtn")
+    .getElementById("searchInput")
+    .addEventListener("input", () => loadSuppliers());
+  document
+    .getElementById("statusFilter")
+    .addEventListener("change", () => loadSuppliers());
+  document
+    .getElementById("ratingFilter")
+    .addEventListener("change", () => loadSuppliers());
+
+  // Add supplier button
+  document
+    .getElementById("addSupplierBtn")
     .addEventListener("click", function () {
-      // In a real app, this would filter the suppliers
-      showNotification("Filters applied successfully!", "success");
+      document.getElementById("modalTitle").textContent = "Add New Supplier";
+      document.getElementById("supplierModal").classList.add("active");
+      document.getElementById("supplierForm").reset();
+      delete document.getElementById("saveSupplierBtn").dataset.supplierId;
+
+      // Generate supplier code
+      document.getElementById("supplierCode").value = generateSupplierCode();
+
+      // Reset tabs to first tab
+      document
+        .querySelectorAll(".tab-btn")
+        .forEach((btn) => btn.classList.remove("active"));
+      document
+        .querySelectorAll(".tab-content")
+        .forEach((content) => content.classList.remove("active"));
+      document.querySelector('[data-tab="basic"]').classList.add("active");
+      document.getElementById("basicTab").classList.add("active");
     });
 
-  // View all purchases button
-  document
-    .getElementById("viewAllPurchasesBtn")
-    .addEventListener("click", function () {
-      alert("This would show all purchase orders in a separate page.");
-    });
+  // Tab switching
+  document.querySelectorAll(".tab-btn").forEach((btn) => {
+    btn.addEventListener("click", function () {
+      const tabId = this.getAttribute("data-tab");
 
-  // Tab buttons
-  document.querySelectorAll(".tab").forEach((tab) => {
-    tab.addEventListener("click", function () {
-      const tabName = this.getAttribute("data-tab");
-      switchTab(tabName);
+      // Update active tab button
+      document
+        .querySelectorAll(".tab-btn")
+        .forEach((b) => b.classList.remove("active"));
+      this.classList.add("active");
+
+      // Update active tab content
+      document
+        .querySelectorAll(".tab-content")
+        .forEach((content) => content.classList.remove("active"));
+      document.getElementById(tabId + "Tab").classList.add("active");
     });
   });
 
-  // Modal close buttons
+  // Add contact person button
   document
-    .getElementById("closeSupplierModal")
+    .getElementById("addContactBtn")
     .addEventListener("click", function () {
-      document.getElementById("supplierModal").classList.remove("active");
+      const additionalContacts = document.getElementById("additionalContacts");
+      const contactIndex = additionalContacts.children.length + 1;
+
+      const contactDiv = document.createElement("div");
+      contactDiv.className = "contact-person-item";
+      contactDiv.innerHTML = `
+                    <div class="contact-person-info">
+                        <div class="contact-person-avatar">${contactIndex}</div>
+                        <div>
+                            <input type="text" class="form-control" style="margin-bottom: 5px;" placeholder="Contact Person Name">
+                            <input type="text" class="form-control" placeholder="Position">
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-danger btn-sm" onclick="this.parentElement.remove()">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                `;
+
+      additionalContacts.appendChild(contactDiv);
     });
 
+  // Modal close buttons
+  document.getElementById("closeModal").addEventListener("click", function () {
+    document.getElementById("supplierModal").classList.remove("active");
+  });
+
   document
-    .getElementById("closeSupplierDetailsModal")
+    .getElementById("closeDetailsModal")
     .addEventListener("click", closeSupplierDetailsModal);
 
-  // Cancel supplier button
-  document
-    .getElementById("cancelSupplierBtn")
-    .addEventListener("click", function () {
-      document.getElementById("supplierModal").classList.remove("active");
-    });
+  // Cancel button
+  document.getElementById("cancelBtn").addEventListener("click", function () {
+    document.getElementById("supplierModal").classList.remove("active");
+  });
 
-  // Form submission
+  // Supplier form submission
   document
     .getElementById("supplierForm")
     .addEventListener("submit", saveSupplier);
@@ -1469,17 +957,115 @@ function setupEventListeners() {
       e.target.classList.remove("active");
     }
   });
+
+  // Make sidebar menu items active on click
+  document.querySelectorAll(".menu-item").forEach((item) => {
+    item.addEventListener("click", function () {
+      document
+        .querySelectorAll(".menu-item")
+        .forEach((i) => i.classList.remove("active"));
+      this.classList.add("active");
+    });
+  });
 }
 
 // Logout function
 function logout() {
   if (confirm("Are you sure you want to logout?")) {
-    // Clear authentication data
-    localStorage.removeItem("loggedIn");
-    localStorage.removeItem("userRole");
-    localStorage.removeItem("userName");
-
-    // Redirect to login page
+    localStorage.removeItem("isLoggedIn");
+    localStorage.removeItem("currentUser");
     window.location.href = "login.html";
+  }
+}
+
+// Add sample suppliers if empty
+function addSampleSuppliersIfEmpty() {
+  const systemData = JSON.parse(localStorage.getItem("inventorySystemData"));
+
+  if (!systemData.suppliers || systemData.suppliers.length === 0) {
+    systemData.suppliers = [
+      {
+        id: 1,
+        name: "Electronics Wholesale Ltd.",
+        code: "SUP-0001",
+        category: "electronics",
+        status: "active",
+        description:
+          "Leading wholesale supplier of electronic components and devices",
+        contactPerson: "John Smith",
+        contactPosition: "Sales Manager",
+        email: "john@ewl.com",
+        phone: "+1-234-567-8901",
+        mobile: "+1-234-567-8902",
+        website: "https://ewl.com",
+        address: "123 Tech Street, Silicon Valley",
+        city: "San Jose",
+        state: "CA",
+        zip: "95101",
+        country: "USA",
+        taxId: "TAX-EWL-001",
+        paymentTerms: 30,
+        creditLimit: 50000,
+        rating: 4,
+        notes: "Reliable supplier with good quality products",
+        createdAt: "2023-01-15",
+        updatedAt: "2023-10-18",
+      },
+      {
+        id: 2,
+        name: "Furniture Manufacturers Inc.",
+        code: "SUP-0002",
+        category: "furniture",
+        status: "active",
+        description: "Manufacturer of office and home furniture",
+        contactPerson: "Sarah Johnson",
+        contactPosition: "Account Executive",
+        email: "sarah@fmi.com",
+        phone: "+1-987-654-3210",
+        mobile: "+1-987-654-3211",
+        website: "https://fmi.com",
+        address: "456 Industrial Road",
+        city: "Chicago",
+        state: "IL",
+        zip: "60601",
+        country: "USA",
+        taxId: "TAX-FMI-002",
+        paymentTerms: 45,
+        creditLimit: 75000,
+        rating: 5,
+        notes: "Excellent quality, slightly longer delivery times",
+        createdAt: "2023-02-20",
+        updatedAt: "2023-10-15",
+      },
+      {
+        id: 3,
+        name: "Global Textiles Corp.",
+        code: "SUP-0003",
+        category: "clothing",
+        status: "pending",
+        description: "Supplier of fabrics and clothing materials",
+        contactPerson: "Michael Chen",
+        contactPosition: "Export Manager",
+        email: "michael@gtc.com",
+        phone: "+86-10-1234-5678",
+        mobile: "+86-138-0013-8000",
+        website: "https://gtc.cn",
+        address: "789 Textile Avenue, Shanghai",
+        city: "Shanghai",
+        state: "",
+        zip: "200000",
+        country: "China",
+        taxId: "CHN-GTC-003",
+        paymentTerms: 60,
+        creditLimit: 30000,
+        rating: 3,
+        notes: "New supplier, requires verification",
+        createdAt: "2023-10-01",
+        updatedAt: "2023-10-18",
+      },
+    ];
+
+    localStorage.setItem("inventorySystemData", JSON.stringify(systemData));
+    loadSuppliers();
   }
 }

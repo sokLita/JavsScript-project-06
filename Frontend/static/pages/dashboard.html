@@ -1,25 +1,30 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Inventory Dashboard</title>
-    <link rel="stylesheet" href="../css/dashboard.css" />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
-    />
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InventoryPro | Dashboard</title>
+    <link rel="stylesheet" href="../css/dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  </head>
-  <body>
-   <!-- Authentication Check -->
+</head>
+
+<body>
+    <!-- Authentication Check -->
     <script>
         // Check if user is logged in
-        if (!localStorage.getItem('loggedIn') || localStorage.getItem('loggedIn') !== 'true') {
-            // Redirect to login page if not logged in
-            window.location.href = 'sign-up.html';
+        if (!localStorage.getItem('isLoggedIn') || localStorage.getItem('isLoggedIn') !== 'true') {
+            window.location.href = 'login.html';
+        }
+
+        // Get current user
+        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+        if (!currentUser) {
+            window.location.href = 'login.html';
         }
     </script>
-    
+
     <!-- Sidebar -->
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
@@ -33,77 +38,68 @@
                 <i class="fas fa-chevron-left"></i>
             </button>
         </div>
-        
+
         <div class="sidebar-menu">
             <a href="./dashboard.html" class="menu-item active">
                 <i class="fas fa-tachometer-alt"></i>
                 <span>Dashboard</span>
             </a>
-            
+
             <a href="./update-category.html" class="menu-item">
                 <i class="fas fa-box-open"></i>
                 <span>Product Management</span>
             </a>
-            
+
             <a href="./stockmanagement.html" class="menu-item">
                 <i class="fas fa-warehouse"></i>
                 <span>Stock Management</span>
             </a>
-            
-            <a href="./sale.html" class="menu-item">
-                <i class="fas fa-chart-line"></i>
-                <span>Sales Management</span>
-            </a>
-            
+
             <a href="./category-management.html" class="menu-item">
                 <i class="fas fa-tags"></i>
                 <span>Category Management</span>
             </a>
-            
+
             <a href="./supplier.html" class="menu-item">
                 <i class="fas fa-truck"></i>
                 <span>Supplier Management</span>
             </a>
-            
+
             <a href="./purchase.html" class="menu-item">
                 <i class="fas fa-shopping-cart"></i>
                 <span>Purchase Management</span>
             </a>
-            
+
+            <a href="./sale.html" class="menu-item">
+                <i class="fas fa-chart-line"></i>
+                <span>Sales Management</span>
+            </a>
+
             <a href="./detailed-analytics.html" class="menu-item">
                 <i class="fas fa-chart-bar"></i>
-                <span>Analytics & Forecasts</span>
+                <span>Analytics & Reports</span>
             </a>
-            
+
+            <a href="./user-management.html" class="menu-item">
+                <i class="fas fa-users"></i>
+                <span>User Management</span>
+            </a>
             <a href="./back-up.html" class="menu-item">
                 <i class="fas fa-database"></i>
                 <span>Backup & Export</span>
             </a>
-            
-            <a href="./barcode.html" class="menu-item">
+            <a href="./barcode.html " class="menu-item">
                 <i class="fas fa-barcode"></i>
                 <span>Barcode Scanner</span>
             </a>
-            
-            <a href="./tansition-history.html" class="menu-item">
-                <i class="fas fa-history"></i>
-                <span>Transaction History</span>
-            </a>
 
-            <a href="./user-management.html" class="menu-item">
-                <i class="fas fa-chart-line"></i>
-                <span>User Management</span>
+            <a href="#" class="menu-item" id="logoutSidebar">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
             </a>
-            
-            <div class="sidebar-footer" style="padding: 20px; margin-top: auto;">
-                <div class="menu-item" id="logoutSidebar">
-                    <i class="fas fa-sign-out-alt"></i>
-                    <span>Logout</span>
-                </div>
-            </div>
         </div>
     </div>
-    
+
     <!-- Main Content -->
     <div class="main-content" id="mainContent">
         <!-- Header -->
@@ -112,300 +108,140 @@
                 <button class="mobile-menu-toggle" id="mobileMenuToggle">
                     <i class="fas fa-bars"></i>
                 </button>
-                <h1>Dashboard</h1>
+                <h1 id="pageTitle">Dashboard</h1>
             </div>
-            
+
             <div class="header-right">
-                <!-- Search Bar -->
-                <div class="search-bar">
-                    <input type="text" class="search-input" placeholder="Search products, orders, customers...">
-                    <i class="fas fa-search search-icon"></i>
-                </div>
-                
-                <!-- Header Icons -->
-                <div class="header-icons">
-                    <button class="icon-btn" id="notificationBtn">
-                        <i class="fas fa-bell"></i>
-                        <span class="badge" id="notificationCount">3</span>
-                    </button>
-                    
-                    <button class="icon-btn" id="messagesBtn">
-                        <i class="fas fa-envelope"></i>
-                        <span class="badge" id="messageCount">2</span>
-                    </button>
-                    
-                    <button class="icon-btn" id="settingsBtn">
-                        <i class="fas fa-cog"></i>
-                    </button>
-                </div>
-                
-                <!-- User Profile -->
-                <div class="user-profile" id="userProfile">
-                    <div class="user-avatar" id="userAvatar">A</div>
-                    <div class="user-info">
-                        <div class="user-name" id="userName">Administrator</div>
-                        <div class="user-role" id="userRole">Admin</div>
+                <div class="user-profile">
+                    <div class="user-avatar" id="userAvatar">
+                        <!-- Initial will be set by JavaScript -->
                     </div>
-                    <i class="fas fa-chevron-down" style="font-size: 12px;"></i>
-                </div>
-                
-                <!-- User Dropdown -->
-                <div class="dropdown-menu" id="userDropdown">
-                    <a href="#" class="dropdown-item">
-                        <i class="fas fa-user"></i> My Profile
-                    </a>
-                    <a href="#" class="dropdown-item">
-                        <i class="fas fa-cog"></i> Settings
-                    </a>
-                    <a href="#" class="dropdown-item">
-                        <i class="fas fa-question-circle"></i> Help & Support
-                    </a>
-                    <div class="dropdown-divider"></div>
-                    <a href="#" class="dropdown-item" id="logoutBtn">
+                    <div class="user-info" style="margin-right: 15px;">
+                        <div class="user-name" id="userName"></div>
+                        <div class="user-role" id="userRole"></div>
+                    </div>
+                    <button class="logout-btn" id="logoutBtn">
                         <i class="fas fa-sign-out-alt"></i> Logout
-                    </a>
+                    </button>
                 </div>
             </div>
         </div>
-        
+
         <!-- Content -->
         <div class="content">
-            <!-- Welcome Banner -->
-            <div class="welcome-banner">
-                <div class="welcome-text">
-                    <h2 id="welcomeMessage">Welcome back, Administrator!</h2>
-                    <p>Here's what's happening with your business today.</p>
-                </div>
-                <div class="date-display">
-                    <div class="current-date" id="currentDate">Monday, October 23, 2023</div>
-                    <div class="current-time" id="currentTime">14:30 PM</div>
-                </div>
+            <!-- Welcome Message -->
+            <div class="welcome-message"
+                style="background: linear-gradient(135deg, #3498db, #2c3e50); color: white; padding: 20px; border-radius: 10px; margin-bottom: 30px;">
+                <h2>Welcome back, <span id="welcomeUserName">User</span>!</h2>
+                <p>Here's what's happening with your inventory today.</p>
             </div>
-            
+
             <!-- Dashboard Cards -->
             <div class="dashboard-cards">
                 <div class="card">
                     <div class="card-header">
                         <div class="card-icon">
-                            <i class="fas fa-rupee-sign"></i>
-                        </div>
-                        <div class="card-change positive">
-                            <i class="fas fa-arrow-up"></i> 18.5%
-                        </div>
-                    </div>
-                    <div class="card-value" id="todaySales">$84,520</div>
-                    <div class="card-title">Today's Sales</div>
-                    <div class="card-change positive">
-                        vs. Yesterday: +$12,850
-                    </div>
-                </div>
-                
-                <div class="card green">
-                    <div class="card-header">
-                        <div class="card-icon">
                             <i class="fas fa-boxes"></i>
                         </div>
                         <div class="card-change positive">
-                            <i class="fas fa-arrow-up"></i> 8.2%
+                            <i class="fas fa-arrow-up"></i> <span id="productChange">0%</span>
                         </div>
                     </div>
-                    <div class="card-value" id="totalProducts">1,245</div>
+                    <div class="card-value" id="totalProducts">0</div>
                     <div class="card-title">Total Products</div>
-                    <div class="card-change positive">
-                        42 new this month
-                    </div>
                 </div>
-                
-                <div class="card orange">
+
+                <div class="card red">
                     <div class="card-header">
                         <div class="card-icon">
                             <i class="fas fa-exclamation-triangle"></i>
                         </div>
                         <div class="card-change negative">
-                            <i class="fas fa-arrow-up"></i> 12.5%
+                            <i class="fas fa-arrow-down"></i> <span id="lowStockChange">0%</span>
                         </div>
                     </div>
-                    <div class="card-value" id="lowStockItems">47</div>
+                    <div class="card-value" id="lowStockItems">0</div>
                     <div class="card-title">Low Stock Items</div>
-                    <div class="card-change negative">
-                        Needs attention
-                    </div>
                 </div>
-                
-                <div class="card purple">
+
+                <div class="card green">
                     <div class="card-header">
                         <div class="card-icon">
-                            <i class="fas fa-shopping-cart"></i>
+                            <i class="fas fa-chart-line"></i>
                         </div>
                         <div class="card-change positive">
-                            <i class="fas fa-arrow-up"></i> 5.3%
+                            <i class="fas fa-arrow-up"></i> <span id="salesChange">0%</span>
                         </div>
                     </div>
-                    <div class="card-value" id="pendingOrders">12</div>
-                    <div class="card-title">Pending Orders</div>
-                    <div class="card-change positive">
-                        3 processed today
+                    <div class="card-value" id="todaysSales">₹0</div>
+                    <div class="card-title">Today's Sales</div>
+                </div>
+
+                <div class="card orange">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-truck"></i>
+                        </div>
+                        <div class="card-change positive">
+                            <i class="fas fa-arrow-up"></i> <span id="ordersChange">0%</span>
+                        </div>
                     </div>
+                    <div class="card-value" id="pendingOrders">0</div>
+                    <div class="card-title">Pending Orders</div>
                 </div>
             </div>
-            
+
+            <!-- Quick Actions -->
+            <div class="quick-actions" style="margin-bottom: 30px;">
+                <h3 class="section-title">
+                    <i class="fas fa-bolt"></i> Quick Actions
+                </h3>
+                <div class="action-buttons" style="display: flex; gap: 15px; flex-wrap: wrap;">
+                    <button class="btn btn-primary" onclick="window.location.href='products.html'">
+                        <i class="fas fa-plus"></i> Add Product
+                    </button>
+                    <button class="btn btn-primary" onclick="window.location.href='stock-management.html'">
+                        <i class="fas fa-search"></i> Check Stock
+                    </button>
+                    <button class="btn btn-primary" onclick="window.location.href='sales-management.html'">
+                        <i class="fas fa-shopping-cart"></i> New Sale
+                    </button>
+                    <button class="btn btn-primary" onclick="window.location.href='purchase-management.html'">
+                        <i class="fas fa-truck"></i> New Purchase
+                    </button>
+                </div>
+            </div>
+
             <!-- Charts Section -->
             <div class="charts-section">
                 <div class="chart-container">
                     <h3 class="section-title">
-                        <i class="fas fa-chart-line"></i> Sales Performance
+                        <i class="fas fa-chart-line"></i> Sales Overview
                     </h3>
                     <canvas id="salesChart" height="250"></canvas>
                 </div>
-                
-                <div class="chart-container">
+
+                <div class="summary-container">
                     <h3 class="section-title">
-                        <i class="fas fa-chart-pie"></i> Inventory Distribution
+                        <i class="fas fa-chart-pie"></i> Inventory Summary
                     </h3>
                     <canvas id="inventoryChart" height="250"></canvas>
                 </div>
             </div>
-            
-            <!-- Quick Actions -->
-            <div class="quick-actions">
+
+            <!-- Recent Activity -->
+            <div class="activity-container">
                 <h3 class="section-title">
-                    <i class="fas fa-bolt"></i> Quick Actions
+                    <i class="fas fa-history"></i> Recent Activity
                 </h3>
-                <div class="actions-grid">
-                    <a href="product-management.html" class="action-btn">
-                        <i class="fas fa-plus-circle"></i>
-                        <span>Add Product</span>
-                    </a>
-                    <a href="sales-management.html" class="action-btn">
-                        <i class="fas fa-shopping-cart"></i>
-                        <span>New Sale</span>
-                    </a>
-                    <a href="stock-management.html" class="action-btn">
-                        <i class="fas fa-warehouse"></i>
-                        <span>Stock In</span>
-                    </a>
-                    <a href="#" class="action-btn">
-                        <i class="fas fa-file-invoice"></i>
-                        <span>Create Invoice</span>
-                    </a>
-                    <a href="#" class="action-btn">
-                        <i class="fas fa-chart-bar"></i>
-                        <span>Generate Report</span>
-                    </a>
-                    <a href="#" class="action-btn">
-                        <i class="fas fa-barcode"></i>
-                        <span>Scan Barcode</span>
-                    </a>
-                </div>
-            </div>
-            
-            <!-- Activity & Notifications -->
-            <div class="activity-section">
-                <div class="activity-container">
-                    <h3 class="section-title">
-                        <i class="fas fa-history"></i> Recent Activity
-                    </h3>
-                    <ul class="activity-list" id="activityList">
-                        <!-- Activities will be populated by JavaScript -->
-                    </ul>
-                </div>
-                
-                <div class="notifications-container">
-                    <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                        <h3 class="section-title">
-                            <i class="fas fa-bell"></i> Notifications
-                        </h3>
-                        <button class="icon-btn" id="markAllReadBtn" style="font-size: 14px;">
-                            <i class="fas fa-check-double"></i> Mark all read
-                        </button>
-                    </div>
-                    <div id="notificationsList">
-                        <!-- Notifications will be populated by JavaScript -->
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Recent Orders -->
-            <div class="recent-orders">
-                <h3 class="section-title">
-                    <i class="fas fa-shopping-cart"></i> Recent Orders
-                </h3>
-                <div class="table-container">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Order ID</th>
-                                <th>Customer</th>
-                                <th>Date</th>
-                                <th>Amount</th>
-                                <th>Status</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="recentOrdersTable">
-                            <!-- Recent orders will be populated by JavaScript -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            
-            <!-- Performance Metrics -->
-            <div class="chart-container">
-                <h3 class="section-title">
-                    <i class="fas fa-chart-bar"></i> Performance Metrics
-                </h3>
-                <div class="metrics-grid">
-                    <div class="metric-card">
-                        <div class="metric-icon">
-                            <i class="fas fa-percentage"></i>
-                        </div>
-                        <div class="metric-value" id="conversionRate">3.8%</div>
-                        <div class="metric-label">Conversion Rate</div>
-                    </div>
-                    
-                    <div class="metric-card">
-                        <div class="metric-icon" style="background: rgba(39, 174, 96, 0.1); color: var(--success-color);">
-                            <i class="fas fa-user-check"></i>
-                        </div>
-                        <div class="metric-value" id="customerSatisfaction">94%</div>
-                        <div class="metric-label">Customer Satisfaction</div>
-                    </div>
-                    
-                    <div class="metric-card">
-                        <div class="metric-icon" style="background: rgba(52, 152, 219, 0.1); color: var(--secondary-color);">
-                            <i class="fas fa-truck"></i>
-                        </div>
-                        <div class="metric-value" id="orderFulfillment">98.5%</div>
-                        <div class="metric-label">Order Fulfillment</div>
-                    </div>
-                    
-                    <div class="metric-card">
-                        <div class="metric-icon" style="background: rgba(243, 156, 18, 0.1); color: var(--warning-color);">
-                            <i class="fas fa-exchange-alt"></i>
-                        </div>
-                        <div class="metric-value" id="returnRate">2.1%</div>
-                        <div class="metric-label">Return Rate</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Notification Modal -->
-    <div class="modal" id="notificationModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">All Notifications</h3>
-                <button class="modal-close" id="closeNotificationModal">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div id="allNotificationsList">
-                    <!-- All notifications will be populated by JavaScript -->
-                </div>
+                <ul class="activity-list" id="activityList">
+                    <!-- Activities will be loaded by JavaScript -->
+                </ul>
             </div>
         </div>
     </div>
 
     <script src="../js/main.js"></script>
-  </body>
+</body>
+
 </html>

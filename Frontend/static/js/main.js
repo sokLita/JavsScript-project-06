@@ -1,85 +1,178 @@
-// Check authentication on page load
+// Initialize on page load
 document.addEventListener("DOMContentLoaded", function () {
-  // Get user info from localStorage
-  const userRole = localStorage.getItem("userRole") || "admin";
-  const userName = localStorage.getItem("userName") || "Administrator";
-
-  // Update UI with user info
-  document.getElementById("userName").textContent = userName;
-  document.getElementById("userRole").textContent =
-    userRole.charAt(0).toUpperCase() + userRole.slice(1);
-  document.getElementById("userAvatar").textContent = userName
-    .charAt(0)
-    .toUpperCase();
-  document.getElementById(
-    "welcomeMessage"
-  ).textContent = `Welcome back, ${userName}!`;
-
-  // Update date and time
-  updateDateTime();
-  setInterval(updateDateTime, 60000); // Update time every minute
-
-  // Initialize charts
-  initializeCharts();
+  // Set user info
+  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+  if (currentUser) {
+    document.getElementById("userName").textContent = currentUser.name;
+    document.getElementById("userRole").textContent =
+      currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1);
+    document.getElementById("userAvatar").textContent = currentUser.name
+      .charAt(0)
+      .toUpperCase();
+    document.getElementById("welcomeUserName").textContent = currentUser.name;
+  }
 
   // Load dashboard data
   loadDashboardData();
-
-  // Set up event listeners
+  initializeCharts();
   setupEventListeners();
 
-  // Check for new notifications periodically
-  setInterval(checkNewNotifications, 30000); // Check every 30 seconds
+  // Check role for permissions
+  if (currentUser.role === "staff") {
+    // Hide admin features
+    document.querySelector('[href="users.html"]').style.display = "none";
+  }
 });
 
-// Update date and time display
-function updateDateTime() {
+// Load dashboard data from localStorage
+function loadDashboardData() {
+  const systemData = JSON.parse(localStorage.getItem("inventorySystemData"));
+  if (!systemData) return;
+
+  const products = systemData.products || [];
+  const sales = systemData.sales || [];
+  const stockMovements = systemData.stockMovements || [];
+
+  // Calculate statistics
+  const totalProducts = products.length;
+  const lowStockItems = products.filter(
+    (p) => p.currentStock <= p.minStock && p.currentStock > 0
+  ).length;
+  const outOfStockItems = products.filter((p) => p.currentStock === 0).length;
+
+  // Today's sales
+  const today = new Date().toISOString().split("T")[0];
+  const todaysSales = sales
+    .filter((s) => s.date === today)
+    .reduce((sum, sale) => sum + sale.total, 0);
+
+  // Pending orders (sales with status 'pending')
+  const pendingOrders = sales.filter((s) => s.status === "pending").length;
+
+  // Update dashboard cards
+  document.getElementById("totalProducts").textContent = totalProducts;
+  document.getElementById("lowStockItems").textContent = lowStockItems;
+  document.getElementById("todaysSales").textContent = `₹${todaysSales.toFixed(
+    2
+  )}`;
+  document.getElementById("pendingOrders").textContent = pendingOrders;
+
+  // Calculate changes (simplified - in real app would compare with previous period)
+  const productChange = totalProducts > 0 ? "+12%" : "0%";
+  const lowStockChange = lowStockItems > 0 ? "+5%" : "0%";
+  const salesChange = todaysSales > 0 ? "+18%" : "0%";
+  const ordersChange = pendingOrders > 0 ? "+8%" : "0%";
+
+  document.getElementById("productChange").textContent = productChange;
+  document.getElementById("lowStockChange").textContent = lowStockChange;
+  document.getElementById("salesChange").textContent = salesChange;
+  document.getElementById("ordersChange").textContent = ordersChange;
+
+  // Load recent activity
+  loadRecentActivity(stockMovements, sales);
+}
+
+// Load recent activity
+function loadRecentActivity(stockMovements, sales) {
+  const activityList = document.getElementById("activityList");
+  activityList.innerHTML = "";
+
+  // Combine and sort activities by date
+  const activities = [];
+
+  // Add stock movements
+  stockMovements.slice(-5).forEach((movement) => {
+    activities.push({
+      type: "stock",
+      text: `${movement.type === "in" ? "Stock In" : "Stock Out"} - ${
+        movement.productName
+      } (${movement.quantity} units)`,
+      time: formatTimeAgo(movement.date),
+      icon:
+        movement.type === "in" ? "fas fa-plus-circle" : "fas fa-minus-circle",
+    });
+  });
+
+  // Add sales
+  sales.slice(-5).forEach((sale) => {
+    activities.push({
+      type: "sale",
+      text: `New Sale - ${sale.customerName || "Walk-in Customer"} (₹${
+        sale.total
+      })`,
+      time: formatTimeAgo(sale.date),
+      icon: "fas fa-shopping-cart",
+    });
+  });
+
+  // Sort by date (newest first)
+  activities.sort((a, b) => new Date(b.time) - new Date(a.time));
+
+  // Display only the 5 most recent
+  activities.slice(0, 5).forEach((activity) => {
+    const item = document.createElement("li");
+    item.className = "activity-item";
+    item.innerHTML = `
+                    <div class="activity-icon">
+                        <i class="${activity.icon}"></i>
+                    </div>
+                    <div class="activity-details">
+                        <div class="activity-text">${activity.text}</div>
+                        <div class="activity-time">${activity.time}</div>
+                    </div>
+                `;
+    activityList.appendChild(item);
+  });
+
+  // If no activities
+  if (activities.length === 0) {
+    activityList.innerHTML = `
+                    <li class="activity-item">
+                        <div class="activity-details">
+                            <div class="activity-text">No recent activity</div>
+                            <div class="activity-time">Get started by adding products or making sales</div>
+                        </div>
+                    </li>
+                `;
+  }
+}
+
+// Format time ago
+function formatTimeAgo(dateString) {
+  const date = new Date(dateString);
   const now = new Date();
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
 
-  // Format date
-  const options = {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  };
-  document.getElementById("currentDate").textContent = now.toLocaleDateString(
-    "en-US",
-    options
-  );
-
-  // Format time
-  let hours = now.getHours();
-  let minutes = now.getMinutes();
-  const ampm = hours >= 12 ? "PM" : "AM";
-  hours = hours % 12;
-  hours = hours ? hours : 12; // Convert 0 to 12
-  minutes = minutes < 10 ? "0" + minutes : minutes;
-  document.getElementById(
-    "currentTime"
-  ).textContent = `${hours}:${minutes} ${ampm}`;
+  if (diffMins < 60) {
+    return `${diffMins} minute${diffMins !== 1 ? "s" : ""} ago`;
+  } else if (diffHours < 24) {
+    return `${diffHours} hour${diffHours !== 1 ? "s" : ""} ago`;
+  } else {
+    return `${diffDays} day${diffDays !== 1 ? "s" : ""} ago`;
+  }
 }
 
 // Initialize charts
 function initializeCharts() {
-  // Sales Performance Chart
+  const systemData = JSON.parse(localStorage.getItem("inventorySystemData"));
+  const products = systemData?.products || [];
+  const sales = systemData?.sales || [];
+
+  // Sales Chart
   const salesCtx = document.getElementById("salesChart").getContext("2d");
+  const salesData = getLast7DaysSales(sales);
+
   new Chart(salesCtx, {
     type: "line",
     data: {
-      labels: [
-        "Oct 17",
-        "Oct 18",
-        "Oct 19",
-        "Oct 20",
-        "Oct 21",
-        "Oct 22",
-        "Oct 23",
-      ],
+      labels: salesData.days,
       datasets: [
         {
-          label: "Sales ($)",
-          data: [45000, 52000, 61000, 58000, 72000, 68000, 84520],
+          label: "Sales (₹)",
+          data: salesData.amounts,
           borderColor: "#3498db",
           backgroundColor: "rgba(52, 152, 219, 0.1)",
           borderWidth: 2,
@@ -92,6 +185,7 @@ function initializeCharts() {
       responsive: true,
       plugins: {
         legend: {
+          display: true,
           position: "top",
         },
       },
@@ -100,7 +194,7 @@ function initializeCharts() {
           beginAtZero: true,
           ticks: {
             callback: function (value) {
-              return "$" + value.toLocaleString();
+              return "₹" + value;
             },
           },
         },
@@ -108,17 +202,19 @@ function initializeCharts() {
     },
   });
 
-  // Inventory Distribution Chart
+  // Inventory Chart
   const inventoryCtx = document
     .getElementById("inventoryChart")
     .getContext("2d");
+  const stockData = getStockDistribution(products);
+
   new Chart(inventoryCtx, {
     type: "doughnut",
     data: {
-      labels: ["In Stock", "Low Stock", "Out of Stock"],
+      labels: stockData.labels,
       datasets: [
         {
-          data: [85, 12, 3],
+          data: stockData.values,
           backgroundColor: ["#27ae60", "#f39c12", "#e74c3c"],
           borderWidth: 1,
         },
@@ -135,385 +231,39 @@ function initializeCharts() {
   });
 }
 
-// Load dashboard data
-function loadDashboardData() {
-  loadActivities();
-  loadNotifications();
-  loadRecentOrders();
-  updateMetrics();
-}
+// Get last 7 days sales data
+function getLast7DaysSales(sales) {
+  const days = [];
+  const amounts = [];
 
-// Sample activities data
-const activities = [
-  {
-    icon: "shopping-cart",
-    text: "New order #ORD-2023-125 from John Smith",
-    time: "10 minutes ago",
-  },
-  {
-    icon: "box",
-    text: 'Product "Wireless Headphones" stock updated (45 units added)',
-    time: "45 minutes ago",
-  },
-  {
-    icon: "user",
-    text: 'New staff member "Jane Doe" added to the system',
-    time: "2 hours ago",
-  },
-  {
-    icon: "chart-line",
-    text: "Monthly sales report generated for October 2023",
-    time: "5 hours ago",
-  },
-  {
-    icon: "exclamation-triangle",
-    text: 'Low stock alert for "Wireless Mouse" (only 5 units left)',
-    time: "1 day ago",
-  },
-];
+  for (let i = 6; i >= 0; i--) {
+    const date = new Date();
+    date.setDate(date.getDate() - i);
+    const dateStr = date.toISOString().split("T")[0];
 
-// Sample notifications data
-let notifications = [
-  {
-    id: 1,
-    icon: "exclamation-triangle",
-    text: 'Product "Desk Lamp" is out of stock',
-    time: "2 hours ago",
-    read: false,
-  },
-  {
-    id: 2,
-    icon: "shopping-cart",
-    text: "New order #ORD-2023-124 requires processing",
-    time: "3 hours ago",
-    read: false,
-  },
-  {
-    id: 3,
-    icon: "truck",
-    text: "Shipment from Supplier ABC has arrived",
-    time: "1 day ago",
-    read: true,
-  },
-  {
-    id: 4,
-    icon: "chart-line",
-    text: "Sales target achieved for this week",
-    time: "2 days ago",
-    read: true,
-  },
-  {
-    id: 5,
-    icon: "user",
-    text: "Customer feedback received for order #ORD-2023-120",
-    time: "3 days ago",
-    read: true,
-  },
-];
+    const daySales = sales
+      .filter((s) => s.date === dateStr)
+      .reduce((sum, sale) => sum + sale.total, 0);
 
-// Sample orders data
-const recentOrders = [
-  {
-    id: "ORD-2023-125",
-    customer: "John Smith",
-    date: "2023-10-23 14:30",
-    amount: 448.36,
-    status: "processing",
-  },
-  {
-    id: "ORD-2023-124",
-    customer: "Sarah Johnson",
-    date: "2023-10-23 11:15",
-    amount: 294.99,
-    status: "pending",
-  },
-  {
-    id: "ORD-2023-123",
-    customer: "Michael Chen",
-    date: "2023-10-22 16:45",
-    amount: 159.24,
-    status: "completed",
-  },
-  {
-    id: "ORD-2023-122",
-    customer: "Emily Davis",
-    date: "2023-10-22 10:20",
-    amount: 165.18,
-    status: "completed",
-  },
-  {
-    id: "ORD-2023-121",
-    customer: "Robert Wilson",
-    date: "2023-10-21 09:30",
-    amount: 58.99,
-    status: "cancelled",
-  },
-];
-
-// Load activities
-function loadActivities() {
-  const activityList = document.getElementById("activityList");
-  activityList.innerHTML = "";
-
-  activities.forEach((activity) => {
-    const item = document.createElement("li");
-    item.className = "activity-item";
-    item.innerHTML = `
-                    <div class="activity-icon">
-                        <i class="fas fa-${activity.icon}"></i>
-                    </div>
-                    <div class="activity-details">
-                        <div class="activity-text">${activity.text}</div>
-                        <div class="activity-time">${activity.time}</div>
-                    </div>
-                `;
-    activityList.appendChild(item);
-  });
-}
-
-// Load notifications
-function loadNotifications() {
-  const notificationsList = document.getElementById("notificationsList");
-  const allNotificationsList = document.getElementById("allNotificationsList");
-
-  // Clear existing notifications
-  notificationsList.innerHTML = "";
-  allNotificationsList.innerHTML = "";
-
-  // Calculate unread count
-  const unreadCount = notifications.filter((n) => !n.read).length;
-  document.getElementById("notificationCount").textContent = unreadCount;
-
-  // Display recent notifications (max 3)
-  const recentNotifications = notifications.slice(0, 3);
-
-  recentNotifications.forEach((notification) => {
-    const item = document.createElement("div");
-    item.className = `notification-item ${notification.read ? "" : "unread"}`;
-    item.dataset.id = notification.id;
-    item.innerHTML = `
-                    <div class="notification-icon">
-                        <i class="fas fa-${notification.icon}"></i>
-                    </div>
-                    <div class="notification-details">
-                        <div class="notification-text">${notification.text}</div>
-                        <div class="notification-time">${notification.time}</div>
-                    </div>
-                `;
-    notificationsList.appendChild(item);
-
-    // Add click event to mark as read
-    item.addEventListener("click", function () {
-      markNotificationAsRead(notification.id);
-    });
-  });
-
-  // Display all notifications in modal
-  notifications.forEach((notification) => {
-    const item = document.createElement("div");
-    item.className = `notification-item ${notification.read ? "" : "unread"}`;
-    item.dataset.id = notification.id;
-    item.innerHTML = `
-                    <div class="notification-icon">
-                        <i class="fas fa-${notification.icon}"></i>
-                    </div>
-                    <div class="notification-details">
-                        <div class="notification-text">${
-                          notification.text
-                        }</div>
-                        <div class="notification-time">${
-                          notification.time
-                        }</div>
-                    </div>
-                    ${
-                      !notification.read
-                        ? '<div class="badge" style="position: relative; top: 0; right: 0;">New</div>'
-                        : ""
-                    }
-                `;
-    allNotificationsList.appendChild(item);
-
-    // Add click event to mark as read
-    item.addEventListener("click", function () {
-      markNotificationAsRead(notification.id);
-    });
-  });
-}
-
-// Load recent orders
-function loadRecentOrders() {
-  const recentOrdersTable = document.getElementById("recentOrdersTable");
-  recentOrdersTable.innerHTML = "";
-
-  recentOrders.forEach((order) => {
-    const row = document.createElement("tr");
-
-    // Determine status badge
-    let statusClass = "";
-    let statusText = "";
-    if (order.status === "completed") {
-      statusClass = "status-completed";
-      statusText = "Completed";
-    } else if (order.status === "pending") {
-      statusClass = "status-pending";
-      statusText = "Pending";
-    } else if (order.status === "processing") {
-      statusClass = "status-processing";
-      statusText = "Processing";
-    } else {
-      statusClass = "status-cancelled";
-      statusText = "Cancelled";
-    }
-
-    row.innerHTML = `
-                    <td><strong>${order.id}</strong></td>
-                    <td>${order.customer}</td>
-                    <td>${order.date}</td>
-                    <td><strong>$${order.amount.toFixed(2)}</strong></td>
-                    <td><span class="status-badge ${statusClass}">${statusText}</span></td>
-                    <td>
-                        <button class="icon-btn" style="font-size: 14px;" onclick="viewOrder('${
-                          order.id
-                        }')">
-                            <i class="fas fa-eye"></i> View
-                        </button>
-                    </td>
-                `;
-    recentOrdersTable.appendChild(row);
-  });
-}
-
-// Update metrics
-function updateMetrics() {
-  // In a real app, these would come from an API
-  // For now, we'll use sample data
-  const conversionRate = 3.8 + (Math.random() * 0.5 - 0.25); // Random variation
-  const customerSatisfaction = 94 + (Math.random() * 2 - 1);
-  const orderFulfillment = 98.5 + (Math.random() * 0.5 - 0.25);
-  const returnRate = 2.1 + (Math.random() * 0.3 - 0.15);
-
-  document.getElementById("conversionRate").textContent =
-    conversionRate.toFixed(1) + "%";
-  document.getElementById("customerSatisfaction").textContent =
-    customerSatisfaction.toFixed(0) + "%";
-  document.getElementById("orderFulfillment").textContent =
-    orderFulfillment.toFixed(1) + "%";
-  document.getElementById("returnRate").textContent =
-    returnRate.toFixed(1) + "%";
-}
-
-// Mark notification as read
-function markNotificationAsRead(id) {
-  const notification = notifications.find((n) => n.id === id);
-  if (notification && !notification.read) {
-    notification.read = true;
-    loadNotifications();
-
-    // Show confirmation
-    showToast("Notification marked as read", "success");
-  }
-}
-
-// Mark all notifications as read
-function markAllNotificationsAsRead() {
-  notifications.forEach((notification) => {
-    notification.read = true;
-  });
-  loadNotifications();
-
-  // Show confirmation
-  showToast("All notifications marked as read", "success");
-}
-
-// Check for new notifications
-function checkNewNotifications() {
-  // In a real app, this would check with an API
-  // For demo, we'll randomly add new notifications
-  if (Math.random() > 0.7) {
-    // 30% chance
-    const newNotification = {
-      id: notifications.length + 1,
-      icon: "info-circle",
-      text: "System maintenance scheduled for tonight",
-      time: "Just now",
-      read: false,
-    };
-
-    notifications.unshift(newNotification);
-
-    // Keep only last 10 notifications
-    if (notifications.length > 10) {
-      notifications.pop();
-    }
-
-    loadNotifications();
-
-    // Show toast notification
-    showToast("New notification received", "info");
-  }
-}
-
-// View order details
-function viewOrder(orderId) {
-  alert(
-    `Viewing order: ${orderId}\nIn a real app, this would open the order details page.`
-  );
-}
-
-// Show toast notification
-function showToast(message, type) {
-  const toast = document.createElement("div");
-  toast.style.position = "fixed";
-  toast.style.bottom = "20px";
-  toast.style.right = "20px";
-  toast.style.padding = "15px 20px";
-  toast.style.borderRadius = "8px";
-  toast.style.color = "white";
-  toast.style.fontWeight = "600";
-  toast.style.zIndex = "10000";
-  toast.style.boxShadow = "0 5px 15px rgba(0,0,0,0.2)";
-  toast.style.display = "flex";
-  toast.style.alignItems = "center";
-  toast.style.gap = "10px";
-  toast.style.animation = "slideIn 0.3s ease";
-
-  // Add animation
-  const style = document.createElement("style");
-  style.textContent = `
-                @keyframes slideIn {
-                    from { transform: translateX(100%); opacity: 0; }
-                    to { transform: translateX(0); opacity: 1; }
-                }
-                @keyframes slideOut {
-                    from { transform: translateX(0); opacity: 1; }
-                    to { transform: translateX(100%); opacity: 0; }
-                }
-            `;
-  document.head.appendChild(style);
-
-  if (type === "success") {
-    toast.style.backgroundColor = "var(--success-color)";
-    toast.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
-  } else if (type === "error") {
-    toast.style.backgroundColor = "var(--accent-color)";
-    toast.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
-  } else if (type === "info") {
-    toast.style.backgroundColor = "var(--secondary-color)";
-    toast.innerHTML = `<i class="fas fa-info-circle"></i> ${message}`;
-  } else {
-    toast.style.backgroundColor = "var(--warning-color)";
-    toast.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${message}`;
+    days.push(date.toLocaleDateString("en-US", { weekday: "short" }));
+    amounts.push(daySales);
   }
 
-  document.body.appendChild(toast);
+  return { days, amounts };
+}
 
-  // Remove toast after 3 seconds
-  setTimeout(() => {
-    toast.style.animation = "slideOut 0.3s ease";
-    setTimeout(() => {
-      toast.remove();
-    }, 300);
-  }, 3000);
+// Get stock distribution
+function getStockDistribution(products) {
+  const inStock = products.filter((p) => p.currentStock > p.minStock).length;
+  const lowStock = products.filter(
+    (p) => p.currentStock <= p.minStock && p.currentStock > 0
+  ).length;
+  const outOfStock = products.filter((p) => p.currentStock === 0).length;
+
+  return {
+    labels: ["In Stock", "Low Stock", "Out of Stock"],
+    values: [inStock, lowStock, outOfStock],
+  };
 }
 
 // Setup event listeners
@@ -532,18 +282,6 @@ function setupEventListeners() {
       document.getElementById("sidebar").classList.toggle("active");
     });
 
-  // User profile dropdown
-  document.getElementById("userProfile").addEventListener("click", function () {
-    document.getElementById("userDropdown").classList.toggle("active");
-  });
-
-  // Close dropdown when clicking outside
-  document.addEventListener("click", function (event) {
-    if (!event.target.closest("#userProfile")) {
-      document.getElementById("userDropdown").classList.remove("active");
-    }
-  });
-
   // Logout buttons
   document.getElementById("logoutBtn").addEventListener("click", logout);
   document
@@ -553,64 +291,111 @@ function setupEventListeners() {
       logout();
     });
 
-  // Notification button
-  document
-    .getElementById("notificationBtn")
-    .addEventListener("click", function () {
-      document.getElementById("notificationModal").classList.add("active");
+  // Make sidebar menu items active on click
+  document.querySelectorAll(".menu-item").forEach((item) => {
+    item.addEventListener("click", function () {
+      document
+        .querySelectorAll(".menu-item")
+        .forEach((i) => i.classList.remove("active"));
+      this.classList.add("active");
     });
-
-  // Mark all as read button
-  document
-    .getElementById("markAllReadBtn")
-    .addEventListener("click", markAllNotificationsAsRead);
-
-  // Close notification modal
-  document
-    .getElementById("closeNotificationModal")
-    .addEventListener("click", function () {
-      document.getElementById("notificationModal").classList.remove("active");
-    });
-
-  // Messages button
-  document.getElementById("messagesBtn").addEventListener("click", function () {
-    showToast("Messages feature coming soon!", "info");
-  });
-
-  // Settings button
-  document.getElementById("settingsBtn").addEventListener("click", function () {
-    showToast("Settings page coming soon!", "info");
-  });
-
-  // Search functionality
-  const searchInput = document.querySelector(".search-input");
-  searchInput.addEventListener("keypress", function (e) {
-    if (e.key === "Enter") {
-      const query = this.value.trim();
-      if (query) {
-        showToast(`Searching for: ${query}`, "info");
-        // In a real app, this would perform a search
-      }
-    }
-  });
-
-  // Close modals when clicking outside
-  window.addEventListener("click", function (e) {
-    if (e.target.classList.contains("modal")) {
-      e.target.classList.remove("active");
-    }
   });
 }
 
 // Logout function
 function logout() {
   if (confirm("Are you sure you want to logout?")) {
-    // Clear authentication data
-    localStorage.removeItem("loggedIn");
-    localStorage.removeItem("userRole");
-    localStorage.removeItem("userName");
-
-    // Redirect to login page
+    localStorage.removeItem("isLoggedIn");
+    localStorage.removeItem("currentUser");
     window.location.href = "login.html";
   }
 }
+
+// Add sample data if empty (for demo purposes)
+function addSampleDataIfEmpty() {
+  const systemData = JSON.parse(localStorage.getItem("inventorySystemData"));
+
+  if (systemData.products.length === 0) {
+    // Add sample products
+    systemData.products = [
+      {
+        id: 1,
+        name: "Wireless Bluetooth Headphones",
+        sku: "WH-001",
+        category: "Electronics",
+        price: 89.99,
+        cost: 45.5,
+        currentStock: 45,
+        minStock: 10,
+        maxStock: 100,
+        supplierId: 1,
+        description: "High-quality wireless headphones with noise cancellation",
+        status: "active",
+      },
+      {
+        id: 2,
+        name: "Ergonomic Office Chair",
+        sku: "OC-002",
+        category: "Furniture",
+        price: 249.99,
+        cost: 150.0,
+        currentStock: 12,
+        minStock: 5,
+        maxStock: 30,
+        supplierId: 2,
+        description: "Adjustable office chair with lumbar support",
+        status: "active",
+      },
+      {
+        id: 3,
+        name: "Smart Fitness Watch",
+        sku: "FW-003",
+        category: "Electronics",
+        price: 199.99,
+        cost: 120.0,
+        currentStock: 3,
+        minStock: 10,
+        maxStock: 50,
+        supplierId: 1,
+        description: "Waterproof fitness tracker with heart rate monitor",
+        status: "active",
+      },
+    ];
+
+    // Add sample sales
+    const today = new Date().toISOString().split("T")[0];
+    systemData.sales = [
+      {
+        id: 1,
+        date: today,
+        customerName: "John Doe",
+        items: [{ productId: 1, quantity: 2, price: 89.99 }],
+        total: 179.98,
+        status: "completed",
+      },
+    ];
+
+    // Add sample stock movements
+    systemData.stockMovements = [
+      {
+        id: 1,
+        date: today,
+        type: "in",
+        productId: 1,
+        productName: "Wireless Bluetooth Headphones",
+        quantity: 20,
+        reference: "PO-001",
+        userId: 1,
+      },
+    ];
+
+    localStorage.setItem("inventorySystemData", JSON.stringify(systemData));
+
+    // Reload dashboard
+    loadDashboardData();
+    initializeCharts();
+  }
+}
+
+// Call this function on first load
+addSampleDataIfEmpty();

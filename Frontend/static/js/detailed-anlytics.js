@@ -1,157 +1,381 @@
-// Check authentication on page load
+// Initialize on page load
 document.addEventListener("DOMContentLoaded", function () {
-  // Get user info from localStorage
-  const userRole = localStorage.getItem("userRole") || "admin";
-  const userName = localStorage.getItem("userName") || "Administrator";
+  // Set user info
+  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+  if (currentUser) {
+    document.getElementById("userAvatar").textContent = currentUser.name
+      .charAt(0)
+      .toUpperCase();
+  }
 
-  // Update UI with user info
-  document.getElementById("userAvatar").textContent = userName
-    .charAt(0)
-    .toUpperCase();
+  // Set default dates
+  setDefaultDateRange();
 
-  // Initialize analytics
+  // Load analytics data
+  loadAnalyticsData();
   initializeCharts();
-  loadPredictionsTable();
   setupEventListeners();
+
+  // Check role for permissions
+  if (currentUser.role === "staff") {
+    // Staff might have limited access to certain reports
+    document.getElementById("scheduleReportBtn").style.display = "none";
+  }
 });
 
-// Chart instances
-let salesForecastChart,
-  revenueCategoryChart,
-  inventoryTurnoverChart,
-  forecastAccuracyChart,
-  detailedForecastChart;
+// Set default date range (last 7 days)
+function setDefaultDateRange() {
+  const endDate = new Date();
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - 7);
+
+  document.getElementById("startDate").valueAsDate = startDate;
+  document.getElementById("endDate").valueAsDate = endDate;
+}
+
+// Load analytics data from localStorage
+function loadAnalyticsData() {
+  const systemData = JSON.parse(localStorage.getItem("inventorySystemData"));
+  const products = systemData?.products || [];
+  const sales = systemData?.sales || [];
+  const stockMovements = systemData?.stockMovements || [];
+
+  // Calculate KPIs
+  calculateKPIs(sales, products);
+
+  // Load tables
+  loadTopProductsTable(products, sales);
+  loadLowStockTable(products);
+}
+
+// Calculate Key Performance Indicators
+function calculateKPIs(sales, products) {
+  // Total Revenue
+  const totalRevenue = sales.reduce((sum, sale) => sum + sale.total, 0);
+
+  // Total Orders
+  const totalOrders = sales.length;
+
+  // Profit Margin (simplified calculation)
+  const totalCost = products.reduce(
+    (sum, product) => sum + (product.cost || 0) * product.currentStock,
+    0
+  );
+  const totalValue = products.reduce(
+    (sum, product) => sum + product.price * product.currentStock,
+    0
+  );
+  const profitMargin =
+    totalValue > 0
+      ? (((totalValue - totalCost) / totalValue) * 100).toFixed(1)
+      : 0;
+
+  // Stock Turnover Ratio (simplified)
+  const stockTurnover =
+    sales.length > 0 ? (totalRevenue / products.length).toFixed(1) : 0;
+
+  // Update KPI cards
+  document.getElementById(
+    "totalRevenue"
+  ).textContent = `₹${totalRevenue.toLocaleString()}`;
+  document.getElementById("totalOrders").textContent = totalOrders;
+  document.getElementById("profitMargin").textContent = `${profitMargin}%`;
+  document.getElementById("stockTurnover").textContent = stockTurnover;
+}
+
+// Load top products table
+function loadTopProductsTable(products, sales) {
+  const tableBody = document.getElementById("topProductsTable");
+  tableBody.innerHTML = "";
+
+  // Calculate sales for each product
+  const productSales = {};
+  sales.forEach((sale) => {
+    if (sale.items) {
+      sale.items.forEach((item) => {
+        if (!productSales[item.productId]) {
+          productSales[item.productId] = {
+            quantity: 0,
+            revenue: 0,
+          };
+        }
+        productSales[item.productId].quantity += item.quantity;
+        productSales[item.productId].revenue += item.quantity * item.price;
+      });
+    }
+  });
+
+  // Create array of products with sales data
+  const productsWithSales = products.map((product) => {
+    const salesData = productSales[product.id] || { quantity: 0, revenue: 0 };
+    return {
+      ...product,
+      unitsSold: salesData.quantity,
+      revenue: salesData.revenue,
+    };
+  });
+
+  // Sort by revenue (descending)
+  productsWithSales.sort((a, b) => b.revenue - a.revenue);
+
+  // Display top 10 products
+  const topProducts = productsWithSales.slice(0, 10);
+
+  topProducts.forEach((product, index) => {
+    const row = document.createElement("tr");
+
+    // Determine trend (random for demo)
+    const trend = Math.random() > 0.5 ? "up" : "down";
+    const trendValue = (Math.random() * 15 + 5).toFixed(1);
+
+    row.innerHTML = `
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div style="width: 30px; height: 30px; border-radius: 6px; background: #f8f9fa; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #3498db;">
+                                ${index + 1}
+                            </div>
+                            <div>
+                                <div style="font-weight: 600;">${
+                                  product.name
+                                }</div>
+                                <div style="font-size: 12px; color: #7f8c8d;">SKU: ${
+                                  product.sku
+                                }</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>${product.category || "Uncategorized"}</td>
+                    <td>${product.unitsSold}</td>
+                    <td>₹${product.revenue.toLocaleString()}</td>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 5px;">
+                            <i class="fas fa-arrow-${trend}" style="color: ${
+      trend === "up" ? "#27ae60" : "#e74c3c"
+    };"></i>
+                            <span class="${
+                              trend === "up" ? "trend-up" : "trend-down"
+                            }">${trendValue}%</span>
+                        </div>
+                    </td>
+                `;
+    tableBody.appendChild(row);
+  });
+
+  // If no products
+  if (topProducts.length === 0) {
+    tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 30px; color: #7f8c8d;">
+                            <i class="fas fa-chart-bar" style="font-size: 40px; margin-bottom: 10px;"></i>
+                            <div>No sales data available</div>
+                        </td>
+                    </tr>
+                `;
+  }
+}
+
+// Load low stock table
+function loadLowStockTable(products) {
+  const tableBody = document.getElementById("lowStockTable");
+  tableBody.innerHTML = "";
+
+  // Filter low stock products
+  const lowStockProducts = products.filter(
+    (product) =>
+      product.currentStock <= product.minStock && product.currentStock > 0
+  );
+
+  // Filter out of stock products
+  const outOfStockProducts = products.filter(
+    (product) => product.currentStock === 0
+  );
+
+  // Combine and sort by stock level
+  const criticalProducts = [...lowStockProducts, ...outOfStockProducts]
+    .sort((a, b) => a.currentStock - b.currentStock)
+    .slice(0, 10);
+
+  criticalProducts.forEach((product) => {
+    const row = document.createElement("tr");
+
+    // Calculate days to out of stock (based on average daily sales)
+    const daysToOut =
+      product.currentStock === 0
+        ? 0
+        : Math.floor(product.currentStock / (product.minStock / 30)); // Simplified calculation
+
+    // Determine action needed
+    let action = "";
+    let actionClass = "";
+
+    if (product.currentStock === 0) {
+      action = "Urgent Reorder";
+      actionClass = "btn-danger";
+    } else if (daysToOut <= 7) {
+      action = "Reorder Now";
+      actionClass = "btn-warning";
+    } else if (daysToOut <= 14) {
+      action = "Plan Reorder";
+      actionClass = "btn-primary";
+    } else {
+      action = "Monitor";
+      actionClass = "btn-outline";
+    }
+
+    row.innerHTML = `
+                    <td>
+                        <div style="font-weight: 600;">${product.name}</div>
+                        <div style="font-size: 12px; color: #7f8c8d;">${
+                          product.category || "Uncategorized"
+                        }</div>
+                    </td>
+                    <td>
+                        <div style="font-weight: 600; color: ${
+                          product.currentStock === 0 ? "#e74c3c" : "#f39c12"
+                        };">${product.currentStock}</div>
+                    </td>
+                    <td>${product.minStock || "Not set"}</td>
+                    <td>
+                        ${
+                          product.currentStock === 0
+                            ? '<span style="color: #e74c3c; font-weight: 600;">Out of Stock</span>'
+                            : `${daysToOut} days`
+                        }
+                    </td>
+                    <td>
+                        <button class="btn ${actionClass}" style="padding: 5px 10px; font-size: 12px;" onclick="reorderProduct(${
+      product.id
+    })">
+                            ${action}
+                        </button>
+                    </td>
+                `;
+    tableBody.appendChild(row);
+  });
+
+  // If no critical products
+  if (criticalProducts.length === 0) {
+    tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 30px; color: #7f8c8d;">
+                            <i class="fas fa-check-circle" style="font-size: 40px; margin-bottom: 10px; color: #27ae60;"></i>
+                            <div>All products are sufficiently stocked</div>
+                        </td>
+                    </tr>
+                `;
+  }
+}
 
 // Initialize charts
 function initializeCharts() {
-  // Sales Forecast Chart
-  const salesCtx = document
-    .getElementById("salesForecastChart")
-    .getContext("2d");
-  salesForecastChart = new Chart(salesCtx, {
+  // Get data for charts
+  const systemData = JSON.parse(localStorage.getItem("inventorySystemData"));
+  const sales = systemData?.sales || [];
+  const products = systemData?.products || [];
+
+  // Sales Trend Chart
+  const salesCtx = document.getElementById("salesTrendChart").getContext("2d");
+  const salesData = getSalesTrendData(sales);
+
+  window.salesChart = new Chart(salesCtx, {
     type: "line",
     data: {
-      labels: [
-        "Jan",
-        "Feb",
-        "Mar",
-        "Apr",
-        "May",
-        "Jun",
-        "Jul",
-        "Aug",
-        "Sep",
-        "Oct",
-        "Nov",
-        "Dec",
-      ],
+      labels: salesData.labels,
       datasets: [
         {
-          label: "Actual Sales",
-          data: [
-            65000, 72000, 81000, 78000, 92000, 89000, 95000, 98000, 101000,
-            105000, 110000, 115000,
-          ],
+          label: "Sales Revenue (₹)",
+          data: salesData.values,
           borderColor: "#3498db",
           backgroundColor: "rgba(52, 152, 219, 0.1)",
-          borderWidth: 2,
+          borderWidth: 3,
           fill: true,
           tension: 0.4,
-        },
-        {
-          label: "Forecast",
-          data: [
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            110000,
-            115000,
-            120000,
-            125000,
-            130000,
-          ],
-          borderColor: "#e74c3c",
-          borderDash: [5, 5],
-          borderWidth: 2,
-          fill: false,
-          tension: 0.4,
+          pointBackgroundColor: "#3498db",
+          pointRadius: 4,
+          pointHoverRadius: 6,
         },
       ],
     },
     options: {
       responsive: true,
+      maintainAspectRatio: false,
       plugins: {
         legend: {
+          display: true,
           position: "top",
         },
         tooltip: {
+          mode: "index",
+          intersect: false,
           callbacks: {
             label: function (context) {
-              let label = context.dataset.label || "";
-              if (label) {
-                label += ": ";
-              }
-              label += "$" + context.raw.toLocaleString();
-              return label;
+              return `Sales: ₹${context.raw.toLocaleString()}`;
             },
           },
         },
       },
       scales: {
+        x: {
+          grid: {
+            display: false,
+          },
+        },
         y: {
           beginAtZero: true,
           ticks: {
             callback: function (value) {
-              return "$" + value.toLocaleString();
+              return "₹" + value.toLocaleString();
             },
           },
+          grid: {
+            borderDash: [5, 5],
+          },
         },
+      },
+      interaction: {
+        intersect: false,
+        mode: "nearest",
       },
     },
   });
 
-  // Revenue by Category Chart
-  const revenueCtx = document
-    .getElementById("revenueCategoryChart")
-    .getContext("2d");
-  revenueCategoryChart = new Chart(revenueCtx, {
+  // Category Chart
+  const categoryCtx = document.getElementById("categoryChart").getContext("2d");
+  const categoryData = getCategoryData(products, sales);
+
+  window.categoryChart = new Chart(categoryCtx, {
     type: "doughnut",
     data: {
-      labels: [
-        "Electronics",
-        "Furniture",
-        "Home & Kitchen",
-        "Sports",
-        "Stationery",
-        "Other",
-      ],
+      labels: categoryData.labels,
       datasets: [
         {
-          data: [45, 20, 15, 10, 5, 5],
+          data: categoryData.values,
           backgroundColor: [
             "#3498db",
             "#9b59b6",
             "#e74c3c",
-            "#1abc9c",
             "#f39c12",
-            "#95a5a6",
+            "#1abc9c",
+            "#34495e",
+            "#d35400",
+            "#7f8c8d",
           ],
           borderWidth: 1,
+          hoverOffset: 15,
         },
       ],
     },
     options: {
       responsive: true,
+      maintainAspectRatio: false,
       plugins: {
         legend: {
           position: "right",
+          labels: {
+            padding: 20,
+            usePointStyle: true,
+            pointStyle: "circle",
+          },
         },
         tooltip: {
           callbacks: {
@@ -160,499 +384,204 @@ function initializeCharts() {
               const value = context.raw || 0;
               const total = context.dataset.data.reduce((a, b) => a + b, 0);
               const percentage = Math.round((value / total) * 100);
-              return `${label}: ${percentage}% ($${(
-                value * 10000
-              ).toLocaleString()})`;
+              return `${label}: ₹${value.toLocaleString()} (${percentage}%)`;
             },
           },
         },
       },
+      cutout: "60%",
     },
   });
 
-  // Inventory Turnover Chart
-  const turnoverCtx = document
-    .getElementById("inventoryTurnoverChart")
-    .getContext("2d");
-  inventoryTurnoverChart = new Chart(turnoverCtx, {
-    type: "bar",
-    data: {
-      labels: ["Q1", "Q2", "Q3", "Q4"],
-      datasets: [
-        {
-          label: "Turnover Rate",
-          data: [3.2, 3.8, 4.1, 4.2],
-          backgroundColor: "rgba(52, 152, 219, 0.7)",
-          borderColor: "#3498db",
-          borderWidth: 1,
-        },
-        {
-          label: "Industry Average",
-          data: [3.0, 3.1, 3.3, 3.5],
-          backgroundColor: "rgba(149, 165, 166, 0.5)",
-          borderColor: "#95a5a6",
-          borderWidth: 1,
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: {
-          position: "top",
-        },
-      },
-      scales: {
-        y: {
-          beginAtZero: true,
-          title: {
-            display: true,
-            text: "Turnover Rate (times)",
-          },
-        },
-      },
-    },
-  });
+  // Update charts when type changes
+  document
+    .getElementById("salesChartType")
+    .addEventListener("change", function () {
+      updateSalesChart(this.value);
+    });
 
-  // Forecast Accuracy Chart
-  const accuracyCtx = document
-    .getElementById("forecastAccuracyChart")
-    .getContext("2d");
-  forecastAccuracyChart = new Chart(accuracyCtx, {
-    type: "line",
-    data: {
-      labels: [
-        "Jan",
-        "Feb",
-        "Mar",
-        "Apr",
-        "May",
-        "Jun",
-        "Jul",
-        "Aug",
-        "Sep",
-        "Oct",
-      ],
-      datasets: [
-        {
-          label: "Forecast Accuracy (MAPE)",
-          data: [15, 12, 10, 11, 9, 8, 7, 6, 5, 4],
-          borderColor: "#27ae60",
-          backgroundColor: "rgba(39, 174, 96, 0.1)",
-          borderWidth: 2,
-          fill: true,
-          tension: 0.4,
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: {
-          position: "top",
-        },
-        tooltip: {
-          callbacks: {
-            label: function (context) {
-              return `Accuracy: ${context.raw}%`;
-            },
-          },
-        },
-      },
-      scales: {
-        y: {
-          beginAtZero: true,
-          reverse: true,
-          title: {
-            display: true,
-            text: "Forecast Error (%)",
-          },
-          ticks: {
-            callback: function (value) {
-              return value + "%";
-            },
-          },
-        },
-      },
-    },
-  });
-
-  // Detailed Forecast Chart (will be populated when forecast is run)
-  const detailedCtx = document
-    .getElementById("detailedForecastChart")
-    .getContext("2d");
-  detailedForecastChart = new Chart(detailedCtx, {
-    type: "bar",
-    data: {
-      labels: [],
-      datasets: [],
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: {
-          position: "top",
-        },
-      },
-    },
-  });
+  document
+    .getElementById("categoryChartType")
+    .addEventListener("change", function () {
+      updateCategoryChart(this.value);
+    });
 }
 
-// Load predictions table
-function loadPredictionsTable() {
-  const predictionsTable = document.getElementById("predictionsTable");
-  predictionsTable.innerHTML = "";
+// Get sales trend data
+function getSalesTrendData(sales) {
+  // For demo, generate last 30 days of data
+  const labels = [];
+  const values = [];
 
-  const predictions = [
-    {
-      product: "Wireless Bluetooth Headphones",
-      category: "Electronics",
-      currentStock: 45,
-      predictedDemand: 68,
-      recommendedOrder: 30,
-      confidence: 92,
-      risk: "Low",
-    },
-    {
-      product: "Ergonomic Office Chair",
-      category: "Furniture",
-      currentStock: 12,
-      predictedDemand: 18,
-      recommendedOrder: 10,
-      confidence: 85,
-      risk: "Medium",
-    },
-    {
-      product: "Smart Fitness Watch",
-      category: "Electronics",
-      currentStock: 3,
-      predictedDemand: 25,
-      recommendedOrder: 25,
-      confidence: 78,
-      risk: "High",
-    },
-    {
-      product: "Desk Lamp with Wireless Charger",
-      category: "Home",
-      currentStock: 0,
-      predictedDemand: 15,
-      recommendedOrder: 20,
-      confidence: 82,
-      risk: "High",
-    },
-    {
-      product: "Premium Notebook Set",
-      category: "Stationery",
-      currentStock: 120,
-      predictedDemand: 85,
-      recommendedOrder: 0,
-      confidence: 91,
-      risk: "Low",
-    },
-    {
-      product: "Wireless Gaming Mouse",
-      category: "Electronics",
-      currentStock: 5,
-      predictedDemand: 22,
-      recommendedOrder: 20,
-      confidence: 76,
-      risk: "High",
-    },
-    {
-      product: "Stainless Steel Water Bottle",
-      category: "Sports",
-      currentStock: 65,
-      predictedDemand: 45,
-      recommendedOrder: 0,
-      confidence: 88,
-      risk: "Low",
-    },
-    {
-      product: "Bluetooth Portable Speaker",
-      category: "Electronics",
-      currentStock: 18,
-      predictedDemand: 25,
-      recommendedOrder: 12,
-      confidence: 83,
-      risk: "Medium",
-    },
-  ];
+  for (let i = 29; i >= 0; i--) {
+    const date = new Date();
+    date.setDate(date.getDate() - i);
+    const dateStr = date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    });
 
-  predictions.forEach((prediction) => {
-    const row = document.createElement("tr");
+    // Calculate sales for this day (random for demo)
+    const dailySales = Math.floor(Math.random() * 5000) + 1000;
 
-    // Determine risk color
-    let riskColor = "";
-    let riskIcon = "";
-    if (prediction.risk === "Low") {
-      riskColor = "var(--success-color)";
-      riskIcon = "fa-check-circle";
-    } else if (prediction.risk === "Medium") {
-      riskColor = "var(--warning-color)";
-      riskIcon = "fa-exclamation-circle";
-    } else {
-      riskColor = "var(--accent-color)";
-      riskIcon = "fa-times-circle";
-    }
-
-    // Determine stock status
-    let stockStatus = "";
-    if (prediction.currentStock < prediction.predictedDemand * 0.5) {
-      stockStatus =
-        '<span style="color: var(--accent-color); font-weight: 600;">Critical</span>';
-    } else if (prediction.currentStock < prediction.predictedDemand) {
-      stockStatus =
-        '<span style="color: var(--warning-color); font-weight: 600;">Warning</span>';
-    } else {
-      stockStatus =
-        '<span style="color: var(--success-color); font-weight: 600;">Adequate</span>';
-    }
-
-    row.innerHTML = `
-                    <td><strong>${prediction.product}</strong></td>
-                    <td>${prediction.category}</td>
-                    <td>${prediction.currentStock} units ${stockStatus}</td>
-                    <td>${prediction.predictedDemand} units</td>
-                    <td><strong>${
-                      prediction.recommendedOrder
-                    } units</strong></td>
-                    <td>
-                        <div class="trend-indicator">
-                            <span>${prediction.confidence}%</span>
-                            <div style="width: 60px; height: 6px; background: #e1e8ed; border-radius: 3px; overflow: hidden;">
-                                <div style="height: 100%; width: ${
-                                  prediction.confidence
-                                }%; background: ${
-      prediction.confidence > 80
-        ? "var(--success-color)"
-        : prediction.confidence > 70
-        ? "var(--warning-color)"
-        : "var(--accent-color)"
-    };"></div>
-                            </div>
-                        </div>
-                    </td>
-                    <td style="color: ${riskColor};">
-                        <i class="fas ${riskIcon}"></i> ${prediction.risk}
-                    </td>
-                `;
-    predictionsTable.appendChild(row);
-  });
-}
-
-// Run forecast analysis
-function runForecastAnalysis() {
-  const forecastMethod = document.getElementById("forecastMethod").value;
-  const forecastPeriod = parseInt(
-    document.getElementById("forecastPeriod").value
-  );
-  const forecastCategory = document.getElementById("forecastCategory").value;
-
-  // Show loading spinner
-  document.getElementById("forecastLoading").style.display = "block";
-  document.getElementById("forecastResults").style.display = "none";
-
-  // Simulate forecast calculation (in real app, this would call an API)
-  setTimeout(() => {
-    // Hide loading spinner
-    document.getElementById("forecastLoading").style.display = "none";
-
-    // Show results
-    document.getElementById("forecastResults").style.display = "block";
-
-    // Update detailed forecast chart
-    updateDetailedForecastChart(
-      forecastMethod,
-      forecastPeriod,
-      forecastCategory
-    );
-
-    // Show success notification
-    showNotification("Forecast analysis completed successfully!", "success");
-  }, 2000);
-}
-
-// Update detailed forecast chart
-function updateDetailedForecastChart(method, period, category) {
-  // Generate forecast data based on parameters
-  const months = ["Nov", "Dec", "Jan", "Feb", "Mar", "Apr"];
-  const forecastData = [110000, 115000, 120000, 125000, 130000, 135000];
-  const confidenceIntervals = [
-    [105000, 115000],
-    [110000, 120000],
-    [115000, 125000],
-    [120000, 130000],
-    [125000, 135000],
-    [130000, 140000],
-  ];
-
-  // Update chart data
-  detailedForecastChart.data.labels = months.slice(0, period);
-  detailedForecastChart.data.datasets = [
-    {
-      label: "Forecast",
-      data: forecastData.slice(0, period),
-      backgroundColor: "rgba(52, 152, 219, 0.7)",
-      borderColor: "#3498db",
-      borderWidth: 1,
-    },
-    {
-      label: "Confidence Interval (Upper)",
-      data: confidenceIntervals.slice(0, period).map((interval) => interval[1]),
-      backgroundColor: "rgba(52, 152, 219, 0.2)",
-      borderColor: "rgba(52, 152, 219, 0.2)",
-      borderWidth: 0,
-      type: "line",
-      fill: "+1",
-    },
-    {
-      label: "Confidence Interval (Lower)",
-      data: confidenceIntervals.slice(0, period).map((interval) => interval[0]),
-      backgroundColor: "rgba(52, 152, 219, 0.2)",
-      borderColor: "rgba(52, 152, 219, 0.2)",
-      borderWidth: 0,
-      type: "line",
-      fill: false,
-    },
-  ];
-
-  detailedForecastChart.update();
-
-  // Update forecast metrics based on category
-  let expectedRevenue = 1245680;
-  let growthProjection = 12.5;
-  let recommendedStock = 1450;
-  let confidenceLevel = 87;
-
-  if (category === "electronics") {
-    expectedRevenue = 856420;
-    growthProjection = 18.2;
-    recommendedStock = 820;
-    confidenceLevel = 91;
-  } else if (category === "furniture") {
-    expectedRevenue = 245680;
-    growthProjection = 8.5;
-    recommendedStock = 180;
-    confidenceLevel = 82;
-  } else if (category === "home") {
-    expectedRevenue = 184520;
-    growthProjection = 6.8;
-    recommendedStock = 220;
-    confidenceLevel = 79;
-  } else if (category === "sports") {
-    expectedRevenue = 128450;
-    growthProjection = 15.3;
-    recommendedStock = 150;
-    confidenceLevel = 85;
+    labels.push(dateStr);
+    values.push(dailySales);
   }
 
-  // Update metrics display
-  document
-    .querySelectorAll(".forecast-metric")[0]
-    .querySelector(
-      ".metric-value"
-    ).textContent = `₹${expectedRevenue.toLocaleString()}`;
-  document
-    .querySelectorAll(".forecast-metric")[1]
-    .querySelector(".metric-value").textContent = `+${growthProjection}%`;
-  document
-    .querySelectorAll(".forecast-metric")[2]
-    .querySelector(".metric-value").textContent = `${recommendedStock} units`;
-  document
-    .querySelectorAll(".forecast-metric")[3]
-    .querySelector(".metric-value").textContent = `${confidenceLevel}%`;
+  return { labels, values };
 }
 
-// Generate AI insights
-function generateAIInsights() {
-  // Show loading
-  const insightsBtn = document.getElementById("generateInsightsBtn");
-  const originalText = insightsBtn.innerHTML;
-  insightsBtn.innerHTML =
-    '<i class="fas fa-spinner fa-spin"></i> Generating...';
-  insightsBtn.disabled = true;
+// Get category data
+function getCategoryData(products, sales) {
+  // Get unique categories
+  const categories = [
+    ...new Set(products.map((p) => p.category).filter(Boolean)),
+  ];
 
-  // Simulate AI processing (in real app, this would call an API)
-  setTimeout(() => {
-    // Restore button
-    insightsBtn.innerHTML = originalText;
-    insightsBtn.disabled = false;
+  // Calculate revenue per category
+  const categoryRevenue = {};
+  categories.forEach((category) => {
+    categoryRevenue[category] = 0;
+  });
 
-    // Show success notification
-    showNotification("New AI insights generated successfully!", "success");
+  // Add uncategorized if any products don't have category
+  if (products.some((p) => !p.category)) {
+    categories.push("Uncategorized");
+    categoryRevenue["Uncategorized"] = 0;
+  }
 
-    // Update insights with new data
-    const insightCards = document.querySelectorAll(".insight-content p");
+  // Calculate revenue from sales
+  sales.forEach((sale) => {
+    if (sale.items) {
+      sale.items.forEach((item) => {
+        const product = products.find((p) => p.id === item.productId);
+        if (product) {
+          const category = product.category || "Uncategorized";
+          categoryRevenue[category] =
+            (categoryRevenue[category] || 0) + item.quantity * item.price;
+        }
+      });
+    }
+  });
 
-    // New insights based on latest data
-    const newInsights = [
-      "AI analysis shows that bundling headphones with phone cases could increase average order value by 28%.",
-      "Seasonal pattern detected: Office furniture sales peak in September (back-to-school/office season).",
-      "Machine learning model predicts a 15% increase in smart home device sales next quarter.",
-    ];
+  // Convert to arrays
+  const labels = Object.keys(categoryRevenue);
+  const values = Object.values(categoryRevenue);
 
-    insightCards.forEach((card, index) => {
-      if (newInsights[index]) {
-        card.textContent = newInsights[index];
+  return { labels, values };
+}
+
+// Update sales chart based on selected type
+function updateSalesChart(type) {
+  const systemData = JSON.parse(localStorage.getItem("inventorySystemData"));
+  const sales = systemData?.sales || [];
+
+  let labels, values;
+
+  if (type === "weekly") {
+    // Weekly data
+    labels = ["Week 1", "Week 2", "Week 3", "Week 4"];
+    values = [15000, 18000, 22000, 19000];
+  } else if (type === "monthly") {
+    // Monthly data
+    labels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun"];
+    values = [45000, 52000, 61000, 58000, 67000, 72000];
+  } else {
+    // Daily data (default)
+    labels = [];
+    values = [];
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      labels.push(date.toLocaleDateString("en-US", { weekday: "short" }));
+      values.push(Math.floor(Math.random() * 5000) + 1000);
+    }
+  }
+
+  window.salesChart.data.labels = labels;
+  window.salesChart.data.datasets[0].data = values;
+  window.salesChart.update();
+}
+
+// Update category chart based on selected type
+function updateCategoryChart(type) {
+  const systemData = JSON.parse(localStorage.getItem("inventorySystemData"));
+  const products = systemData?.products || [];
+  const sales = systemData?.sales || [];
+
+  let labels, values;
+
+  if (type === "quantity") {
+    // By quantity sold
+    const categoryQuantity = {};
+
+    sales.forEach((sale) => {
+      if (sale.items) {
+        sale.items.forEach((item) => {
+          const product = products.find((p) => p.id === item.productId);
+          if (product) {
+            const category = product.category || "Uncategorized";
+            categoryQuantity[category] =
+              (categoryQuantity[category] || 0) + item.quantity;
+          }
+        });
       }
     });
-  }, 3000);
+
+    labels = Object.keys(categoryQuantity);
+    values = Object.values(categoryQuantity);
+  } else {
+    // By revenue (default)
+    const data = getCategoryData(products, sales);
+    labels = data.labels;
+    values = data.values;
+  }
+
+  window.categoryChart.data.labels = labels;
+  window.categoryChart.data.datasets[0].data = values;
+  window.categoryChart.update();
 }
 
-// Generate report
-function generateReport() {
-  // Show loading
-  const reportBtn = document.getElementById("generateReportBtn");
-  const originalText = reportBtn.innerHTML;
-  reportBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
-  reportBtn.disabled = true;
+// Reorder product function
+function reorderProduct(productId) {
+  const systemData = JSON.parse(localStorage.getItem("inventorySystemData"));
+  const product = systemData.products.find((p) => p.id === productId);
 
-  // Simulate report generation (in real app, this would generate and download a PDF)
-  setTimeout(() => {
-    // Restore button
-    reportBtn.innerHTML = originalText;
-    reportBtn.disabled = false;
-
-    // Show success notification
-    showNotification(
-      "Analytics report generated and downloaded successfully!",
-      "success"
-    );
-
-    // In a real app, this would trigger a download
-    // For now, show a preview alert
+  if (product) {
+    // In a real app, this would create a purchase order
     alert(
-      "Analytics Report Generated!\n\nReport includes:\n- KPI Dashboard\n- Sales Trends & Forecasts\n- Inventory Turnover Analysis\n- Demand Predictions\n- AI Insights\n\nReport has been saved to your downloads folder."
+      `Purchase order created for ${product.name}. Recommended quantity: ${
+        product.minStock * 2
+      }`
     );
-  }, 2000);
+
+    // Show notification
+    showNotification(`Reorder initiated for ${product.name}`, "success");
+  }
 }
 
-// Refresh data
-function refreshData() {
-  // Show loading
-  const refreshBtn = document.getElementById("refreshDataBtn");
-  const originalText = refreshBtn.innerHTML;
-  refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing...';
-  refreshBtn.disabled = true;
+// Export functions
+function exportTopProducts() {
+  showNotification("Top products data exported successfully!", "success");
+}
 
-  // Simulate data refresh (in real app, this would fetch latest data from server)
-  setTimeout(() => {
-    // Restore button
-    refreshBtn.innerHTML = originalText;
-    refreshBtn.disabled = false;
+function exportLowStock() {
+  showNotification("Low stock report exported successfully!", "success");
+}
 
-    // Update charts with "refreshed" data
-    salesForecastChart.update();
-    revenueCategoryChart.update();
-    inventoryTurnoverChart.update();
-    forecastAccuracyChart.update();
+function generateSalesReport() {
+  showNotification(
+    "Sales report is being generated. You will receive it shortly.",
+    "info"
+  );
+}
 
-    // Show success notification
-    showNotification(
-      "Data refreshed successfully with latest information!",
-      "success"
-    );
-  }, 1500);
+function generateInventoryReport() {
+  showNotification("Inventory report exported as Excel file.", "success");
+}
+
+function generatePerformanceReport() {
+  showNotification("Performance report is being prepared.", "info");
 }
 
 // Show notification
@@ -690,44 +619,6 @@ function showNotification(message, type) {
   }, 3000);
 }
 
-// Handle period selection
-function handlePeriodSelection(period) {
-  // Update active period button
-  document.querySelectorAll(".period-btn").forEach((btn) => {
-    btn.classList.remove("active");
-  });
-  event.target.classList.add("active");
-
-  // Update charts based on selected period
-  // In a real app, this would fetch new data for the selected period
-  if (period === "week") {
-    salesForecastChart.data.labels = [
-      "Mon",
-      "Tue",
-      "Wed",
-      "Thu",
-      "Fri",
-      "Sat",
-      "Sun",
-    ];
-    salesForecastChart.data.datasets[0].data = [
-      12500, 13200, 14100, 12800, 15200, 14800, 16200,
-    ];
-  } else if (period === "month") {
-    salesForecastChart.data.labels = ["Week 1", "Week 2", "Week 3", "Week 4"];
-    salesForecastChart.data.datasets[0].data = [52000, 58000, 61000, 68000];
-  } else if (period === "quarter") {
-    salesForecastChart.data.labels = ["Month 1", "Month 2", "Month 3"];
-    salesForecastChart.data.datasets[0].data = [245000, 268000, 285000];
-  } else if (period === "year") {
-    salesForecastChart.data.labels = ["Q1", "Q2", "Q3", "Q4"];
-    salesForecastChart.data.datasets[0].data = [798000, 856000, 912000, 984000];
-  }
-
-  salesForecastChart.update();
-  showNotification(`Data period updated to ${period}`, "info");
-}
-
 // Setup event listeners
 function setupEventListeners() {
   // Sidebar toggle
@@ -753,73 +644,239 @@ function setupEventListeners() {
       logout();
     });
 
-  // Period selector buttons
-  document.querySelectorAll(".period-btn").forEach((btn) => {
+  // Quick date buttons
+  document.querySelectorAll(".quick-date-btn").forEach((btn) => {
     btn.addEventListener("click", function () {
-      const period = this.getAttribute("data-period");
-      handlePeriodSelection(period);
+      document
+        .querySelectorAll(".quick-date-btn")
+        .forEach((b) => b.classList.remove("active"));
+      this.classList.add("active");
+
+      const period = this.dataset.period;
+      setQuickDateRange(period);
     });
   });
 
-  // Forecast controls
-  document
-    .getElementById("runForecastBtn")
-    .addEventListener("click", runForecastAnalysis);
+  // Time period change
+  document.getElementById("timePeriod").addEventListener("change", function () {
+    if (this.value === "custom") {
+      document.getElementById("startDate").disabled = false;
+      document.getElementById("endDate").disabled = false;
+    } else {
+      setQuickDateRange(this.value);
+    }
+  });
 
-  // Generate insights button
-  document
-    .getElementById("generateInsightsBtn")
-    .addEventListener("click", generateAIInsights);
-
-  // Generate report button
+  // Report buttons
   document
     .getElementById("generateReportBtn")
-    .addEventListener("click", generateReport);
-
-  // Refresh data button
-  document
-    .getElementById("refreshDataBtn")
-    .addEventListener("click", refreshData);
-
-  // Export predictions button
-  document
-    .getElementById("exportPredictionsBtn")
     .addEventListener("click", function () {
-      showNotification(
-        "Product demand predictions exported to CSV!",
-        "success"
+      document.getElementById("reportModal").classList.add("active");
+    });
+
+  document
+    .getElementById("exportDataBtn")
+    .addEventListener("click", function () {
+      exportAllData();
+    });
+
+  document
+    .getElementById("scheduleReportBtn")
+    .addEventListener("click", function () {
+      alert(
+        "Schedule report feature would allow you to set up automated report delivery."
       );
     });
 
-  // Chart option changes
+  // Modal close buttons
   document
-    .getElementById("salesChartType")
-    .addEventListener("change", function () {
-      const type = this.value;
-      // Update sales forecast chart based on type
-      salesForecastChart.update();
-      showNotification(`Sales chart updated to ${type} view`, "info");
+    .getElementById("closeReportModal")
+    .addEventListener("click", function () {
+      document.getElementById("reportModal").classList.remove("active");
     });
 
+  // Cancel button
   document
-    .getElementById("revenuePeriod")
-    .addEventListener("change", function () {
-      const period = this.value;
-      // Update revenue chart based on period
-      revenueCategoryChart.update();
-      showNotification(`Revenue chart updated for ${period}`, "info");
+    .getElementById("cancelReportBtn")
+    .addEventListener("click", function () {
+      document.getElementById("reportModal").classList.remove("active");
     });
+
+  // Report form submission
+  document
+    .getElementById("reportForm")
+    .addEventListener("submit", function (e) {
+      e.preventDefault();
+      showNotification(
+        "Report generation started. You will be notified when it's ready.",
+        "success"
+      );
+      document.getElementById("reportModal").classList.remove("active");
+    });
+
+  // Date range changes
+  document.getElementById("startDate").addEventListener("change", function () {
+    document.getElementById("timePeriod").value = "custom";
+    document
+      .querySelectorAll(".quick-date-btn")
+      .forEach((b) => b.classList.remove("active"));
+  });
+
+  document.getElementById("endDate").addEventListener("change", function () {
+    document.getElementById("timePeriod").value = "custom";
+    document
+      .querySelectorAll(".quick-date-btn")
+      .forEach((b) => b.classList.remove("active"));
+  });
+
+  // Make sidebar menu items active on click
+  document.querySelectorAll(".menu-item").forEach((item) => {
+    item.addEventListener("click", function () {
+      document
+        .querySelectorAll(".menu-item")
+        .forEach((i) => i.classList.remove("active"));
+      this.classList.add("active");
+    });
+  });
+}
+
+// Set quick date range
+function setQuickDateRange(period) {
+  const endDate = new Date();
+  const startDate = new Date();
+
+  switch (period) {
+    case "today":
+      startDate.setDate(endDate.getDate());
+      break;
+    case "yesterday":
+      startDate.setDate(endDate.getDate() - 1);
+      endDate.setDate(endDate.getDate() - 1);
+      break;
+    case "week":
+      startDate.setDate(endDate.getDate() - 7);
+      break;
+    case "month":
+      startDate.setMonth(endDate.getMonth() - 1);
+      break;
+    case "quarter":
+      startDate.setMonth(endDate.getMonth() - 3);
+      break;
+    case "year":
+      startDate.setFullYear(endDate.getFullYear() - 1);
+      break;
+  }
+
+  document.getElementById("startDate").valueAsDate = startDate;
+  document.getElementById("endDate").valueAsDate = endDate;
+  document.getElementById("timePeriod").value = period;
+
+  // Reload data with new date range
+  loadAnalyticsData();
+}
+
+// Export all data
+function exportAllData() {
+  const systemData = JSON.parse(localStorage.getItem("inventorySystemData"));
+
+  // Create downloadable JSON file
+  const dataStr = JSON.stringify(systemData, null, 2);
+  const dataUri =
+    "data:application/json;charset=utf-8," + encodeURIComponent(dataStr);
+
+  const exportFileDefaultName = `inventory_data_${
+    new Date().toISOString().split("T")[0]
+  }.json`;
+
+  const linkElement = document.createElement("a");
+  linkElement.setAttribute("href", dataUri);
+  linkElement.setAttribute("download", exportFileDefaultName);
+  linkElement.click();
+
+  showNotification("All data exported successfully!", "success");
 }
 
 // Logout function
 function logout() {
   if (confirm("Are you sure you want to logout?")) {
-    // Clear authentication data
-    localStorage.removeItem("loggedIn");
-    localStorage.removeItem("userRole");
-    localStorage.removeItem("userName");
-
-    // Redirect to login page
+    localStorage.removeItem("isLoggedIn");
+    localStorage.removeItem("currentUser");
     window.location.href = "login.html";
   }
 }
+
+// Add sample data if empty
+function addSampleDataIfEmpty() {
+  const systemData = JSON.parse(localStorage.getItem("inventorySystemData"));
+
+  if (!systemData.sales || systemData.sales.length === 0) {
+    // Add sample sales data for analytics
+    const categories = [
+      "Electronics",
+      "Furniture",
+      "Clothing",
+      "Home",
+      "Sports",
+    ];
+    const today = new Date();
+
+    systemData.sales = [];
+
+    // Generate 30 days of sales data
+    for (let i = 30; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toISOString().split("T")[0];
+
+      // Random number of sales per day (1-5)
+      const salesCount = Math.floor(Math.random() * 5) + 1;
+
+      for (let j = 0; j < salesCount; j++) {
+        const sale = {
+          id: systemData.sales.length + 1,
+          date: dateStr,
+          customerName: `Customer ${Math.floor(Math.random() * 1000) + 1}`,
+          items: [],
+          total: 0,
+          status: "completed",
+        };
+
+        // Add 1-3 items per sale
+        const itemCount = Math.floor(Math.random() * 3) + 1;
+        for (let k = 0; k < itemCount; k++) {
+          const productId =
+            Math.floor(Math.random() * systemData.products.length) + 1;
+          const product = systemData.products.find((p) => p.id === productId);
+
+          if (product) {
+            const quantity = Math.floor(Math.random() * 3) + 1;
+            sale.items.push({
+              productId: product.id,
+              quantity: quantity,
+              price: product.price,
+            });
+            sale.total += quantity * product.price;
+          }
+        }
+
+        systemData.sales.push(sale);
+      }
+    }
+
+    localStorage.setItem("inventorySystemData", JSON.stringify(systemData));
+
+    // Reload analytics
+    loadAnalyticsData();
+
+    // Update charts
+    if (window.salesChart) {
+      updateSalesChart("daily");
+    }
+    if (window.categoryChart) {
+      updateCategoryChart("revenue");
+    }
+  }
+}
+
+// Call this function on first load
+addSampleDataIfEmpty();
