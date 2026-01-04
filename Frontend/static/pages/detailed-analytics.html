@@ -1,326 +1,513 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>InventoryPro - Analytics & Forecasting</title>
-    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>Document</title>
+    <link rel="stylesheet" href="../css/detailed-analytics.css">
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
-    <link rel="stylesheet" href="/Frontend/static/css/detailed-analytics.css">
+    <script src="https://cdn.jsdelivr.net/npm/regression@2.0.1/dist/regression.min.js"></script>
 </head>
-
 <body>
-    <header class="topbar">
+    <script>
+    if (
+        !localStorage.getItem("loggedIn") ||
+        localStorage.getItem("loggedIn") !== "true"
+      ) {
+        // Redirect to login page if not logged in
+        window.location.href = "login.html";
+      }
+    </script>
+
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-header">
         <div class="logo">
-            <i class="bx bx-cube"></i>
-            <span>InventoryPro</span>
+          <div class="logo-icon">
+            <i class="fas fa-boxes"></i>
+          </div>
+          <div class="logo-text">InventoryPro</div>
         </div>
+        <button class="toggle-btn" id="sidebarToggle">
+          <i class="fas fa-chevron-left"></i>
+        </button>
+      </div>
 
-        <div class="user-info">
-            <div class="avatar">A</div>
-            <span>Admin User</span>
-            <i class="bx bx-chevron-down"></i>
+      <div class="sidebar-menu">
+        <a href="./dashboard.html" class="menu-item active">
+          <i class="fas fa-tachometer-alt"></i>
+          <span>Dashboard</span>
+        </a>
+
+        <a href="./update-category.html" class="menu-item">
+          <i class="fas fa-box-open"></i>
+          <span>Product Management</span>
+        </a>
+
+        <a href="./stockmanagement.html" class="menu-item">
+          <i class="fas fa-warehouse"></i>
+          <span>Stock Management</span>
+        </a>
+
+        <a href="./sale.html" class="menu-item">
+          <i class="fas fa-chart-line"></i>
+          <span>Sales Management</span>
+        </a>
+
+        <a href="./category-management.html" class="menu-item">
+          <i class="fas fa-tags"></i>
+          <span>Category Management</span>
+        </a>
+
+        <a href="./supplier.html" class="menu-item">
+          <i class="fas fa-truck"></i>
+          <span>Supplier Management</span>
+        </a>
+
+        <a href="./purchase.html" class="menu-item">
+          <i class="fas fa-shopping-cart"></i>
+          <span>Purchase Management</span>
+        </a>
+
+        <a href="./detailed-analytics.html" class="menu-item">
+          <i class="fas fa-chart-bar"></i>
+          <span>Analytics & Forecasts</span>
+        </a>
+
+        <a href="backup-export.html" class="menu-item">
+          <i class="fas fa-database"></i>
+          <span>Backup & Export</span>
+        </a>
+
+        <a href="barcode-scanner.html" class="menu-item">
+          <i class="fas fa-barcode"></i>
+          <span>Barcode Scanner</span>
+        </a>
+
+        <a href="transaction-history.html" class="menu-item">
+          <i class="fas fa-history"></i>
+          <span>Transaction History</span>
+        </a>
+
+        <a href="user-management.html" class="menu-item">
+          <i class="fas fa-chart-line"></i>
+          <span>User management</span>
+        </a>
+
+        <div class="sidebar-footer" style="padding: 20px; margin-top: auto">
+          <div class="menu-item" id="logoutSidebar">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Logout</span>
+          </div>
         </div>
-    </header>
-
-    <div class="app">
-        <!-- SIDEBAR -->
-        <aside class="sidebar">
-            <ul>
-                <li><i class="bx bx-user"></i> User Management</li>
-                <li><i class="bx bx-box"></i> Product Management</li>
-                <li><i class="bx bx-layer"></i> Stock Management</li>
-                <li><i class="bx bx-category"></i> Category Management</li>
-                <li><i class="bx bx-truck"></i> Supplier Management</li>
-                <li><i class="bx bx-cart"></i> Purchase Management</li>
-                <li><i class="bx bx-money"></i> Sales Management</li>
-                <li class="active">
-                    <i class="bx bx-bar-chart"></i> Analytics & Forecasts
-                </li>
-                <li><i class="bx bx-history"></i> Transaction History</li>
-                <li><i class="bx bx-download"></i> Backup & Export</li>
-            </ul>
-        </aside>
-
-        <!-- MAIN CONTENT -->
-        <main class="content">
-            <div class="page-header">
-                <div class="page-title">
-                    <i class='bx bx-bar-chart'></i>
-                    Analytics & Forecasting Dashboard
-                </div>
-                <button class="btn-apply" onclick="exportAnalytics()">
-                    <i class="bx bx-download"></i> Export Report
-                </button>
-            </div>
-
-            <!-- Dashboard Controls -->
-            <div class="dashboard-controls">
-                <div class="control-group">
-                    <label for="timeRange">Time Range</label>
-                    <select id="timeRange" class="control-select" onchange="updateCharts()">
-                        <option value="7">Last 7 Days</option>
-                        <option value="30" selected>Last 30 Days</option>
-                        <option value="90">Last 90 Days</option>
-                        <option value="180">Last 6 Months</option>
-                        <option value="365">Last Year</option>
-                    </select>
-                </div>
-
-                <div class="control-group">
-                    <label for="categoryFilter">Category</label>
-                    <select id="categoryFilter" class="control-select" onchange="updateCharts()">
-                        <option value="all">All Categories</option>
-                        <option value="electronics">Electronics</option>
-                        <option value="accessories">Accessories</option>
-                        <option value="office">Office Supplies</option>
-                        <option value="furniture">Furniture</option>
-                    </select>
-                </div>
-
-                <div class="control-group">
-                    <label for="forecastModel">Forecast Model</label>
-                    <select id="forecastModel" class="control-select" onchange="updateForecast()">
-                        <option value="linear">Linear Regression</option>
-                        <option value="seasonal" selected>Seasonal ARIMA</option>
-                        <option value="exponential">Exponential Smoothing</option>
-                    </select>
-                </div>
-
-                <button class="btn-apply" onclick="refreshData()">
-                    <i class="bx bx-refresh"></i> Refresh Data
-                </button>
-            </div>
-
-            <!-- KPI Cards -->
-            <div class="kpi-cards">
-                <div class="kpi-card">
-                    <div class="kpi-header">
-                        <div class="kpi-title">Total Sales Revenue</div>
-                        <div class="kpi-icon icon-sales">
-                            <i class="bx bx-dollar"></i>
-                        </div>
-                    </div>
-                    <div class="kpi-value">$24,850</div>
-                    <div class="kpi-trend">
-                        <i class="bx bx-up-arrow-alt trend-up"></i>
-                        <span class="trend-up">+12.5% vs last month</span>
-                    </div>
-                </div>
-
-                <div class="kpi-card">
-                    <div class="kpi-header">
-                        <div class="kpi-title">Stock Turnover Rate</div>
-                        <div class="kpi-icon icon-turnover">
-                            <i class="bx bx-transfer"></i>
-                        </div>
-                    </div>
-                    <div class="kpi-value">4.2x</div>
-                    <div class="kpi-trend">
-                        <i class="bx bx-up-arrow-alt trend-up"></i>
-                        <span class="trend-up">+0.8x vs last quarter</span>
-                    </div>
-                </div>
-
-                <div class="kpi-card">
-                    <div class="kpi-header">
-                        <div class="kpi-title">Low Stock Items</div>
-                        <div class="kpi-icon icon-stock">
-                            <i class="bx bx-low-vision"></i>
-                        </div>
-                    </div>
-                    <div class="kpi-value">8</div>
-                    <div class="kpi-trend">
-                        <i class="bx bx-down-arrow-alt trend-down"></i>
-                        <span class="trend-down">-3 vs last week</span>
-                    </div>
-                </div>
-
-                <div class="kpi-card">
-                    <div class="kpi-header">
-                        <div class="kpi-title">30-Day Sales Forecast</div>
-                        <div class="kpi-icon icon-forecast">
-                            <i class="bx bx-trending-up"></i>
-                        </div>
-                    </div>
-                    <div class="kpi-value">$28,400</div>
-                    <div class="kpi-trend">
-                        <i class="bx bx-up-arrow-alt trend-up"></i>
-                        <span class="trend-up">+14.3% predicted growth</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Charts Grid -->
-            <div class="charts-grid">
-                <div class="chart-container">
-                    <div class="chart-header">
-                        <div class="chart-title">Sales Trend Analysis</div>
-                        <div class="chart-actions">
-                            <button class="chart-btn" onclick="toggleChartType('salesChart')">
-                                <i class="bx bx-bar-chart"></i>
-                            </button>
-                            <button class="chart-btn" onclick="downloadChart('salesChart')">
-                                <i class="bx bx-download"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="chart-wrapper">
-                        <canvas id="salesChart"></canvas>
-                    </div>
-                </div>
-
-                <div class="chart-container">
-                    <div class="chart-header">
-                        <div class="chart-title">Stock Level Trends</div>
-                        <div class="chart-actions">
-                            <button class="chart-btn" onclick="toggleChartType('stockChart')">
-                                <i class="bx bx-line-chart"></i>
-                            </button>
-                            <button class="chart-btn" onclick="downloadChart('stockChart')">
-                                <i class="bx bx-download"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="chart-wrapper">
-                        <canvas id="stockChart"></canvas>
-                    </div>
-                </div>
-
-                <div class="chart-container">
-                    <div class="chart-header">
-                        <div class="chart-title">Category Performance</div>
-                        <div class="chart-actions">
-                            <button class="chart-btn" onclick="toggleChartType('categoryChart')">
-                                <i class="bx bx-pie-chart"></i>
-                            </button>
-                            <button class="chart-btn" onclick="downloadChart('categoryChart')">
-                                <i class="bx bx-download"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="chart-wrapper">
-                        <canvas id="categoryChart"></canvas>
-                    </div>
-                </div>
-
-                <div class="chart-container">
-                    <div class="chart-header">
-                        <div class="chart-title">Inventory Turnover by Product</div>
-                        <div class="chart-actions">
-                            <button class="chart-btn" onclick="toggleChartType('turnoverChart')">
-                                <i class="bx bx-bar-chart"></i>
-                            </button>
-                            <button class="chart-btn" onclick="downloadChart('turnoverChart')">
-                                <i class="bx bx-download"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="chart-wrapper">
-                        <canvas id="turnoverChart"></canvas>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Forecasting Section -->
-            <div class="forecasting-container">
-                <div class="forecast-header">
-                    <div class="forecast-title">
-                        <i class="bx bx-trending-up"></i>
-                        Sales Forecast & Demand Prediction
-                    </div>
-                    <div class="forecast-controls">
-                        <div class="forecast-period">
-                            <button class="forecast-period-btn active" onclick="setForecastPeriod(30)">30 Days</button>
-                            <button class="forecast-period-btn" onclick="setForecastPeriod(90)">90 Days</button>
-                            <button class="forecast-period-btn" onclick="setForecastPeriod(180)">6 Months</button>
-                        </div>
-                    </div>
-                </div>
-                <div class="forecast-chart-wrapper">
-                    <canvas id="forecastChart"></canvas>
-                </div>
-            </div>
-
-            <!-- Product Performance Table -->
-            <div class="performance-container">
-                <div class="performance-header">
-                    <div class="performance-title">Product Performance Metrics</div>
-                    <button class="btn-apply" onclick="sortPerformanceTable('revenue')">
-                        <i class="bx bx-sort"></i> Sort by Revenue
-                    </button>
-                </div>
-                <table class="performance-table">
-                    <thead>
-                        <tr>
-                            <th>Product</th>
-                            <th>Category</th>
-                            <th>Stock Level</th>
-                            <th>Monthly Sales</th>
-                            <th>Turnover Rate</th>
-                            <th>30-Day Forecast</th>
-                            <th>Trend</th>
-                        </tr>
-                    </thead>
-                    <tbody id="performanceTableBody">
-                        <!-- Product data will be populated by JavaScript -->
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Insights Panel -->
-            <div class="insights-container">
-                <div class="insights-header">
-                    <div class="insights-title">
-                        <i class="bx bx-bulb"></i>
-                        AI-Powered Insights & Recommendations
-                    </div>
-                    <button class="btn-apply" onclick="generateNewInsights()">
-                        <i class="bx bx-refresh"></i> Generate New Insights
-                    </button>
-                </div>
-                <div class="insights-list" id="insightsList">
-                    <!-- Insights will be populated by JavaScript -->
-                </div>
-            </div>
-        </main>
+      </div>
     </div>
 
-    <footer class="footer">
-        <div class="footer-container">
-            <div class="footer-section">
-                <h3>InventoryPro Analytics</h3>
-                <p>Advanced analytics and forecasting for smarter inventory decisions.</p>
-            </div>
-
-            <div class="footer-section">
-                <h4>Quick Links</h4>
-                <ul>
-                    <li><a href="#">Dashboard</a></li>
-                    <li><a href="#">Reports</a></li>
-                    <li><a href="#">Forecasting</a></li>
-                    <li><a href="#">Analytics</a></li>
-                </ul>
-            </div>
-
-            <div class="footer-section">
-                <h4>Contact</h4>
-                <p>Email: analytics@inventorypro.com</p>
-                <p>Phone: +855 12 345 678</p>
-                <p>Support: 24/7 AI Assistant Available</p>
-            </div>
+    <!-- Main Content -->
+    <div class="main-content" id="mainContent">
+      <!-- Header -->
+      <div class="header">
+        <div class="header-left">
+          <button class="mobile-menu-toggle" id="mobileMenuToggle">
+            <i class="fas fa-bars"></i>
+          </button>
+          <h1 id="pageTitle">Analytics & Forecasts</h1>
         </div>
 
-        <div class="footer-bottom">
-            © 2025 InventoryPro Analytics System. AI-powered insights for inventory optimization.
+        <div class="header-right">
+          <div class="user-profile">
+            <div class="user-avatar" id="userAvatar">A</div>
+            <button class="logout-btn" id="logoutBtn">
+              <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+          </div>
         </div>
-    </footer>
+      </div>
 
+      <!-- Content -->
+      <div class="content">
+        <!-- Page Header -->
+        <div class="page-header">
+          <div>
+            <h1 class="page-title">Analytics & Forecasts</h1>
+            <p class="page-subtitle">
+              Advanced analytics, predictive insights, and data-driven forecasts
+              for smarter inventory management
+            </p>
+          </div>
+          <div>
+            <button class="btn btn-primary" id="generateReportBtn">
+              <i class="fas fa-file-pdf"></i> Generate Report
+            </button>
+            <button class="btn btn-outline" id="refreshDataBtn">
+              <i class="fas fa-sync-alt"></i> Refresh Data
+            </button>
+          </div>
+        </div>
 
+        <!-- Period Selector -->
+        <div class="period-selector">
+          <button class="period-btn active" data-period="week">
+            Last 7 Days
+          </button>
+          <button class="period-btn" data-period="month">Last 30 Days</button>
+          <button class="period-btn" data-period="quarter">Last 90 Days</button>
+          <button class="period-btn" data-period="year">Last 12 Months</button>
+          <button class="period-btn" data-period="custom">Custom Range</button>
+        </div>
+
+        <!-- KPI Dashboard -->
+        <div class="kpi-dashboard">
+          <div class="kpi-card">
+            <div class="kpi-header">
+              <div class="kpi-title">Sales Growth Rate</div>
+              <div class="kpi-trend trend-up">
+                <i class="fas fa-arrow-up"></i> 18.5%
+              </div>
+            </div>
+            <div class="kpi-value">+18.5%</div>
+            <div>Compared to previous period</div>
+            <div class="kpi-progress">
+              <div
+                class="kpi-progress-bar progress-success"
+                style="width: 78%"
+              ></div>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-header">
+              <div class="kpi-title">Inventory Turnover</div>
+              <div class="kpi-trend trend-up">
+                <i class="fas fa-arrow-up"></i> 12.3%
+              </div>
+            </div>
+            <div class="kpi-value">4.2x</div>
+            <div>Times inventory sold per quarter</div>
+            <div class="kpi-progress">
+              <div
+                class="kpi-progress-bar progress-success"
+                style="width: 65%"
+              ></div>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-header">
+              <div class="kpi-title">Gross Margin</div>
+              <div class="kpi-trend trend-down">
+                <i class="fas fa-arrow-down"></i> 2.1%
+              </div>
+            </div>
+            <div class="kpi-value">42.5%</div>
+            <div>Profit after cost of goods</div>
+            <div class="kpi-progress">
+              <div
+                class="kpi-progress-bar progress-warning"
+                style="width: 42.5%"
+              ></div>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-header">
+              <div class="kpi-title">Stockout Rate</div>
+              <div class="kpi-trend trend-down">
+                <i class="fas fa-arrow-down"></i> 15.8%
+              </div>
+            </div>
+            <div class="kpi-value">3.2%</div>
+            <div>Percentage of out-of-stock items</div>
+            <div class="kpi-progress">
+              <div
+                class="kpi-progress-bar progress-danger"
+                style="width: 3.2%"
+              ></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Charts Grid -->
+        <div class="charts-grid">
+          <div class="chart-container">
+            <div class="chart-header">
+              <h3 class="chart-title">
+                <i class="fas fa-chart-line"></i> Sales Trend & Forecast
+              </h3>
+              <div class="chart-options">
+                <select class="control-select" id="salesChartType">
+                  <option value="daily">Daily</option>
+                  <option value="weekly">Weekly</option>
+                  <option value="monthly">Monthly</option>
+                </select>
+              </div>
+            </div>
+            <canvas id="salesForecastChart" height="250"></canvas>
+          </div>
+
+          <div class="chart-container">
+            <div class="chart-header">
+              <h3 class="chart-title">
+                <i class="fas fa-chart-pie"></i> Revenue by Category
+              </h3>
+              <div class="chart-options">
+                <select class="control-select" id="revenuePeriod">
+                  <option value="month">This Month</option>
+                  <option value="quarter">This Quarter</option>
+                  <option value="year">This Year</option>
+                </select>
+              </div>
+            </div>
+            <canvas id="revenueCategoryChart" height="250"></canvas>
+          </div>
+
+          <div class="chart-container">
+            <div class="chart-header">
+              <h3 class="chart-title">
+                <i class="fas fa-boxes"></i> Inventory Turnover Analysis
+              </h3>
+              <div class="chart-options">
+                <select class="control-select" id="turnoverPeriod">
+                  <option value="monthly">Monthly</option>
+                  <option value="quarterly">Quarterly</option>
+                  <option value="yearly">Yearly</option>
+                </select>
+              </div>
+            </div>
+            <canvas id="inventoryTurnoverChart" height="250"></canvas>
+          </div>
+
+          <div class="chart-container">
+            <div class="chart-header">
+              <h3 class="chart-title">
+                <i class="fas fa-bullseye"></i> Demand Forecast Accuracy
+              </h3>
+              <div class="chart-options">
+                <select class="control-select" id="accuracyMetric">
+                  <option value="mape">MAPE</option>
+                  <option value="mse">MSE</option>
+                  <option value="rmse">RMSE</option>
+                </select>
+              </div>
+            </div>
+            <canvas id="forecastAccuracyChart" height="250"></canvas>
+          </div>
+        </div>
+
+        <!-- AI Insights -->
+        <div class="forecast-section">
+          <div class="section-header">
+            <h3 class="section-title">
+              <i class="fas fa-brain"></i> AI-Powered Insights
+            </h3>
+            <button class="btn btn-primary" id="generateInsightsBtn">
+              <i class="fas fa-magic"></i> Generate New Insights
+            </button>
+          </div>
+
+          <div class="insights-grid">
+            <div class="insight-card">
+              <div class="insight-header">
+                <div class="insight-icon">
+                  <i class="fas fa-fire"></i>
+                </div>
+                <div class="insight-title">Top Performing Products</div>
+              </div>
+              <div class="insight-content">
+                <p>
+                  Wireless Headphones and Smart Watches are showing 45% higher
+                  sales growth than other categories. Consider increasing stock
+                  levels for these items.
+                </p>
+              </div>
+              <a href="#" class="insight-action">
+                View Details <i class="fas fa-arrow-right"></i>
+              </a>
+            </div>
+
+            <div class="insight-card">
+              <div class="insight-header">
+                <div class="insight-icon">
+                  <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="insight-title">Seasonal Trend Alert</div>
+              </div>
+              <div class="insight-content">
+                <p>
+                  Based on historical data, fitness equipment sales increase by
+                  68% in January. Prepare inventory now to meet expected demand.
+                </p>
+              </div>
+              <a href="#" class="insight-action">
+                View Forecast <i class="fas fa-arrow-right"></i>
+              </a>
+            </div>
+
+            <div class="insight-card">
+              <div class="insight-header">
+                <div class="insight-icon">
+                  <i class="fas fa-lightbulb"></i>
+                </div>
+                <div class="insight-title">Optimization Opportunity</div>
+              </div>
+              <div class="insight-content">
+                <p>
+                  Reducing safety stock levels for 15 slow-moving items could
+                  free up $84,500 in working capital without increasing stockout
+                  risk.
+                </p>
+              </div>
+              <a href="#" class="insight-action">
+                View Recommendations <i class="fas fa-arrow-right"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Forecast Section -->
+        <div class="forecast-section">
+          <div class="section-header">
+            <h3 class="section-title">
+              <i class="fas fa-crystal-ball"></i> Demand Forecasting Tool
+            </h3>
+            <div class="forecast-controls">
+              <div class="control-group">
+                <label class="control-label">Forecast Method</label>
+                <select class="control-select" id="forecastMethod">
+                  <option value="moving-average">Moving Average</option>
+                  <option value="exponential-smoothing">
+                    Exponential Smoothing
+                  </option>
+                  <option value="linear-regression">Linear Regression</option>
+                  <option value="seasonal">Seasonal Decomposition</option>
+                </select>
+              </div>
+
+              <div class="control-group">
+                <label class="control-label">Forecast Period</label>
+                <select class="control-select" id="forecastPeriod">
+                  <option value="1">1 Month</option>
+                  <option value="3" selected>3 Months</option>
+                  <option value="6">6 Months</option>
+                  <option value="12">12 Months</option>
+                </select>
+              </div>
+
+              <div class="control-group">
+                <label class="control-label">Product Category</label>
+                <select class="control-select" id="forecastCategory">
+                  <option value="all">All Categories</option>
+                  <option value="electronics">Electronics</option>
+                  <option value="furniture">Furniture</option>
+                  <option value="home">Home & Kitchen</option>
+                  <option value="sports">Sports & Outdoors</option>
+                </select>
+              </div>
+
+              <div class="control-group" style="align-self: flex-end">
+                <button class="btn btn-success" id="runForecastBtn">
+                  <i class="fas fa-play"></i> Run Forecast
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Loading Spinner -->
+          <div class="loading-spinner" id="forecastLoading">
+            <div class="spinner"></div>
+            <div>Running forecast analysis...</div>
+          </div>
+
+          <!-- Forecast Results -->
+          <div id="forecastResults" style="display: none">
+            <div class="alert alert-info">
+              <i class="fas fa-info-circle"></i>
+              <div>
+                <strong>Forecast Results Ready</strong>
+                <div>
+                  Based on historical data and selected parameters, here are the
+                  demand forecasts for the next period.
+                </div>
+              </div>
+            </div>
+
+            <div class="forecast-result">
+              <div class="forecast-metric">
+                <div class="metric-label">Expected Revenue</div>
+                <div class="metric-value" style="color: var(--success-color)">
+                  ₹1,245,680
+                </div>
+              </div>
+              <div class="forecast-metric">
+                <div class="metric-label">Growth Projection</div>
+                <div class="metric-value trend-up">+12.5%</div>
+              </div>
+              <div class="forecast-metric">
+                <div class="metric-label">Recommended Stock Level</div>
+                <div class="metric-value">1,450 units</div>
+              </div>
+              <div class="forecast-metric">
+                <div class="metric-label">Confidence Level</div>
+                <div class="metric-value" style="color: var(--success-color)">
+                  87%
+                </div>
+              </div>
+            </div>
+
+            <div style="margin-top: 25px">
+              <canvas id="detailedForecastChart" height="200"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Predictive Analytics Table -->
+        <div class="forecast-section">
+          <div class="section-header">
+            <h3 class="section-title">
+              <i class="fas fa-table"></i> Product Demand Predictions
+            </h3>
+            <button class="btn btn-outline" id="exportPredictionsBtn">
+              <i class="fas fa-download"></i> Export Data
+            </button>
+          </div>
+
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th>Category</th>
+                  <th>Current Stock</th>
+                  <th>Predicted Demand (Next 30 Days)</th>
+                  <th>Recommended Order Quantity</th>
+                  <th>Confidence Score</th>
+                  <th>Risk Level</th>
+                </tr>
+              </thead>
+              <tbody id="predictionsTable">
+                <!-- Predictions will be populated by JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Alert Section -->
+        <div class="alert alert-warning">
+          <i class="fas fa-exclamation-triangle"></i>
+          <div>
+            <strong>Forecast Alert</strong>
+            <div>
+              Based on predictive analytics, 8 products are at high risk of
+              stockout in the next 30 days. Review recommendations above.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 </body>
-<script src="/Frontend/static/js/detailed-anlytics.js"></script>
-
 </html>
