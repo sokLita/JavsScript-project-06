@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>InventoryPro | Supplier Management</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="../css/supplier.css">
+  </head>
+  <body>
+    <!-- Authentication Check -->
+    <script>
+        // Check if user is logged in
+        if (!localStorage.getItem('isLoggedIn') || localStorage.getItem('isLoggedIn') !== 'true') {
+            window.location.href = 'login.html';
+        }
+
+        const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+        if (!currentUser) {
+            window.location.href = 'login.html';
+        }
+    </script>
+
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <div class="logo-icon">
+                    <i class="fas fa-boxes"></i>
+                </div>
+                <div class="logo-text">InventoryPro</div>
+            </div>
+            <button class="toggle-btn" id="sidebarToggle">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+        </div>
+
+ <div class="sidebar-menu">
+            <a href="./dashboard.html" class="menu-item active">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>Dashboard</span>
+            </a>
+
+            <a href="./update-category.html" class="menu-item">
+                <i class="fas fa-box-open"></i>
+                <span>Product Management</span>
+            </a>
+
+            <a href="./stockmanagement.html" class="menu-item">
+                <i class="fas fa-warehouse"></i>
+                <span>Stock Management</span>
+            </a>
+
+            <a href="./category-management.html" class="menu-item">
+                <i class="fas fa-tags"></i>
+                <span>Category Management</span>
+            </a>
+
+            <a href="./supplier.html" class="menu-item">
+                <i class="fas fa-truck"></i>
+                <span>Supplier Management</span>
+            </a>
+
+            <a href="./purchase.html" class="menu-item">
+                <i class="fas fa-shopping-cart"></i>
+                <span>Purchase Management</span>
+            </a>
+
+            <a href="./sale.html" class="menu-item">
+                <i class="fas fa-chart-line"></i>
+                <span>Sales Management</span>
+            </a>
+
+            <a href="./detailed-analytics.html" class="menu-item">
+                <i class="fas fa-chart-bar"></i>
+                <span>Analytics & Reports</span>
+            </a>
+
+            <a href="./user-management.html" class="menu-item">
+                <i class="fas fa-users"></i>
+                <span>User Management</span>
+            </a>
+            <a href="./back-up.html" class="menu-item">
+                <i class="fas fa-database"></i>
+                <span>Backup & Export</span>
+            </a>
+            <a href="./barcode.html " class="menu-item">
+                <i class="fas fa-barcode"></i>
+                <span>Barcode Scanner</span>
+            </a>
+            <a href="./notification.html " class="menu-item">
+                <i class="fas fa-bell"></i>
+                <span>NOtification</span>
+            </a>
+
+            <a href="#" class="menu-item" id="logoutSidebar">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content" id="mainContent">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-left">
+                <button class="mobile-menu-toggle" id="mobileMenuToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h1 id="pageTitle">Supplier Management</h1>
+            </div>
+
+            <div class="header-right">
+                <div class="user-profile">
+                    <div class="user-avatar" id="userAvatar">A</div>
+                    <button class="logout-btn" id="logoutBtn">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+            <!-- Page Header -->
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">Supplier Management</h1>
+                    <p class="page-subtitle">Manage your suppliers, track performance, and maintain contact information
+                    </p>
+                </div>
+                <button class="btn btn-primary" id="addSupplierBtn">
+                    <i class="fas fa-plus"></i> Add New Supplier
+                </button>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="stats-cards">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-truck"></i>
+                    </div>
+                    <div class="stat-details">
+                        <div class="stat-value" id="totalSuppliers">0</div>
+                        <div class="stat-label">Total Suppliers</div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: rgba(39, 174, 96, 0.1); color: var(--success-color);">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-details">
+                        <div class="stat-value" id="activeSuppliers">0</div>
+                        <div class="stat-label">Active Suppliers</div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: rgba(243, 156, 18, 0.1); color: var(--warning-color);">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-details">
+                        <div class="stat-value" id="pendingOrders">0</div>
+                        <div class="stat-label">Pending Orders</div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: rgba(231, 76, 60, 0.1); color: var(--accent-color);">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="stat-details">
+                        <div class="stat-value" id="overduePayments">₹0</div>
+                        <div class="stat-label">Overdue Payments</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Bar -->
+            <div class="action-bar">
+                <div class="search-box">
+                    <input type="text" class="search-input" id="searchInput"
+                        placeholder="Search suppliers by name, contact person, or email...">
+                    <i class="fas fa-search search-icon"></i>
+                </div>
+
+                <div class="filter-group" style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <select class="filter-select" id="statusFilter"
+                        style="padding: 10px 15px; border: 2px solid #e1e8ed; border-radius: 8px; font-size: 14px; min-width: 150px;">
+                        <option value="">All Status</option>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                        <option value="pending">Pending Approval</option>
+                    </select>
+
+                    <select class="filter-select" id="ratingFilter"
+                        style="padding: 10px 15px; border: 2px solid #e1e8ed; border-radius: 8px; font-size: 14px; min-width: 150px;">
+                        <option value="">All Ratings</option>
+                        <option value="5">★★★★★ (5 Stars)</option>
+                        <option value="4">★★★★☆ (4 Stars)</option>
+                        <option value="3">★★★☆☆ (3 Stars)</option>
+                        <option value="2">★★☆☆☆ (2 Stars)</option>
+                        <option value="1">★☆☆☆☆ (1 Star)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- View Toggle -->
+            <div class="view-toggle">
+                <button class="view-btn active" id="gridViewBtn">
+                    <i class="fas fa-th-large"></i> Grid View
+                </button>
+                <button class="view-btn" id="tableViewBtn">
+                    <i class="fas fa-list"></i> Table View
+                </button>
+            </div>
+
+            <!-- Grid View -->
+            <div class="grid-view active" id="gridView">
+                <div class="suppliers-grid" id="suppliersGrid">
+                    <!-- Suppliers will be populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Table View -->
+            <div class="table-view" id="tableView">
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Supplier Name</th>
+                                <th>Contact Person</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>Products</th>
+                                <th>Status</th>
+                                <th>Rating</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="suppliersTable">
+                            <!-- Suppliers will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            <div class="pagination" id="pagination">
+                <!-- Pagination will be generated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Supplier Modal -->
+    <div class="modal" id="supplierModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modalTitle">Add New Supplier</h3>
+                <button class="modal-close" id="closeModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="tabs" id="supplierTabs">
+                    <button class="tab-btn active" data-tab="basic">Basic Information</button>
+                    <button class="tab-btn" data-tab="contact">Contact Details</button>
+                    <button class="tab-btn" data-tab="additional">Additional Info</button>
+                </div>
+
+                <form id="supplierForm">
+                    <!-- Basic Information Tab -->
+                    <div class="tab-content active" id="basicTab">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="supplierName">Supplier Name *</label>
+                                <input type="text" id="supplierName" class="form-control" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="supplierCode">Supplier Code</label>
+                                <input type="text" id="supplierCode" class="form-control"
+                                    placeholder="Auto-generated if empty">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="supplierCategory">Category</label>
+                                <select id="supplierCategory" class="form-control">
+                                    <option value="">Select Category</option>
+                                    <option value="electronics">Electronics</option>
+                                    <option value="furniture">Furniture</option>
+                                    <option value="clothing">Clothing</option>
+                                    <option value="raw_materials">Raw Materials</option>
+                                    <option value="packaging">Packaging</option>
+                                    <option value="services">Services</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="supplierStatus">Status *</label>
+                                <select id="supplierStatus" class="form-control" required>
+                                    <option value="active">Active</option>
+                                    <option value="inactive">Inactive</option>
+                                    <option value="pending">Pending Approval</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="supplierDescription">Description</label>
+                            <textarea id="supplierDescription" class="form-control" rows="3"
+                                placeholder="Enter supplier description..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Contact Details Tab -->
+                    <div class="tab-content" id="contactTab">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="contactPerson">Contact Person *</label>
+                                <input type="text" id="contactPerson" class="form-control" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="contactPosition">Position</label>
+                                <input type="text" id="contactPosition" class="form-control"
+                                    placeholder="e.g., Sales Manager">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="supplierEmail">Email Address *</label>
+                                <input type="email" id="supplierEmail" class="form-control" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="supplierPhone">Phone Number *</label>
+                                <input type="tel" id="supplierPhone" class="form-control" required>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="supplierMobile">Mobile Number</label>
+                                <input type="tel" id="supplierMobile" class="form-control">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="supplierFax">Fax Number</label>
+                                <input type="text" id="supplierFax" class="form-control">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="supplierWebsite">Website</label>
+                            <input type="url" id="supplierWebsite" class="form-control"
+                                placeholder="https://example.com">
+                        </div>
+
+                        <!-- Additional Contact Persons -->
+                        <div class="contact-persons">
+                            <h4 style="margin-bottom: 15px; color: var(--primary-color);">Additional Contact Persons
+                            </h4>
+                            <div id="additionalContacts">
+                                <!-- Additional contacts will be added here -->
+                            </div>
+                            <button type="button" class="btn btn-outline" id="addContactBtn" style="margin-top: 10px;">
+                                <i class="fas fa-user-plus"></i> Add Contact Person
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Additional Info Tab -->
+                    <div class="tab-content" id="additionalTab">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="supplierAddress">Address *</label>
+                                <textarea id="supplierAddress" class="form-control" rows="3" required
+                                    placeholder="Full address..."></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="supplierCity">City *</label>
+                                <input type="text" id="supplierCity" class="form-control" required>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="supplierState">State / Province</label>
+                                <input type="text" id="supplierState" class="form-control">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="supplierZip">ZIP / Postal Code</label>
+                                <input type="text" id="supplierZip" class="form-control">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="supplierCountry">Country *</label>
+                                <input type="text" id="supplierCountry" class="form-control" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="supplierTaxId">Tax ID / GST Number</label>
+                                <input type="text" id="supplierTaxId" class="form-control">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="paymentTerms">Payment Terms (Days)</label>
+                                <input type="number" id="paymentTerms" class="form-control" min="0" value="30">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="creditLimit">Credit Limit (₹)</label>
+                                <input type="number" id="creditLimit" class="form-control" min="0" step="0.01">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="supplierRating">Supplier Rating (1-5)</label>
+                            <select id="supplierRating" class="form-control">
+                                <option value="5">★★★★★ - Excellent</option>
+                                <option value="4">★★★★☆ - Very Good</option>
+                                <option value="3" selected>★★★☆☆ - Good</option>
+                                <option value="2">★★☆☆☆ - Fair</option>
+                                <option value="1">★☆☆☆☆ - Poor</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="supplierNotes">Notes</label>
+                            <textarea id="supplierNotes" class="form-control" rows="4"
+                                placeholder="Any additional notes about this supplier..."></textarea>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn" id="cancelBtn">Cancel</button>
+                        <button type="submit" class="btn btn-primary" id="saveSupplierBtn">
+                            <i class="fas fa-save"></i> Save Supplier
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Supplier Details Modal -->
+    <div class="modal" id="supplierDetailsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="detailsModalTitle">Supplier Details</h3>
+                <button class="modal-close" id="closeDetailsModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="supplierDetailsContent">
+                    <!-- Supplier details will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/supplier.js"></script>
+  </body>
+</html>
